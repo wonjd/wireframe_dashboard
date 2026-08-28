@@ -118,6 +118,9 @@ export async function GET(req: NextRequest) {
       status: "FINISHED",
       runId,
       doc: docFromRunResult(run.result),
+      // ?raw=1 — 모델이 실제로 뭘 뱉었는지 보기 위한 디버그용.
+      // 화면이 비어 나올 때 coerce가 깎아낸 건지 모델이 안 만든 건지 가른다.
+      ...(req.nextUrl.searchParams.get("raw") ? { raw: run.result } : {}),
     });
   } catch (e) {
     if (e instanceof GenerationError) return fail(e.message);
