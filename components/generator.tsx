@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { WireframeRenderer } from "@/components/wireframe/renderer";
 import {
+  AGENT_MISSING_TIMEOUT_MS,
   ALLOWED_MODELS,
   GENERATION_TIMEOUT_MS,
   MAX_SOURCE_TEXT,
@@ -12,7 +13,7 @@ import {
 import type { WireframeDoc } from "@/lib/wireframe/schema";
 
 type Phase = "idle" | "running" | "done";
-type RunRef = { agentId: string; runId: string };
+type RunRef = { agentId: string; runId?: string };
 
 const MODEL_LABEL: Record<string, string> = {
   [MODELS.default]: "빠르게 (composer-2.5)",
@@ -23,11 +24,18 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function toQuery(run: RunRef): string {
+  const params = new URLSearchParams({ agentId: run.agentId });
+  if (run.runId) params.set("runId", run.runId);
+  return params.toString();
+}
+
 /**
  * PRD(파일 또는 텍스트) → 와이어프레임.
  *
- * 서버는 상태를 갖지 않는다. 착수 응답으로 받은 (agentId, runId)를 들고
- * 여기서 폴링한다. 그래서 서버 함수가 긴 생성 시간을 물고 있을 필요가 없다.
+ * 서버는 상태를 갖지 않는다. 착수 응답으로 받은 agentId를 들고 여기서 폴링하고,
+ * run id는 폴링 중에 따라붙는다. 그래서 서버 함수가 긴 생성 시간을 물고 있을
+ * 필요가 없다.
  */
 export function Generator() {
   const [text, setText] = useState("");
@@ -87,19 +95,36 @@ export function Generator() {
       const started = await res.json();
       if (!res.ok) throw new Error(started?.error ?? "생성 요청에 실패했습니다.");
 
-      runRef.current = { agentId: started.agentId, runId: started.runId };
+      runRef.current = { agentId: started.agentId };
 
-      const deadline = Date.now() + GENERATION_TIMEOUT_MS;
+      const startedAt = Date.now();
+      const deadline = startedAt + GENERATION_TIMEOUT_MS;
       while (!canceledRef.current) {
         if (Date.now() > deadline) throw new Error("생성 시간이 초과되었습니다.");
         await sleep(POLL_INTERVAL_MS);
         if (canceledRef.current) return;
 
-        const q = new URLSearchParams(runRef.current);
-        const poll = await fetch(`/api/generate?${q}`, { cache: "no-store" });
-        const data = await poll.json();
+        const run: RunRef | null = runRef.current;
+        if (!run) return;
+
+        const poll = await fetch(`/api/generate?${toQuery(run)}`, { cache: "no-store" });
+        const data: {
+          status?: string;
+          runId?: string;
+          doc?: WireframeDoc;
+          error?: string;
+        } = await poll.json();
         if (!poll.ok) throw new Error(data?.error ?? "상태 조회에 실패했습니다.");
 
+        // 착수 응답을 기다리지 않았으므로 run id는 폴링 도중에 붙는다.
+        if (data.runId) runRef.current = { agentId: run.agentId, runId: data.runId };
+
+        if (data.status === "CREATING" && !data.runId) {
+          if (Date.now() - startedAt > AGENT_MISSING_TIMEOUT_MS) {
+            throw new Error("생성이 시작되지 않았습니다. 잠시 후 다시 시도해 주세요.");
+          }
+          continue;
+        }
         if (data.status === "CREATING" || data.status === "RUNNING") continue;
         if (data.error) throw new Error(data.error);
 
@@ -118,10 +143,9 @@ export function Generator() {
 
   const cancel = useCallback(() => {
     canceledRef.current = true;
-    const run = runRef.current;
+    const run: RunRef | null = runRef.current;
     if (run) {
-      const q = new URLSearchParams(run);
-      void fetch(`/api/generate?${q}`, { method: "DELETE" });
+      void fetch(`/api/generate?${toQuery(run)}`, { method: "DELETE" });
       runRef.current = null;
     }
     setPhase("idle");

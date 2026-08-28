@@ -1,5 +1,5 @@
 import { ALLOWED_MODELS, MAX_PROMPT_SOURCE, MODELS } from "../constants";
-import { createCloudAgent, GenerationError } from "../cursor-cloud";
+import { createCloudAgent, GenerationError, newAgentId } from "../cursor-cloud";
 import { coerceWireframeDoc } from "./coerce";
 import { SYSTEM_PROMPT, userPrompt } from "./prompt";
 import type { WireframeDoc } from "./schema";
@@ -20,17 +20,26 @@ export function buildPrompt(sourceText: string): string {
   return SYSTEM_PROMPT + "\n\n" + userPrompt(truncateSource(sourceText));
 }
 
-/** Cursor Cloud agent 착수. 완료는 GET /api/generate 폴링이 확인한다. */
-export async function startWireframeRun(input: {
-  sourceText: string;
-  model?: string;
-}): Promise<{ agentId: string; runId: string; model: string }> {
+/**
+ * Cursor Cloud agent 착수.
+ *
+ * agentId를 먼저 정하고 요청을 보낸다. 착수 응답(POST /v1/agents)은 20초를
+ * 넘길 때가 잦은데, id를 이미 알고 있으므로 응답을 못 기다려도 폴링으로
+ * 결과를 따라갈 수 있다. 그래서 agentId와 진행 중인 Promise를 함께 돌려준다.
+ */
+export function startWireframeRun(input: { sourceText: string; model?: string }): {
+  agentId: string;
+  model: string;
+  created: Promise<void>;
+} {
   const model = pickModel(input.model);
-  const { agentId, runId } = await createCloudAgent({
+  const agentId = newAgentId();
+  const created = createCloudAgent({
+    agentId,
     prompt: buildPrompt(input.sourceText),
     model,
   });
-  return { agentId, runId, model };
+  return { agentId, model, created };
 }
 
 /** 에이전트 최종 텍스트에서 JSON을 꺼낸다 — 코드펜스/앞뒤 설명이 섞여 와도 견딘다. */
