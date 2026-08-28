@@ -1,6 +1,7 @@
-import { GenerationError } from "./wireframe/generate-errors";
+/** Cursor Cloud REST. 착수 요청은 즉시 반환되고, 완료 여부는 폴링으로 확인한다. */
 
-/** Cursor Cloud REST. Create returns immediately; completion is polled. */
+/** 사용자에게 그대로 보여줄 수 있는 생성 실패. */
+export class GenerationError extends Error {}
 
 export const CURSOR_API_BASE =
   process.env.CURSOR_API_BASE_URL?.replace(/\/$/, "") || "https://api.cursor.com";
@@ -25,12 +26,32 @@ export type CloudRunSnapshot = {
   error?: string;
 };
 
+/** fetch 헤더는 ASCII(ByteString)만 허용 — 복붙 시 •·스마트 따옴표·BOM 제거 */
+function normalizeApiKey(raw: string): string {
+  return raw
+    .replace(/^\uFEFF/, "")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/[\u2018\u2019\u201C\u201D`\u00B4]/g, "")
+    .replace(/^["']+|["']+$/g, "")
+    .replace(/[^\x21-\x7E]/g, "")
+    .trim();
+}
+
 function apiKey(): string {
-  const key = process.env.CURSOR_API_KEY?.trim();
-  if (!key) {
+  const raw = process.env.CURSOR_API_KEY?.trim();
+  if (!raw) {
     throw new GenerationError(
       "CURSOR_API_KEY가 설정되지 않았습니다. .env에 키를 넣고 서버를 재시작하세요."
     );
+  }
+  const key = normalizeApiKey(raw);
+  if (!key) {
+    throw new GenerationError(
+      "CURSOR_API_KEY가 비어 있습니다. crsr_... 형태의 키만 붙여넣으세요."
+    );
+  }
+  if (key.length !== raw.length || /[^\x20-\x7E]/.test(raw)) {
+    console.warn("[cursor-cloud] CURSOR_API_KEY에서 비-ASCII/따옴표 문자를 제거했습니다.");
   }
   return key;
 }
@@ -45,7 +66,7 @@ export function causeMessage(err: unknown): string {
   } else if (cause != null) {
     parts.push(String(cause));
   }
-  return parts.join(" ? ");
+  return parts.join(" — ");
 }
 
 function sleep(ms: number): Promise<void> {
@@ -123,6 +144,11 @@ async function cursorFetch(
       last = e;
       if (e instanceof GenerationError) throw e;
       if (!(attempt < RETRIES && isRetryableNetwork(e))) {
+        if (causeMessage(e).includes("ByteString")) {
+          throw new GenerationError(
+            "CURSOR_API_KEY에 •·스마트 따옴표·보이지 않는 문자가 섞였습니다. Vercel Production 환경변수에 crsr_... 키만 다시 붙여넣으세요."
+          );
+        }
         throw new GenerationError(
           "Cursor API 연결 실패 (" + method + " " + path + "): " + causeMessage(e)
         );

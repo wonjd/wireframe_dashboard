@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Action, Screen, WireframeDoc, WireframeNode } from "@/lib/wireframe/types";
+import type { Action, Screen, WireframeDoc, WireframeNode } from "@/lib/wireframe/schema";
 import { NodeView } from "./node-view";
 
 /**

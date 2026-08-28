@@ -1,114 +1,74 @@
-# Wireframe Dashboard
+# Wireframe Generator
 
-PRD를 넣으면 **와이어프레임 수준의 화면을 자동으로 생성**해 주는 사내 도구.
+PRD 파일(또는 붙여넣은 텍스트)을 넣으면 Cursor Cloud agent가 와이어프레임 IR(JSON)을
+만들고, 브라우저가 그것을 화면으로 그린다. **그게 전부다.**
 
-회사에 화면 디자이너가 없는 상황에서, 기획 초기에 화면 시안을 만들 리소스가 없어 PRD만 보고 각자 다른 화면을 상상하게 되는 문제를 줄이는 것이 목적이다. AX팀 내부용.
+DB도, 로그인도, 잡 큐도, cron도 없다. 상태는 Cursor 쪽 run에만 있다.
 
-> **현재 상태: 기능 구현 완료, 인증 미연동.** PRD 등록 → 자동 생성 → 탭 확인 → 수정 시 자동 재생성 → 이력까지 동작한다.
-> 네이버웍스 OAuth는 사내 앱 등록(Phase 0) 이후에 붙이며, 그때까지는 **개발용 스텁 사용자**로 동작한다.
-> 설계 문서는 [`docs/SPEC.md`](docs/SPEC.md).
+## 동작
 
-## 시작하기
-
-```bash
-npm install
-cp .env.example .env        # DATABASE_URL은 기본값 그대로 두면 된다
-npx prisma db push          # SQLite 스키마 생성
-npm run db:seed             # (선택) 하드코딩 IR 샘플 — API 키 없이 렌더러 확인용
-npm run dev                 # http://localhost:3000
+```
+[브라우저]  PRD 파일 드롭 / 텍스트 붙여넣기
+    │  POST /api/generate         { sourceText, model }
+    ▼
+[Vercel]    Cursor API 로 agent 착수  →  { agentId, runId } 즉시 반환
+    │
+    │  GET /api/generate?agentId=..&runId=..   (2초마다 폴링)
+    ▼
+[Vercel]    Cursor run 조회 → FINISHED 면 결과 텍스트에서 JSON 추출 → IR 반환
+    │
+    ▼
+[브라우저]  WireframeRenderer 가 IR을 React 컴포넌트로 렌더
 ```
 
-와이어프레임을 **실제로 생성하려면** `.env`에 `CURSOR_API_KEY`를 넣어야 한다. 키가 없으면 등록·수정·이력은 정상 동작하고 생성 Job만 실패로 기록된다(기존 버전은 보존된다).
-
-`npm run db:seed`는 LLM 없이 하드코딩 IR을 넣어 준다. 렌더러·인터랙션·버전·stale·이력 연결을 API 키 없이 확인할 수 있다.
-
-## 무엇을 하는가
-
-1. 사이트에 `prd.md`를 업로드한다. (사내 로그인은 웍스 OAuth 연동 후 — 현재는 스텁 사용자)
-2. **등록 즉시 와이어프레임이 자동 생성된다.** 별도 "생성" 버튼이 없다.
-3. 대시보드의 **스펙 탭 / 와이어프레임 탭 / 이력 탭**을 오가며 원문과 화면을 확인한다.
-4. 생성된 와이어프레임은 **클릭이 작동한다** — 사이드바 메뉴·버튼·테이블 행을 눌러 화면 전환, 모달 열기/닫기까지 따라가 볼 수 있다.
-5. 요구사항이 추가되어 `prd.md`를 고치면 **와이어프레임도 자동으로 다시 생성된다.**
-6. **누가 언제 무엇을 바꿨는지 이력 탭에 남는다.** 각 와이어프레임이 어느 수정에서 나왔는지도 추적된다.
-
-화면은 PRD 단위로 관리되며 `/prd/[id]/spec`, `/prd/[id]/wireframe`, `/prd/[id]/history` 라우트로 접근한다. URL이 곧 탭 상태라 새로고침과 링크 공유가 된다.
-
-**로그인한 사내 구성원은 전원 동일 권한이 될 것이다** (OAuth 연동 후). 모든 PRD를 보고 고칠 수 있다 — PRD를 바꾸는 누구나 그 와이어프레임을 볼 수 있어야 한다는 것이 이 도구의 핵심 요구다. 접근을 권한으로 막는 대신 변경 이력으로 추적한다.
-
-## 핵심 설계 원칙
-
-**PRD가 단일 진실 공급원(SSOT)이고, 와이어프레임은 순수 파생물이다.**
-
-데이터 흐름은 단방향(PRD → 와이어프레임)이며, **와이어프레임을 직접 편집하는 기능은 만들지 않는다.** 화면을 바꾸려면 PRD를 바꾼다.
-
-이 도구의 주 사용 패턴이 "한 번 생성"이 아니라 **"PRD 수정 → 화면 확인 → 또 수정"의 반복 루프**이기 때문이다. 수동 편집을 허용하면 편집본과 재생성본이 갈라져 매번 병합 판정이 필요해지고, 화면의 근거가 문서에 남지 않는다. 자세한 근거는 [SPEC §6](docs/SPEC.md)에 있다.
-
-**LLM은 HTML을 만들지 않는다.** 구조화된 JSON IR(중간 표현)을 생성하고, React 렌더러가 그것을 그린다. 검증 가능하고, 부분 수정이 열려 있고, 렌더링이 일관되며, `dangerouslySetInnerHTML` 경로가 없다.
-
-**이력은 고칠 수 없다.** PRD 변경은 매번 원문 전체 스냅샷으로 쌓이며(append-only), 수정·삭제 API가 없다. 작성자는 요청 바디가 아니라 **세션에서만** 결정한다 — 위조할 수 있는 이력은 이력이 아니기 때문이다.
-
-**재생성은 국소적이어야 한다.** PRD에 요구사항 한 줄을 더했는데 화면 전체가 재배치되면, 추가분을 찾느라 매번 전체를 다시 읽어야 한다. 그래서 PRD 수정으로 인한 재생성은 직전 IR을 함께 넘겨 "바뀐 부분만 고치고 나머지 id는 유지하라"고 지시한다. 다만 이는 지시일 뿐 보장이 아니라서, 실제로 지켜지는지는 Phase 4에서 실측한다.
-
-## 기술 스택
-
-| 레이어 | 선택 |
-|---|---|
-| 프론트엔드 | Next.js 15 (App Router), TypeScript, Tailwind CSS |
-| 백엔드 | Next.js Route Handlers (별도 서버 없음) |
-| ORM | Prisma |
-| DB (로컬) | SQLite (file) |
-| DB (프로덕션) | Turso (libSQL) — Prisma `driverAdapters` |
-| 생성 엔진 | Cursor API (custom tool로 IR 형태 강제 + 서버 Zod 재검증) |
-| 검증 | Zod |
-| 인증 | Auth.js (NextAuth) v5 + 네이버웍스 OAuth — **미연동, 현재 스텁** |
-| 배포 | Vercel |
-
-### DB가 둘인 이유
-
-Vercel은 서버리스라 **파일 기반 SQLite가 영속되지 않는다.** 배포마다 초기화되고 런타임 쓰기가 남지 않는다. 그래서 로컬은 `file:./dev.db`, 프로덕션은 SQLite 호환 서버리스 DB인 Turso를 쓴다. Prisma 스키마의 `provider = "sqlite"`와 마이그레이션 SQL은 양쪽이 동일하고, **바뀌는 것은 런타임 커넥션(어댑터)과 환경 변수뿐**이다. 자세한 내용과 대안 비교는 [SPEC §3.1](docs/SPEC.md).
+폴링을 클라이언트가 하므로 서버 함수는 매 요청 몇 초 안에 끝난다.
+Vercel 함수 실행 시간 제한과 무관하게 몇 분짜리 생성도 견딘다.
 
 ## 환경 변수
 
-값이 아니라 **키 이름만** 적는다. 실제 값은 로컬 `.env`(gitignore)와 Vercel 환경 변수에 둔다.
+| 이름 | 필수 | 설명 |
+| --- | --- | --- |
+| `CURSOR_API_KEY` | ✅ | `crsr_...` 형태의 Cursor API 키. 서버 전용 |
+| `CURSOR_API_BASE_URL` | — | 기본 `https://api.cursor.com` |
 
-| 변수 | 용도 |
-|---|---|
-| `DATABASE_URL` | Prisma datasource. 로컬은 `file:./dev.db` |
-| `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN` | 프로덕션 Turso 접속. 앞의 값이 있으면 libSQL 어댑터로 전환 |
-| `CURSOR_API_KEY` | Cursor API 키. 서버 전용 (`NEXT_PUBLIC_` 금지) |
-| `AUTH_SECRET` / `AUTH_URL` | Auth.js JWT 서명 키, OAuth 콜백 베이스 URL |
-| `WORKS_CLIENT_ID` / `WORKS_CLIENT_SECRET` / `WORKS_ISSUER` | 네이버웍스 OAuth 자격증명 |
-| `WORKS_ALLOWED_DOMAIN_ID` | **사내 테넌트 식별자. 이 값과 다른 조직 계정은 로그인 거부** |
+로컬은 `.env.local`, 배포는 Vercel 프로젝트 환경 변수에 넣는다.
 
-> ⚠️ `WORKS_ALLOWED_DOMAIN_ID`가 없으면 앱이 부팅에 실패하도록 만든다. OAuth 로그인 성공만으로는 사내 구성원임이 보장되지 않기 때문에, 이 검증이 빠지면 다른 조직의 웍스 계정에게 사내 PRD 전문이 열린다. 설정 누락이 조용히 통과해서는 안 되는 유일한 변수다.
+## 실행
 
-## 문서
+```bash
+npm install
+npm run dev        # http://localhost:3210
+npm run typecheck
+npm run build
+```
 
-- [`docs/SPEC.md`](docs/SPEC.md) — 기술 스펙. 주요 섹션:
-  - §5 와이어프레임 IR 타입 정의와 인터랙션 런타임
-  - §6 생성 트리거 정책 (자동 재생성, stale 판정, 재생성 안정성)
-  - §7 인증 및 접근 제어 (네이버웍스 OAuth, 테넌트 검증)
-  - §8 PRD 변경 이력
-  - §9 데이터 모델 · §10 API 명세 · §11 라우팅 구조 · §12 화면 설계
-  - §13 LLM 프롬프트 설계 · §16 마일스톤 · §17 열린 이슈
+## 구조
 
-## 개발 계획
+```
+app/
+  page.tsx                    입력 → 생성 → 결과, 화면 하나
+  api/generate/route.ts       POST 착수 / GET 폴링 / DELETE 중단
+components/
+  generator.tsx               입력 폼 + 폴링 + 결과 헤더 (클라이언트)
+  wireframe/renderer.tsx      IR → 화면 (내비게이션·모달 상태 머신)
+  wireframe/node-view.tsx     노드 타입별 렌더링
+lib/
+  cursor-cloud.ts             Cursor REST (착수 / 조회 / 취소)
+  constants.ts                모델, 상한값
+  wireframe/prompt.ts         시스템·유저 프롬프트
+  wireframe/generate.ts       프롬프트 조립, 응답에서 JSON 추출
+  wireframe/coerce.ts         모델이 뱉은 JSON → 렌더 가능한 IR (관대하게 보정)
+  wireframe/schema.ts         IR 정의 (Zod, 타입의 단일 소스)
+```
 
-| Phase | 내용 |
-|---|---|
-| 1 | ✅ 뼈대 — CRUD + 변경 이력 + 렌더러 + 인터랙션 런타임 |
-| 2 | ✅ 생성 파이프라인 — Cursor API 연동, 자동 트리거(T1/T2), Zod 검증+재시도, 버전 관리, stale 판정 |
-| 0 | ⏳ 선행 — 사내 웍스 앱 등록, 자격증명 발급, 연동 스펙 확인 (인증의 전제) |
-| — | ⏳ 웍스 OAuth 연동 — `lib/session.ts`의 스텁을 실제 세션 조회로 교체 |
-| 3 | ⏳ Vercel + Turso 배포 |
-| 4 | ⏳ 다듬기 — 반복 루프 실측, 프롬프트 튜닝, 비용 실측 |
+## IR 원칙
 
-Phase 1을 LLM 없이 만든 이유는 IR 스키마와 렌더러가 이 시스템의 계약이기 때문이다. 계약을 하드코딩 IR로 먼저 검증해 두면 생성 품질 문제와 렌더링 문제를 분리해서 디버깅할 수 있다. `npm run db:seed`가 그때 쓴 샘플이며 지금도 회귀 확인용으로 남아 있다.
+모델은 HTML이 아니라 JSON(IR)을 만든다. 렌더러는 화이트리스트된 노드 타입과
+액션(`navigate` / `openModal` / `closeModal`)만 실행하므로 스크립트 주입 경로가 없다.
+모델 출력이 스키마에서 어긋나도 `coerce.ts`가 렌더 가능한 형태로 깎아 낸다 — 생성이
+통째로 실패하는 것보다 낫다.
 
-인증만 뒤로 미뤘고 나머지 기능은 구현돼 있다. **Phase 0은 개발 외 리드타임이다.** 사내 웍스 관리자 권한으로 앱을 등록하고 리다이렉트 URI(로컬·프로덕션 2개)를 넣고 자격증명을 받아야 하며, 승인 절차가 걸릴 수 있다. Phase 1보다 먼저 시작해 두어야 대기가 생기지 않는다.
+---
 
-**인증은 뒤로 미뤘지만 `User`/`authorId` 스키마는 처음부터 넣었다.** 변경 이력이 작성자를 필수로 참조하므로, 컬럼 없이 시작하면 그때까지 쌓인 이력의 작성자를 나중에 알 수 없기 때문이다. 지금은 개발용 스텁 사용자가 그 자리를 채우고, OAuth를 붙일 때 `lib/session.ts` 한 곳만 바꾸면 된다.
-
-## 범위 밖 (Non-Goals)
-
-픽셀 퍼펙트 디자인 · 디자인 시스템 토큰 · 와이어프레임 수동 편집 · 이미지/Figma export · 실제 데이터 연동 · 협업(코멘트/멘션) · 세분화된 권한·역할 · 실시간 협업 편집
+이전 버전(프로젝트 목록 / PRD 편집 / 버전 이력 / Prisma+Turso / Vercel Cron 잡 큐)은
+`backup/pre-cleanup` 브랜치에 있다.

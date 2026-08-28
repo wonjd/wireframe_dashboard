@@ -1,6 +1,6 @@
 "use client";
 
-import type { Action, WireframeNode } from "@/lib/wireframe/types";
+import type { Action, WireframeNode } from "@/lib/wireframe/schema";
 
 /**
  * 노드 타입별 렌더링 — §5.1 "같은 type은 항상 같은 컴포넌트로".
