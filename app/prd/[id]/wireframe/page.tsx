@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { getLatestRevision } from "@/lib/prd-service";
-import { wireframeDocSchema } from "@/lib/wireframe/schema";
+import { coerceWireframeDoc } from "@/lib/wireframe/coerce";
 import { toWireframeListItem } from "@/lib/serializers";
 import { WireframeTab } from "@/components/wireframe/wireframe-tab";
 import type { WireframeDoc } from "@/lib/wireframe/types";
@@ -32,8 +32,7 @@ export default async function WireframePage({ params }: { params: Promise<{ id: 
   let initialDoc: WireframeDoc | null = null;
   const latest = wireframes[0];
   if (latest) {
-    const parsed = wireframeDocSchema.safeParse(JSON.parse(latest.docJson));
-    if (parsed.success) initialDoc = parsed.data;
+    initialDoc = coerceWireframeDoc(JSON.parse(latest.docJson));
   }
 
   return (

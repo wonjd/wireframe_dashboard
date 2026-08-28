@@ -92,29 +92,38 @@ export function WireframeRenderer({
   }, [onScreenChange]);
 
   if (!current) {
-    return <div className="p-8 text-sm text-neutral-500">화면이 없습니다.</div>;
+    return <div className="p-10 text-center text-[13px] text-ink-3">화면이 없습니다.</div>;
   }
 
   const modal = state.openModalId ? findNode(current.nodes, state.openModalId) : null;
 
   return (
     <div className="relative">
-      <div className="flex items-center gap-2 border-b border-neutral-200 bg-neutral-50 px-3 py-2 text-xs">
-        <span className="font-medium text-neutral-700">{current.name}</span>
-        {current.route && <code className="text-neutral-400">{current.route}</code>}
+      <div className="flex flex-wrap items-center gap-2 border-b border-line bg-subtle px-3.5 py-2 text-[12px]">
+        <span className="flex items-center gap-1.5 font-medium text-ink-2">
+          <span className="flex gap-1" aria-hidden>
+            <span className="h-2 w-2 rounded-full bg-line-strong" />
+            <span className="h-2 w-2 rounded-full bg-line-strong" />
+            <span className="h-2 w-2 rounded-full bg-line-strong" />
+          </span>
+          {current.name}
+        </span>
+        {current.route && (
+          <code className="rounded border border-line bg-surface px-1.5 py-0.5 text-[11px] text-ink-4">
+            {current.route}
+          </code>
+        )}
         <div className="ml-auto flex items-center gap-2">
           {state.history.length > 0 && (
-            <button
-              onClick={goBack}
-              className="rounded border border-neutral-300 bg-white px-2 py-0.5 text-neutral-600 hover:bg-neutral-100"
-            >
+            <button onClick={goBack} className="btn-default px-2 py-1 text-[11.5px]">
               ← 뒤로
             </button>
           )}
           <select
+            aria-label="화면 선택"
             value={current.id}
             onChange={(e) => dispatch({ type: "navigate", targetScreenId: e.target.value })}
-            className="rounded border border-neutral-300 bg-white px-2 py-0.5 text-neutral-600"
+            className="input-field h-7 px-2 text-[11.5px]"
           >
             {screens.map((s) => (
               <option key={s.id} value={s.id}>

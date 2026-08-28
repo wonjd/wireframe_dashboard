@@ -4,9 +4,11 @@ import { db } from "@/lib/db";
 import { ApiError, apiError, handle } from "@/lib/api-error";
 import { requireUser } from "@/lib/session";
 import { createPrd, createJob } from "@/lib/prd-service";
-import { runJobDetached } from "@/lib/job-runner";
+import { startJobIfServer } from "@/lib/job-runner";
 import { MAX_SOURCE_TEXT, MAX_UPLOAD_BYTES } from "@/lib/constants";
 import { toPrdDto, toPrdListItem } from "@/lib/serializers";
+
+export const maxDuration = 60;
 
 const jsonBody = z.object({
   title: z.string().min(1).max(200).optional(),
@@ -97,7 +99,7 @@ export async function POST(req: NextRequest) {
 
     // 등록 = 생성. 사용자가 "생성" 버튼을 따로 누르지 않는다 (§6.2 T1).
     const { job } = await createJob({ prdId: prd.id, trigger: "T1", userId: user.id });
-    runJobDetached(job.id);
+    await startJobIfServer(job.id);
 
     return NextResponse.json(
       toPrdDto({ ...prd, status: "GENERATING" }, { jobId: job.id, currentRevision: revision.revision }),

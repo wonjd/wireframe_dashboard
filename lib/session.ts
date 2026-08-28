@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { ensureSchema } from "./ensure-schema";
 
 /**
  * 현재 사용자 조회 — 스펙 §7.3.
@@ -18,7 +19,7 @@ const DEV_USER = {
 } as const;
 
 export async function getCurrentUser() {
-  // TODO(Phase 0 이후): Auth.js 세션에서 worksUserId를 읽어 조회로 교체.
+  await ensureSchema();
   return db.user.upsert({
     where: { worksUserId: DEV_USER.worksUserId },
     update: {},

@@ -1,7 +1,7 @@
 /**
  * 개발용 seed — Phase 1의 "LLM 없이 하드코딩 IR로 계약 검증" (§16).
  *
- * ANTHROPIC_API_KEY 없이도 렌더러·인터랙션·버전·stale·이력 연결을 전부 확인할 수 있다.
+ * CURSOR_API_KEY 없이도 렌더러·인터랙션·버전·stale·이력 연결을 전부 확인할 수 있다.
  * 실행: npm run db:seed
  */
 import { PrismaClient } from "@prisma/client";

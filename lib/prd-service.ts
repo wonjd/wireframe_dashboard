@@ -147,6 +147,34 @@ export async function createJob(input: {
   return { job, created: true };
 }
 
+/**
+ * 진행 중인 생성을 중단한다.
+ *
+ * Job은 삭제하지 않고 CANCELED로 남긴다 — 무엇이 언제 왜 멈췄는지가 사라지면
+ * "생성했는데 결과가 없다"를 나중에 설명할 수 없다.
+ * PRD 상태는 GENERATING에 갇히지 않도록 되돌린다: 기존 버전이 있으면 GENERATED,
+ * 없으면 DRAFT. 중단은 실패가 아니므로 FAILED로 두지 않는다.
+ */
+export async function cancelActiveJob(prdId: string) {
+  const active = await findActiveJob(prdId);
+  if (!active) return null;
+
+  const hasWireframe = await db.wireframe.count({ where: { prdId } });
+
+  const [job] = await db.$transaction([
+    db.generationJob.update({
+      where: { id: active.id },
+      data: { status: "CANCELED", error: "사용자가 생성을 중단했습니다." },
+    }),
+    db.prd.update({
+      where: { id: prdId },
+      data: { status: hasWireframe > 0 ? "GENERATED" : "DRAFT" },
+    }),
+  ]);
+
+  return job;
+}
+
 /** 와이어프레임이 현재 PRD 기준인지 — §6.3 */
 export function isStale(wireframePrdRevisionId: string, currentRevisionId: string | null): boolean {
   return currentRevisionId === null || wireframePrdRevisionId !== currentRevisionId;

@@ -95,6 +95,9 @@ model GenerationJob {
   triggeredBy   User?    @relation(fields: [triggeredById], references: [id])
   wireframeId   String?
   error         String?
+  cursorAgentId String?
+  cursorRunId   String?
+  model         String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

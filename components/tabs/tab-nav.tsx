@@ -4,9 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const TABS = [
-  { seg: "spec", label: "스펙" },
+  { seg: "spec", label: "PRD" },
   { seg: "wireframe", label: "와이어프레임" },
-  { seg: "history", label: "이력" },
 ] as const;
 
 /** 탭은 링크다 — 키보드 이동·뒤로가기가 기본 제공된다 (§14.5). */
@@ -14,7 +13,7 @@ export function TabNav({ prdId }: { prdId: string }) {
   const pathname = usePathname();
 
   return (
-    <nav className="flex gap-1 border-b border-neutral-200">
+    <nav className="flex gap-1 border-b border-line px-4">
       {TABS.map((t) => {
         const href = `/prd/${prdId}/${t.seg}`;
         const active = pathname === href;
@@ -22,13 +21,13 @@ export function TabNav({ prdId }: { prdId: string }) {
           <Link
             key={t.seg}
             href={href}
-            className={`rounded-t border border-b-0 px-4 py-2 text-sm ${
-              active
-                ? "border-neutral-200 bg-white font-medium text-neutral-800"
-                : "border-transparent text-neutral-500 hover:text-neutral-800"
+            aria-current={active ? "page" : undefined}
+            className={`relative -mb-px px-3 py-3 text-[13px] transition-colors ${
+              active ? "font-medium text-brand" : "text-ink-2 hover:text-brand"
             }`}
           >
             {t.label}
+            {active && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-brand" />}
           </Link>
         );
       })}

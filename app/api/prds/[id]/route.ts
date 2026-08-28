@@ -4,9 +4,11 @@ import { db } from "@/lib/db";
 import { ApiError, apiError, handle } from "@/lib/api-error";
 import { requireUser } from "@/lib/session";
 import { createJob, getLatestRevision, updatePrd } from "@/lib/prd-service";
-import { runJobDetached } from "@/lib/job-runner";
+import { startJobIfServer } from "@/lib/job-runner";
 import { MAX_SOURCE_TEXT, MAX_UPLOAD_BYTES } from "@/lib/constants";
 import { toPrdDto } from "@/lib/serializers";
+
+export const maxDuration = 60;
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -88,7 +90,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     if (revision) {
       const { job } = await createJob({ prdId: prd.id, trigger: "T2", userId: user.id });
       jobId = job.id;
-      runJobDetached(job.id);
+      await startJobIfServer(job.id);
     }
 
     const latest = revision ?? (await getLatestRevision(prd.id));

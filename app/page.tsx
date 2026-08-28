@@ -3,17 +3,12 @@ import { PrdTable, type PrdRow } from "@/components/prd/prd-table";
 
 export const dynamic = "force-dynamic";
 
-/** PRD 전체 목록 — 어드민 테이블 (검색 + 상태 필터). */
+/** 프로젝트 목록. */
 export default async function HomePage() {
   const prds = await db.prd.findMany({
     orderBy: { updatedAt: "desc" },
     include: {
       wireframes: { select: { version: true }, orderBy: { version: "desc" }, take: 1 },
-      revisions: {
-        select: { revision: true, author: { select: { name: true } } },
-        orderBy: { revision: "desc" },
-        take: 1,
-      },
     },
   });
 
@@ -22,14 +17,12 @@ export default async function HomePage() {
     title: p.title,
     status: p.status,
     version: p.wireframes[0]?.version ?? null,
-    revision: p.revisions[0]?.revision ?? null,
-    lastEditor: p.revisions[0]?.author.name ?? null,
     updatedAt: p.updatedAt.toISOString(),
   }));
 
   return (
-    <div>
-      <h1 className="mb-4 text-lg font-semibold text-neutral-800">PRD 전체 목록</h1>
+    <div className="mx-auto max-w-5xl">
+      <h1 className="mb-5 text-[20px] font-semibold tracking-tight text-ink">프로젝트</h1>
       <PrdTable rows={rows} />
     </div>
   );

@@ -18,7 +18,7 @@ npm run db:seed             # (선택) 하드코딩 IR 샘플 — API 키 없이
 npm run dev                 # http://localhost:3000
 ```
 
-와이어프레임을 **실제로 생성하려면** `.env`에 `ANTHROPIC_API_KEY`를 넣어야 한다. 키가 없으면 등록·수정·이력은 정상 동작하고 생성 Job만 실패로 기록된다(기존 버전은 보존된다).
+와이어프레임을 **실제로 생성하려면** `.env`에 `CURSOR_API_KEY`를 넣어야 한다. 키가 없으면 등록·수정·이력은 정상 동작하고 생성 Job만 실패로 기록된다(기존 버전은 보존된다).
 
 `npm run db:seed`는 LLM 없이 하드코딩 IR을 넣어 준다. 렌더러·인터랙션·버전·stale·이력 연결을 API 키 없이 확인할 수 있다.
 
@@ -58,7 +58,7 @@ npm run dev                 # http://localhost:3000
 | ORM | Prisma |
 | DB (로컬) | SQLite (file) |
 | DB (프로덕션) | Turso (libSQL) — Prisma `driverAdapters` |
-| 생성 엔진 | Anthropic Claude API (tool use로 IR 형태 강제 + 서버 Zod 재검증) |
+| 생성 엔진 | Cursor API (custom tool로 IR 형태 강제 + 서버 Zod 재검증) |
 | 검증 | Zod |
 | 인증 | Auth.js (NextAuth) v5 + 네이버웍스 OAuth — **미연동, 현재 스텁** |
 | 배포 | Vercel |
@@ -75,7 +75,7 @@ Vercel은 서버리스라 **파일 기반 SQLite가 영속되지 않는다.** �
 |---|---|
 | `DATABASE_URL` | Prisma datasource. 로컬은 `file:./dev.db` |
 | `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN` | 프로덕션 Turso 접속. 앞의 값이 있으면 libSQL 어댑터로 전환 |
-| `ANTHROPIC_API_KEY` | Claude API 키. 서버 전용 (`NEXT_PUBLIC_` 금지) |
+| `CURSOR_API_KEY` | Cursor API 키. 서버 전용 (`NEXT_PUBLIC_` 금지) |
 | `AUTH_SECRET` / `AUTH_URL` | Auth.js JWT 서명 키, OAuth 콜백 베이스 URL |
 | `WORKS_CLIENT_ID` / `WORKS_CLIENT_SECRET` / `WORKS_ISSUER` | 네이버웍스 OAuth 자격증명 |
 | `WORKS_ALLOWED_DOMAIN_ID` | **사내 테넌트 식별자. 이 값과 다른 조직 계정은 로그인 거부** |
@@ -97,7 +97,7 @@ Vercel은 서버리스라 **파일 기반 SQLite가 영속되지 않는다.** �
 | Phase | 내용 |
 |---|---|
 | 1 | ✅ 뼈대 — CRUD + 변경 이력 + 렌더러 + 인터랙션 런타임 |
-| 2 | ✅ 생성 파이프라인 — Claude 연동, 자동 트리거(T1/T2), Zod 검증+재시도, 버전 관리, stale 판정 |
+| 2 | ✅ 생성 파이프라인 — Cursor API 연동, 자동 트리거(T1/T2), Zod 검증+재시도, 버전 관리, stale 판정 |
 | 0 | ⏳ 선행 — 사내 웍스 앱 등록, 자격증명 발급, 연동 스펙 확인 (인증의 전제) |
 | — | ⏳ 웍스 OAuth 연동 — `lib/session.ts`의 스텁을 실제 세션 조회로 교체 |
 | 3 | ⏳ Vercel + Turso 배포 |

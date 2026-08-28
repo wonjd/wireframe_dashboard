@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { handle } from "@/lib/api-error";
+import { settleJob } from "@/lib/job-runner";
+
+export const maxDuration = 60;
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -8,13 +11,19 @@ type Ctx = { params: Promise<{ id: string }> };
 export async function GET(_req: NextRequest, { params }: Ctx) {
   return handle(async () => {
     const { id } = await params;
-    const job = await db.generationJob.findFirst({
+    let job = await db.generationJob.findFirst({
       where: { prdId: id },
       orderBy: { createdAt: "desc" },
     });
 
     if (!job) {
       return NextResponse.json({ jobId: null, status: null, wireframeId: null, error: null });
+    }
+
+    if (job.status === "RUNNING") {
+      await settleJob(job.id);
+      const fresh = await db.generationJob.findUnique({ where: { id: job.id } });
+      if (fresh) job = fresh;
     }
 
     return NextResponse.json({

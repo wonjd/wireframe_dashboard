@@ -1,34 +1,38 @@
 {
-  "name": "wireframe-dashboard",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "prisma generate && next build",
-    "start": "next start",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts",
-    "postinstall": "prisma generate"
-  },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.122.0",
-    "@prisma/client": "^6.19.3",
-    "next": "^15.5.24",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4.3.3",
-    "@types/node": "^26.4.0",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.5",
-    "postcss": "^8.5.26",
-    "prisma": "^6.19.3",
-    "tailwindcss": "^4.3.3",
-    "tsx": "^4.23.12",
-    "typescript": "^5.9.3"
-  }
+    "name": "wireframe-dashboard",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "prisma generate && next dev -p 3210",
+        "build": "prisma generate && next build",
+        "start": "next start",
+        "lint": "next lint",
+        "typecheck": "prisma generate && tsc --noEmit",
+        "db:push": "prisma db push",
+        "db:seed": "tsx prisma/seed.ts",
+        "postinstall": "prisma generate",
+        "vercel-build": "node scripts/turso-db-push.mjs && DATABASE_URL=file:./dev.db prisma generate && next build",
+        "worker": "tsx --env-file=.env scripts/job-worker.ts"
+    },
+    "dependencies": {
+        "@cursor/sdk": "^1.0.30",
+        "@libsql/client": "^0.17.4",
+        "@prisma/adapter-libsql": "^7.10.0",
+        "@prisma/client": "^6.19.3",
+        "next": "^15.5.24",
+        "react": "^19.2.8",
+        "react-dom": "^19.2.8",
+        "zod": "^4.4.3"
+    },
+    "devDependencies": {
+        "@tailwindcss/postcss": "^4.3.3",
+        "@types/node": "^26.4.0",
+        "@types/react": "^19.2.18",
+        "@types/react-dom": "^19.2.5",
+        "postcss": "^8.5.26",
+        "prisma": "^6.19.3",
+        "tailwindcss": "^4.3.3",
+        "tsx": "^4.23.12",
+        "typescript": "^5.9.3"
+    }
 }

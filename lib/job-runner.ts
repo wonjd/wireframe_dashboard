@@ -1,20 +1,46 @@
 import { db } from "./db";
-import { generateWireframe, GenerationError } from "./wireframe/generate";
+import { docFromAgentResult, GenerationError, startCloudWireframe } from "@/lib/wireframe/generate";
 import { getLatestRevision } from "./prd-service";
+import { cancelCloudRun, causeMessage, getCloudRun } from "./cursor-cloud";
 
-/**
- * 생성 Job 실행 — §4 요청 흐름.
- *
- * Job 레코드를 먼저 만들고(호출자), 여기서 RUNNING → DONE/FAILED로 옮긴다.
- * 실패해도 기존 Wireframe 버전은 손대지 않는다 — 생성 실패가 이미 보고 있던
- * 화면을 훼손하지 않는 것이 버전 테이블을 분리한 이유다 (§9).
- */
-export async function runJob(jobId: string, opts?: { model?: string }): Promise<void> {
+const JOB_TIMEOUT_MS = 15 * 60 * 1000;
+
+export function shouldStartInServer(): boolean {
+  return process.env.GENERATION_MODE !== "worker";
+}
+
+export async function isJobCanceled(jobId: string): Promise<boolean> {
+  const job = await db.generationJob.findUnique({
+    where: { id: jobId },
+    select: { status: true },
+  });
+  return job?.status === "CANCELED";
+}
+
+function formatJobError(e: unknown): string {
+  if (e instanceof GenerationError) return e.message;
+  return causeMessage(e);
+}
+
+async function failJob(jobId: string, prdId: string, message: string): Promise<void> {
+  console.error("[job] 생성 실패", jobId, message);
+  await db.$transaction([
+    db.generationJob.update({ where: { id: jobId }, data: { status: "FAILED", error: message } }),
+    db.prd.update({ where: { id: prdId }, data: { status: "FAILED" } }),
+  ]);
+}
+
+/** Cursor Cloud agent만 착수한다. wait 하지 않는다. */
+export async function startJob(jobId: string, opts?: { model?: string }): Promise<void> {
+  const claimed = await db.generationJob.updateMany({
+    where: { id: jobId, status: { in: ["PENDING", "RUNNING"] } },
+    data: { status: "RUNNING" },
+  });
+  if (claimed.count === 0) return;
+
   const job = await db.generationJob.findUnique({ where: { id: jobId } });
   if (!job) return;
-  if (job.status === "DONE" || job.status === "FAILED") return;
-
-  await db.generationJob.update({ where: { id: jobId }, data: { status: "RUNNING" } });
+  if (job.cursorRunId) return;
 
   try {
     const prd = await db.prd.findUnique({ where: { id: job.prdId } });
@@ -23,63 +49,94 @@ export async function runJob(jobId: string, opts?: { model?: string }): Promise<
     const revision = await getLatestRevision(prd.id);
     if (!revision) throw new GenerationError("PRD 리비전이 없습니다.");
 
-    // T2(본문 수정에 의한 자동 재생성)일 때만 직전 IR을 앵커로 넘긴다 — §6.5.
-    let previousDocJson: string | undefined;
-    if (job.trigger === "T2") {
-      const prev = await db.wireframe.findFirst({
-        where: { prdId: prd.id },
-        orderBy: { version: "desc" },
-        select: { docJson: true },
-      });
-      previousDocJson = prev?.docJson;
-    }
-
-    const { doc, model } = await generateWireframe({
+    const started = await startCloudWireframe({
       sourceText: revision.sourceText,
       model: opts?.model,
-      previousDocJson,
     });
 
-    const last = await db.wireframe.findFirst({
-      where: { prdId: prd.id },
-      orderBy: { version: "desc" },
-      select: { version: true },
-    });
+    if (await isJobCanceled(jobId)) {
+      await cancelCloudRun(started.agentId, started.runId);
+      return;
+    }
 
-    const wireframe = await db.wireframe.create({
+    await db.generationJob.update({
+      where: { id: jobId },
       data: {
-        prdId: prd.id,
-        version: (last?.version ?? 0) + 1,
-        docJson: JSON.stringify(doc),
-        prdRevisionId: revision.id,
-        model,
+        cursorAgentId: started.agentId,
+        cursorRunId: started.runId,
+        model: started.model,
       },
     });
-
-    await db.$transaction([
-      db.generationJob.update({
-        where: { id: jobId },
-        data: { status: "DONE", wireframeId: wireframe.id, error: null },
-      }),
-      db.prd.update({ where: { id: prd.id }, data: { status: "GENERATED" } }),
-    ]);
   } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    console.error("[job] 생성 실패", jobId, message);
-    await db.$transaction([
-      db.generationJob.update({ where: { id: jobId }, data: { status: "FAILED", error: message } }),
-      db.prd.update({ where: { id: job.prdId }, data: { status: "FAILED" } }),
-    ]);
+    if (await isJobCanceled(jobId)) return;
+    await failJob(jobId, job.prdId, formatJobError(e));
   }
 }
 
-/**
- * Job을 응답과 분리해 실행한다 — §13.5.
- *
- * 클라이언트는 202를 받고 status API를 폴링하므로 긴 요청을 물고 있지 않는다.
- * 서버리스에서는 함수가 응답 후 종료될 수 있어 v1은 "함수 1회 실행 안에 완료"를
- * 전제로 한다. 초대형 PRD가 문제되면 큐/워커 분리를 검토한다 (§17.2).
- */
-export function runJobDetached(jobId: string, opts?: { model?: string }): void {
-  void runJob(jobId, opts).catch((e) => console.error("[job] detached 실패", jobId, e));
+/** 상태 폴링이 Cursor run을 수거해 Job을 끝낸다. */
+export async function settleJob(jobId: string): Promise<void> {
+  const job = await db.generationJob.findUnique({ where: { id: jobId } });
+  if (!job || job.status !== "RUNNING") return;
+  if (!job.cursorAgentId || !job.cursorRunId) return;
+
+  if (Date.now() - job.createdAt.getTime() > JOB_TIMEOUT_MS) {
+    await failJob(jobId, job.prdId, "생성 시간이 초과되었습니다.");
+    return;
+  }
+
+  let run;
+  try {
+    run = await getCloudRun(job.cursorAgentId, job.cursorRunId);
+  } catch (e) {
+    console.error("[job] Cursor 폴링 실패", jobId, formatJobError(e));
+    return;
+  }
+
+  if (run.status === "CREATING" || run.status === "RUNNING") return;
+
+  if (await isJobCanceled(jobId)) return;
+
+  if (run.status !== "FINISHED") {
+    await failJob(jobId, job.prdId, run.error || ("Cursor run " + run.status));
+    return;
+  }
+
+  const revision = await getLatestRevision(job.prdId);
+  if (!revision) {
+    await failJob(jobId, job.prdId, "PRD 리비전이 없습니다.");
+    return;
+  }
+
+  const { doc, model } = docFromAgentResult(run.result, job.model || "composer-2.5");
+  const last = await db.wireframe.findFirst({
+    where: { prdId: job.prdId },
+    orderBy: { version: "desc" },
+    select: { version: true },
+  });
+
+  const wireframe = await db.wireframe.create({
+    data: {
+      prdId: job.prdId,
+      version: (last?.version ?? 0) + 1,
+      docJson: JSON.stringify(doc),
+      prdRevisionId: revision.id,
+      model,
+    },
+  });
+
+  const claimed = await db.generationJob.updateMany({
+    where: { id: jobId, status: "RUNNING" },
+    data: { status: "DONE", wireframeId: wireframe.id, error: null },
+  });
+  if (claimed.count === 0) {
+    await db.wireframe.delete({ where: { id: wireframe.id } });
+    return;
+  }
+
+  await db.prd.update({ where: { id: job.prdId }, data: { status: "GENERATED" } });
+}
+
+export async function startJobIfServer(jobId: string, opts?: { model?: string }): Promise<void> {
+  if (!shouldStartInServer()) return;
+  await startJob(jobId, opts);
 }
