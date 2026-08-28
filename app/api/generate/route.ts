@@ -9,7 +9,7 @@ import {
   getLatestRunId,
   GenerationError,
 } from "@/lib/cursor-cloud";
-import { docFromRunResult, startWireframeRun } from "@/lib/wireframe/generate";
+import { htmlFromRunResult, startWireframeRun } from "@/lib/wireframe/generate";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/** 폴링 — 끝났으면 IR까지 같이 준다 */
+/** 폴링 — 끝났으면 문서까지 같이 준다 */
 export async function GET(req: NextRequest) {
   const agentId = req.nextUrl.searchParams.get("agentId");
   if (!agentId) return fail("agentId가 필요합니다.");
@@ -117,9 +117,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       status: "FINISHED",
       runId,
-      doc: docFromRunResult(run.result),
+      html: htmlFromRunResult(run.result),
       // ?raw=1 — 모델이 실제로 뭘 뱉었는지 보기 위한 디버그용.
-      // 화면이 비어 나올 때 coerce가 깎아낸 건지 모델이 안 만든 건지 가른다.
+      // 화면이 비어 나올 때 추출이 깎아낸 건지 모델이 안 만든 건지 가른다.
       ...(req.nextUrl.searchParams.get("raw") ? { raw: run.result } : {}),
     });
   } catch (e) {

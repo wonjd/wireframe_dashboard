@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { WireframeRenderer } from "@/components/wireframe/renderer";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AGENT_MISSING_TIMEOUT_MS,
   ALLOWED_MODELS,
@@ -10,7 +9,7 @@ import {
   MODELS,
   POLL_INTERVAL_MS,
 } from "@/lib/constants";
-import type { WireframeDoc } from "@/lib/wireframe/schema";
+import { countScreens } from "@/lib/wireframe/shell";
 
 type Phase = "idle" | "running" | "done";
 type RunRef = { agentId: string; runId?: string };
@@ -43,13 +42,15 @@ export function Generator() {
   const [model, setModel] = useState<string>(MODELS.default);
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [doc, setDoc] = useState<WireframeDoc | null>(null);
+  const [html, setHtml] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [elapsed, setElapsed] = useState(0);
 
   const runRef = useRef<RunRef | null>(null);
   const canceledRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const screenCount = useMemo(() => (html ? countScreens(html) : 0), [html]);
 
   // 진행 중 경과 시간 — 몇 분 걸리는 작업이라 멈춘 것처럼 보이지 않게 한다.
   useEffect(() => {
@@ -83,7 +84,7 @@ export function Generator() {
 
     canceledRef.current = false;
     setError(null);
-    setDoc(null);
+    setHtml(null);
     setPhase("running");
 
     try {
@@ -111,7 +112,7 @@ export function Generator() {
         const data: {
           status?: string;
           runId?: string;
-          doc?: WireframeDoc;
+          html?: string;
           error?: string;
         } = await poll.json();
         if (!poll.ok) throw new Error(data?.error ?? "상태 조회에 실패했습니다.");
@@ -128,7 +129,7 @@ export function Generator() {
         if (data.status === "CREATING" || data.status === "RUNNING") continue;
         if (data.error) throw new Error(data.error);
 
-        setDoc(data.doc as WireframeDoc);
+        setHtml(data.html ?? "");
         setPhase("done");
         runRef.current = null;
         return;
@@ -151,29 +152,30 @@ export function Generator() {
     setPhase("idle");
   }, []);
 
-  function downloadJson() {
-    if (!doc) return;
-    const blob = new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" });
+  /** 저장한 파일은 그 자체로 열리는 완결된 문서다 — 뷰어가 따로 필요 없다. */
+  function downloadHtml() {
+    if (!html) return;
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = (fileName?.replace(/\.[^.]+$/, "") || "wireframe") + ".json";
+    a.download = (fileName?.replace(/\.[^.]+$/, "") || "wireframe") + ".html";
     a.click();
     URL.revokeObjectURL(url);
   }
 
   // ---- 결과 화면 -------------------------------------------------------
-  if (phase === "done" && doc) {
+  if (phase === "done" && html !== null) {
     return (
       <div className="flex h-screen flex-col">
         <header className="flex items-center gap-3 border-b border-line bg-surface px-5 py-3">
           <h1 className="text-[14px] font-semibold text-ink">와이어프레임</h1>
           <span className="text-[12.5px] text-ink-3">
-            {fileName ?? "붙여넣은 PRD"} · 화면 {doc.screens.length}개
+            {fileName ?? "붙여넣은 PRD"} · 화면 {screenCount}개
           </span>
           <div className="ml-auto flex gap-2">
-            <button onClick={downloadJson} className="btn-default px-3 py-1.5 text-[13px]">
-              JSON 저장
+            <button onClick={downloadHtml} className="btn-default px-3 py-1.5 text-[13px]">
+              HTML 저장
             </button>
             <button onClick={() => void generate()} className="btn-default px-3 py-1.5 text-[13px]">
               다시 생성
@@ -181,7 +183,7 @@ export function Generator() {
             <button
               onClick={() => {
                 setPhase("idle");
-                setDoc(null);
+                setHtml(null);
               }}
               className="btn-primary px-3 py-1.5 text-[13px]"
             >
@@ -189,8 +191,19 @@ export function Generator() {
             </button>
           </div>
         </header>
-        <div className="min-h-0 flex-1 overflow-auto p-6">
-          <WireframeRenderer doc={doc} />
+        <div className="min-h-0 flex-1 bg-subtle p-6">
+          {/*
+            생성된 문서는 sandbox iframe에서만 그린다. allow-scripts는 주되
+            allow-same-origin은 주지 않는다 — 그래야 문서가 고유 origin에 갇혀
+            부모 앱의 DOM·쿠키·스토리지에 닿지 못하고, 화면 전환·모달 같은
+            동작은 그대로 살아 있다.
+          */}
+          <iframe
+            title="와이어프레임 미리보기"
+            srcDoc={html}
+            sandbox="allow-scripts"
+            className="h-full w-full rounded-card border border-line bg-white"
+          />
         </div>
       </div>
     );

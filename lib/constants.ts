@@ -6,9 +6,6 @@ export const MODELS = {
 
 export const ALLOWED_MODELS = [MODELS.default, MODELS.smart] as const;
 
-/** 와이어프레임 IR 상한 */
-export const MAX_SCREENS = 6;
-
 /** 프롬프트에 실어 보내는 PRD 최대 길이 */
 export const MAX_PROMPT_SOURCE = 8_000;
 /** 입력으로 받는 PRD 최대 길이 */

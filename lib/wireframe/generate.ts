@@ -1,8 +1,7 @@
 import { ALLOWED_MODELS, MAX_PROMPT_SOURCE, MODELS } from "../constants";
 import { createCloudAgent, GenerationError, newAgentId } from "../cursor-cloud";
-import { coerceWireframeDoc } from "./coerce";
 import { SYSTEM_PROMPT, userPrompt } from "./prompt";
-import type { WireframeDoc } from "./schema";
+import { buildDocument } from "./shell";
 
 export { GenerationError };
 
@@ -42,52 +41,44 @@ export function startWireframeRun(input: { sourceText: string; model?: string })
   return { agentId, model, created };
 }
 
-/** 에이전트 최종 텍스트에서 JSON을 꺼낸다 — 코드펜스/앞뒤 설명이 섞여 와도 견딘다. */
-export function extractJsonFromText(text: string): unknown {
-  const trimmed = text.trim();
-  if (!trimmed) throw new GenerationError("모델 응답이 비어 있습니다.");
+/**
+ * 에이전트 최종 텍스트에서 마크업을 꺼낸다 — 코드펜스나 앞뒤 설명이 섞여 와도 견딘다.
+ *
+ * JSON을 받던 때와 달리 파싱이 실패할 지점이 없다. 첫 태그부터 마지막 닫는
+ * 태그까지 잘라내면 되고, 모델이 태그를 조금 어긋나게 써도 브라우저가 받아준다.
+ */
+export function extractMarkup(text: string): string {
+  let out = text.trim();
+  if (!out) throw new GenerationError("모델 응답이 비어 있습니다.");
 
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    // 아래 폴백으로
-  }
+  // ```html … ``` 코드펜스가 있으면 그 안이 곧 답이다.
+  const fence = out.match(/```(?:html)?\s*\n([\s\S]*?)```/i);
+  if (fence) out = fence[1].trim();
 
-  const fenceStart = trimmed.indexOf("```");
-  if (fenceStart !== -1) {
-    const afterFence = trimmed.indexOf("\n", fenceStart);
-    const fenceEnd = trimmed.indexOf("```", afterFence + 1);
-    if (afterFence !== -1 && fenceEnd !== -1) {
-      try {
-        return JSON.parse(trimmed.slice(afterFence + 1, fenceEnd).trim());
-      } catch {
-        // 아래 폴백으로
-      }
-    }
-  }
+  // 앞뒤 설명 문장을 태그 경계로 잘라낸다.
+  const start = out.search(/<(?:section|div|!doctype|html|body)\b/i);
+  const end = out.lastIndexOf(">");
+  if (start > 0 && end > start) out = out.slice(start, end + 1).trim();
+  else if (start === -1) throw new GenerationError("모델 응답에서 HTML을 찾지 못했습니다.");
 
-  const start = trimmed.indexOf("{");
-  const end = trimmed.lastIndexOf("}");
-  if (start !== -1 && end > start) {
-    try {
-      return JSON.parse(trimmed.slice(start, end + 1));
-    } catch {
-      // 폴백 실패
-    }
-  }
-
-  throw new GenerationError("모델 응답에서 JSON을 찾지 못했습니다.");
+  return out;
 }
 
-/** 완료된 run의 결과 텍스트 → 렌더러가 바로 그릴 수 있는 IR. */
-export function docFromRunResult(text: string | undefined): WireframeDoc {
-  let raw: unknown;
+/** 완료된 run의 결과 텍스트 → iframe에 그대로 넣을 수 있는 문서. */
+export function htmlFromRunResult(text: string | undefined): string {
+  let markup = "";
   if (text) {
     try {
-      raw = extractJsonFromText(text);
+      markup = extractMarkup(text);
     } catch {
-      raw = undefined;
+      markup = "";
     }
   }
-  return coerceWireframeDoc(raw ?? {});
+  if (!markup) {
+    markup =
+      '<section data-screen="empty" data-name="빈 결과">' +
+      '<div class="wf-body"><h1>생성 결과가 비어 있습니다</h1>' +
+      "<p>다시 생성하거나 PRD 내용을 더 구체적으로 적어 보세요.</p></div></section>";
+  }
+  return buildDocument(markup);
 }
