@@ -7,7 +7,7 @@ import { useRef, useState } from "react";
  * PRD 등록 — §12.1.
  * prd.md 드래그&드롭이 1순위 UI이고, 텍스트 붙여넣기는 접힌 보조 경로다.
  */
-export function NewPrdForm() {
+export function NewPrdForm({ onCreated }: { onCreated?: () => void } = {}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pasteMode, setPasteMode] = useState(false);
@@ -28,6 +28,8 @@ export function NewPrdForm() {
       const res = await fetch("/api/prds", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error?.message ?? "등록에 실패했습니다.");
+      setOpen(false);
+      onCreated?.();
       router.push(`/prd/${data.id}/spec`);
       router.refresh();
     } catch (e) {
@@ -47,6 +49,8 @@ export function NewPrdForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error?.message ?? "등록에 실패했습니다.");
+      setOpen(false);
+      onCreated?.();
       router.push(`/prd/${data.id}/spec`);
       router.refresh();
     } catch (e) {
@@ -59,7 +63,7 @@ export function NewPrdForm() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="rounded bg-neutral-800 px-3 py-1.5 text-sm text-white hover:bg-neutral-700"
+        className="w-full rounded bg-neutral-800 px-3 py-1.5 text-sm text-white hover:bg-neutral-700"
       >
         + 새 PRD
       </button>

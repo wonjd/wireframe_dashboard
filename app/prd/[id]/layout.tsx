@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { TabNav } from "@/components/tabs/tab-nav";
@@ -24,10 +23,8 @@ export default async function PrdLayout({
 
   return (
     <div>
+      {/* 사이드바가 상시 내비게이션이므로 "목록으로" 링크를 중복해서 두지 않는다. */}
       <div className="mb-3 flex items-center gap-3">
-        <Link href="/" className="text-sm text-neutral-500 hover:text-neutral-800">
-          ← 목록
-        </Link>
         <h1 className="font-semibold text-neutral-800">{prd.title}</h1>
         <StatusBadge status={prd.status} />
       </div>
