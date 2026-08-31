@@ -46,6 +46,5 @@ function serveWireFrame() {
 
 export default defineConfig({
   plugins: [react(), serveWireFrame()],
-  server: { port: 5173, open: "/wireFrame" },
-  preview: { port: 5173 },
+  server: { open: "/wireFrame" },
 });

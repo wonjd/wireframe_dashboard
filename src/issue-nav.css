@@ -1,37 +1,37 @@
-.wfs-tree { display: flex; flex-direction: column; gap: 2px; }
+.wfs-tree { display: flex; flex-direction: column; gap: 6px; }
+.wfs-tree > details { border-radius: 8px; overflow: hidden; }
+
 .wfs-tree-parent { list-style: none; }
 .wfs-tree-parent::-webkit-details-marker { display: none; }
 .wfs-tree-parent::marker { content: ""; }
 .wfs-tree-parent::before {
   content: "▸";
-  flex: 0 0 14px;
-  margin-top: 2px;
-  font-size: 11px;
-  color: #a3a3a3;
+  flex: 0 0 12px;
+  font-size: 10px;
+  color: #e5e5e5;
   transition: transform 0.12s ease;
 }
-details[open] .wfs-tree-parent::before { transform: rotate(90deg); color: #737373; }
-.wfs-tree-item { border-radius: 6px; }
-.wfs-tree-item.is-active { background: #fff; outline: 1px solid #d4d4d4; }
+details[open] .wfs-tree-parent::before { transform: rotate(90deg); color: #f5f5f5; }
 
 .wfs-tree-parent {
-  display: flex; align-items: flex-start; gap: 6px;
-  width: 100%; padding: 8px 8px 8px 6px;
-  border: 0; background: none; color: #404040; text-align: left; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 8px 10px;
+  border: 0; border-radius: 8px;
+  background: #525252; color: #fff; text-align: left; cursor: pointer;
+  font-size: 13px; line-height: 1.2;
 }
-.wfs-tree-parent:hover { background: #f0f0f0; }
-.wfs-tree-item.is-active .wfs-tree-parent { font-weight: 600; color: #171717; }
+.wfs-tree-parent:hover { background: #404040; }
+.wfs-tree-parent.is-active { font-weight: 600; }
 
-.wfs-tree-chevron {
-  flex: 0 0 14px; width: 14px; margin-top: 2px;
-  font-size: 11px; color: #a3a3a3; line-height: 1;
-  transform: rotate(0deg); transition: transform 0.12s ease;
+.wfs-tree-parent .wfs-issue-tab-id,
+.wfs-tree-parent .wfs-tree-id {
+  flex-shrink: 0;
+  font-size: 11px; font-weight: 500; color: #d4d4d4; letter-spacing: 0.02em;
 }
-.wfs-tree-chevron.is-open { transform: rotate(90deg); color: #737373; }
-
-.wfs-tree-parent-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.wfs-tree-id { font-size: 11px; font-weight: 500; color: #a3a3a3; letter-spacing: 0.02em; }
-.wfs-tree-title { font-size: 13px; line-height: 1.35; }
+.wfs-tree-parent > span:last-child {
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
 .wfs-tree-children {
   display: flex; flex-direction: column; gap: 1px;
