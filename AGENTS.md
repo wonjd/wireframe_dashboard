@@ -36,14 +36,14 @@ crm_backend   →  projects/{slug}/api.json      엔드포인트 · 필드
 
 ### 1. 정규화 — PRD당 1회
 
-자연어 PRD → `wireFrame/input/{feature}.md` (원문 그대로 보존)
+자연어 PRD → `wireFrame/input/{run}.md` (원문 그대로 보존)
 
 빠진 정보는 되묻지 않는다. 가정을 세우고 진행하되 `manifest.assumptions[]`에
 남긴다. 사람이 뭘 채웠는지 알아야 고칠 데를 안다.
 
 ### 2. 구조 판정 — PRD당 1회
 
-`db.json` + PRD → `wireFrame/spec/{feature}.domain.json`
+`db.json` + PRD → `wireFrame/spec/{run}.domain.json`
 
 스키마 덤프를 넘기지 마라. **화면 구조를 결정하는 판정까지 해서** 넘긴다.
 
@@ -67,7 +67,7 @@ PRD + `domain.json` + `design.md` → `manifest.json`
 
 ### 4. 화면 생성
 
-셸 위에서 화면 HTML을 만든다. `wireFrame/issue/{feature}/{id}.html`
+셸 위에서 화면 HTML을 만든다. `wireFrame/artifacts/{run}/{id}.html`
 
 화면끼리 서로 몰라도 되므로 **병렬로 생성한다.**
 
@@ -80,7 +80,7 @@ locked: true   → 건드리지 않는다. 기존 HTML 재사용
 locked: false  → 이번 지시 대상
 ```
 
-지시는 `screens[].instructions[]`에 누적된다. **이 로그가 개발자에게 가는 실제
+지시는 `artifacts[].instructions[]`에 누적된다. **이 로그가 개발자에게 가는 실제
 명세다** — 화면은 그림이고, 로그가 "왜 이렇게 생겼나"다.
 
 ---
@@ -114,10 +114,10 @@ locked: false  → 이번 지시 대상
 채팅과 폼이 완전히 같은 경로를 타야 한다.
 
 ```
-wireframe intake  {feature}      ① 정규화
-wireframe domain  {feature}      ② 구조 판정
-wireframe plan    {feature}      ③ 화면 설계
-wireframe render  {feature} [--screen {id}]   ④ 생성 / ⑤ 재생성
+wireframe intake  {run}      ① 정규화
+wireframe domain  {run}      ② 구조 판정
+wireframe plan    {run}      ③ 화면 설계
+wireframe render  {run} [--artifact {id}]   ④ 생성 / ⑤ 재생성
 ```
 
-`--screen` 없는 `render`는 `locked: false`인 화면 전부를 병렬로 다시 그린다.
+`--artifact` 없는 `render`는 `locked: false`인 산출물 전부를 병렬로 다시 그린다.

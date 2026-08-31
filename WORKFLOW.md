@@ -47,7 +47,7 @@
 
 ## 개발자
 
-URL 하나 받는다. `/wireFrame/{프로젝트}/{feature}`
+URL 하나 받는다. `/wireFrame/{프로젝트}/{run}`
 
 | 탭 | 보는 것 |
 | --- | --- |
