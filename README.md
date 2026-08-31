@@ -1,9 +1,60 @@
 # Wireframe Studio
 
-**워크플로우:** `git clone` → `PRD` → **[existing만 감지]** → `HTML`
-자세히: [WORKFLOW.md](./WORKFLOW.md)
+PRD만 주면 와이어프레임을 구성한다.
+기존 프로젝트인지, 새 프로젝트인지는 묻지 않는다.
 
-**이슈 트리:** 최상위(epic) → 하위(screen) · HTML은 `wireframe_issue.html`
+자세히: [WORKFLOW.md](./WORKFLOW.md) · 에이전트: [AGENTS.md](./AGENTS.md)
+
+## 사용
+
+```bash
+pnpm install
+pnpm wf
+```
+
+또는
+
+```bash
+pnpm wf start --prd ./prd.md
+pnpm wf start --prd ./prd.md --repo ../crm   # 프로젝트 폴더를 알 때만
+```
+
+채팅이어도 같다. “PRD는 이거야”만 주면 된다.
+
+## 자동 판단
+
+| | 새 프로젝트 | 기존 프로젝트 |
+|---|-----|----------|
+| 언제 | 옆에 코드베이스 없음 | package.json + app/src 또는 DB |
+| 하는 일 | PRD로 바로 와이어 | 도메인·DB 파악 후 와이어 |
+
+이 스튜디오 레포 자신은 기존 프로젝트로 보지 않는다.
+
+## 산출물
+
+화면 1개 = `wireFrame/issue/{id}.html`
+
+```
+wireFrame/
+  spec/     스캔·스펙
+  issue/    HTML — 이슈 id별
+  input/    PRD
+  prompt/   Claude 입력
+```
+
+최상위 이슈(탭) → 하위 화면. HTML은 `wireframe_issue.html`.
+
+## 보기
+
+```bash
+pnpm dev                  # http://localhost:5173/wireframe
+```
+
+| URL | 설명 |
+|-----|------|
+| `/wireframe` | 프로젝트 목록 |
+| `/wireframe/01/growth-pause` | 탭 뷰어 |
+| `/wireframe/01/growth-pause/screens/01-list` | 화면 딥링크 |
 
 ## DB
 
@@ -13,92 +64,17 @@
 - `DATABASE_URL` = 클론 프로젝트 MySQL (SSH 터널이면 로컬 포트)
 - 없으면 뷰어는 `wireFrame/` 파일만 본다
 
-```bash
-pnpm install
-pnpm dev               # API :3001 + viewer :5173
-```
-
-- `/wireframe/01/growth-pause` — epic
-- `/wireframe/01/growth-pause/screens/01-list` — 하위 이슈
-- HTML: `GET /api/html/:projectNo/:epicSlug/:screenSlug`
-
-## 클론 프로젝트 통합 (detect → integrate)
-
-대상 repo의 프레임워크·라우터·번들러를 감지하고, 맞는 템플릿을 한 번에 복사합니다.
+## 클론 프로젝트에 뷰어 붙이기
 
 ```bash
 pnpm wf detect --repo ../my-app
-pnpm wf detect --repo ../my-app --json
 pnpm wf integrate --repo ../my-app
-pnpm wf integrate --repo ../my-app --dry-run
 ```
 
-| 감지 결과 | 복사 파일 | 패키지 |
-|-----------|-----------|--------|
-| Next App Router | `app/wireframe/[[...slug]]/page.tsx` | `@wireframe-studio/next` |
-| Next Pages | `pages/wireframe/[[...slug]].tsx` + API route | `@wireframe-studio/react` |
-| React SPA | `src/routes/wireframe.tsx` 등 | `@wireframe-studio/react` |
+| 감지 결과 | 복사 파일 |
+|-----------|-----------|
+| Next App Router | `app/wireframe/[[...slug]]/page.tsx` |
+| Next Pages | `pages/wireframe/[[...slug]].tsx` + API |
+| React SPA | `src/routes/wireframe.tsx` 등 |
 
 자세한 내용: `integrations/README.md`
-
-## 구조
-
-```
-wireframe-studio/
-├── apps/viewer/          # Vite + React — /wireframe
-├── packages/core/        # manifest + ProjectSpec 스키마
-├── packages/scanner/     # EXISTING 모드 repo 스캔 + framework detect
-├── packages/react/       # client-only WireframeApp (Vite/Pages)
-├── packages/next/        # Next App Router (Server Actions)
-├── packages/renderer/    # 프롬프트 + HTML shell
-├── packages/server/      # mysql2 — 클론 MySQL 조회
-├── integrations/         # detect/integrate 템플릿 + MySQL DDL
-├── design-kit/           # NEW 프로젝트 공통 컴포넌트
-├── wireFrame/            # 산출물 (spec + issue HTML)
-└── cli/                  # wf start | generate
-```
-
-## 실행
-
-```bash
-pnpm install
-pnpm dev                  # http://localhost:5173/wireframe
-```
-
-## 라우팅
-
-| URL | 설명 |
-|-----|------|
-| `/wireframe` | 프로젝트 목록 |
-| `/wireframe/01` | PRD 목록 |
-| `/wireframe/01/growth-pause` | 탭 뷰어 |
-| `/wireframe/01/growth-pause/screens/02-detail` | 화면 딥링크 |
-
-## 생성 (API 키 없음)
-
-```bash
-# EXISTING — 도메인·DB·framework 감지 후 prompt.txt 생성
-pnpm wf generate --project crm_frontend --feature growth-pause --prd ./prd.md --mode existing --repo ../crm_frontend
-
-# NEW — 감지 스킵, design-kit 기준
-pnpm wf generate --project new-landing --feature onboarding --prd ./prd.md --mode new
-```
-
-1. `prompt.txt`를 Claude Code / Artifact에 붙여넣기
-2. `wireFrame/issue/{id}.html` 저장 (화면 1개당 파일 1개)
-3. `manifest.json`의 `screens` 배열 갱신
-4. 뷰어에서 확인
-
-## NEW / EXISTING
-
-| | NEW | EXISTING |
-|---|-----|----------|
-| 감지 | 스킵 | 도메인·DB·framework |
-| scanner | 스킵 | `detectExistingContext` |
-| design | design-kit | 프로젝트 theme 추출 |
-| manifest.mode | `new` | `existing` |
-| diff 탭 | 없음 | NEW/MODIFY/EXTEND |
-
-## 샘플
-
-- `/wireframe/01/growth-pause`

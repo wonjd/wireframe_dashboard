@@ -1,1 +1,1 @@
-export { runWorkflow, runWorkflowFromFlags } from "./workflow.js";
+export { runWorkflowFromFlags } from "./start.js";

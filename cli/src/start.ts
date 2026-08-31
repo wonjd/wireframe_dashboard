@@ -1,5 +1,7 @@
+import { decideWorkflow } from "@wireframe-studio/scanner";
 import { getFlag } from "./commands.js";
-import { ask, parseYesNo, readPrd } from "./prompts.js";
+import { inferIssue, slugify } from "./infer.js";
+import { ask, readPrd } from "./prompts.js";
 import { writeWireFrameOut } from "./out.js";
 
 function yn(argv: string[]): boolean | undefined {
@@ -16,42 +18,67 @@ function yn(argv: string[]): boolean | undefined {
   return undefined;
 }
 
+async function runFromPrd(opts: {
+  projectsRoot: string;
+  prdText: string;
+  prdPath?: string;
+  repoHint?: string;
+  project?: string;
+  feature?: string;
+  title?: string;
+  forceExisting?: boolean;
+}) {
+  const inferred = inferIssue(opts.prdText, opts.prdPath);
+  const decision = await decideWorkflow(opts.repoHint);
+  let detect = decision.mode === "existing";
+  if (opts.forceExisting === true) detect = true;
+  if (opts.forceExisting === false) detect = false;
+  const project = opts.project || (decision.context ? slugify(decision.context.repoName) : "new");
+  const id = opts.feature || inferred.id;
+  const title = opts.title || inferred.title;
+  if (detect) {
+    console.log(`기존 프로젝트로 파악했습니다: ${decision.reason}`);
+    if (decision.context?.domains.length) console.log(`도메인: ${decision.context.domains.join(", ")}`);
+    console.log("이 기준으로 와이어프레임을 구성합니다.");
+  } else {
+    console.log("새 프로젝트로 파악했습니다.");
+    console.log("PRD만으로 와이어프레임을 구성합니다.");
+  }
+  await writeWireFrameOut({
+    root: opts.projectsRoot,
+    project,
+    id,
+    title,
+    prdText: opts.prdText,
+    detect,
+    repoPath: opts.repoHint || decision.repoPath,
+  });
+}
+
 export async function runWorkflowFromFlags(argv: string[], projectsRoot: string): Promise<void> {
   if (!argv.some((a) => a.startsWith("--"))) {
-    const repoPath = (await ask("git clone 후 repo 경로 (Enter=건너뛰기): ")).trim() || undefined;
     let prdPath = "";
     while (!prdPath) {
       prdPath = (await ask("PRD 파일 경로: ")).trim();
-      if (!prdPath) console.log("PRD 경로는 필수입니다.");
+      if (!prdPath) console.log("PRD만 있으면 됩니다. 파일 경로를 넣어 주세요.");
     }
-    const { text: prdText } = await readPrd(prdPath);
-    const detect = parseYesNo(await ask("기존 프로젝트를 감지하시겠습니까? (y/n): "));
-    let project = "";
-    while (!project) project = (await ask("프로젝트 slug: ")).trim();
-    let feature = "";
-    while (!feature) feature = (await ask("기능(이슈) id: ")).trim();
-    const title = (await ask("제목 (Enter=id): ")).trim() || feature;
-    await writeWireFrameOut({ root: projectsRoot, project, id: feature, title, prdText, detect, repoPath });
+    const { abs, text } = await readPrd(prdPath);
+    const repoHint = (await ask("프로젝트 폴더 (모르면 Enter): ")).trim() || undefined;
+    await runFromPrd({ projectsRoot, prdText: text, prdPath: abs, repoHint });
     return;
   }
 
   const prd = getFlag(argv, "--prd");
-  const project = getFlag(argv, "--project");
-  const feature = getFlag(argv, "--feature");
-  const title = getFlag(argv, "--title");
-  const repo = getFlag(argv, "--repo");
-  const detect = yn(argv);
-  if (!prd || !project || !feature) throw new Error("필수: --project, --feature, --prd");
-  if (detect === undefined) throw new Error("필수: --detect y|n");
-  if (detect && !repo) throw new Error("감지 시 --repo 필요");
-  const { text: prdText } = await readPrd(prd);
-  await writeWireFrameOut({
-    root: projectsRoot,
-    project,
-    id: feature,
-    title: title ?? feature,
-    prdText,
-    detect,
-    repoPath: repo,
+  if (!prd) throw new Error("필수: --prd");
+  const { abs, text } = await readPrd(prd);
+  await runFromPrd({
+    projectsRoot,
+    prdText: text,
+    prdPath: abs,
+    repoHint: getFlag(argv, "--repo"),
+    project: getFlag(argv, "--project"),
+    feature: getFlag(argv, "--feature"),
+    title: getFlag(argv, "--title"),
+    forceExisting: yn(argv),
   });
 }

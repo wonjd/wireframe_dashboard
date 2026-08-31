@@ -43,12 +43,16 @@ wireFrame/
 
 ## 워크플로우
 
+유저가 PRD만 준다. **기존인지 새 프로젝트인지 묻지 않는다. 에이전트가 스스로 판단한다.**
+
 ```
-0. git clone
-1. PRD 입력
-2. 기존 프로젝트 감지? y/n
-3. y면 도메인·DB 감지 → spec
-4. issue/{id}.html (화면 1개 = 이슈 1개)
+1. PRD 받음 → wireFrame/input/{id}.md
+2. 기존 코드베이스인가?
+   - 옆/위 폴더에 package.json + (app|src) 또는 DB 스키마가 있으면 existing
+   - 이 스튜디오 레포 자신은 existing이 아님
+3. existing → 도메인·DB 스캔 → spec → issue HTML
+4. new → PRD만으로 spec → issue HTML
+5. 화면 1개 = wireFrame/issue/{id}.html
 ```
 
-`pnpm wf` 가 인터랙티브 진입점.
+`pnpm wf` / `pnpm wf start --prd ./prd.md` 도 같은 판단.

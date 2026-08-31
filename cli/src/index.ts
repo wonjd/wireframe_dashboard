@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { printUsage, runDetect, runIntegrate } from "./commands.js";
+import { runDetect, runIntegrate } from "./commands.js";
+import { printUsage } from "./usage.js";
 import { runWorkflowFromFlags } from "./start.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
