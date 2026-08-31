@@ -1,8 +1,0 @@
-packages:
-  - "apps/*"
-  - "packages/*"
-  - "!packages/db"
-  - "cli"
-
-onlyBuiltDependencies:
-  - esbuild

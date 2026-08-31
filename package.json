@@ -1,20 +1,24 @@
 {
-  "name": "wireframe-studio",
+  "name": "wireframe",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@10.34.5",
+  "type": "module",
   "scripts": {
-    "preinstall": "node scripts/only-pnpm.mjs",
-    "dev": "pnpm --parallel --filter @wireframe-studio/api --filter @wireframe-studio/viewer dev",
-    "dev:viewer": "pnpm --filter @wireframe-studio/viewer dev",
-    "dev:api": "pnpm --filter @wireframe-studio/api dev",
-    "build": "pnpm --filter @wireframe-studio/viewer build",
-    "preview": "pnpm --filter @wireframe-studio/viewer preview",
-    "typecheck": "pnpm -r typecheck",
-    "wf": "pnpm --filter @wireframe-studio/cli start"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
-  "engines": {
-    "node": ">=20",
-    "pnpm": ">=10"
+  "dependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^5.0.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.3"
   }
 }

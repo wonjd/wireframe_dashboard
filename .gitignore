@@ -1,11 +1,9 @@
 node_modules/
 dist/
-.next/
-out/
-build/
 .env*
 !.env.example
 .DS_Store
 tsconfig.tsbuildinfo
 *.local
-packages/db/
+.vercel/
+board/
