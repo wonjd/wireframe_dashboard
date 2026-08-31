@@ -6,11 +6,14 @@
 
 ```
 1. PRD → wireFrame/input/{id}.md
-2. 옆에 실제 서비스 코드(package.json + app/src 또는 DB)가 있으면 그걸 보고 화면을 만든다
+2. 옆에 실제 서비스 코드(package.json + app/src 또는 DB)가 있으면 existing
    이 레포 자신은 기존 프로젝트가 아니다
-3. 없으면 PRD만으로 화면을 만든다
-4. 화면 1개 = wireFrame/issue/{id}.html
-5. wireFrame/index.json 과 spec/{id}.manifest.json 을 맞춘다
+3. existing → 도메인·DB + 기존 디자인을 보고 화면을 만든다
+   레이아웃, 간격, 컴포넌트, 타이포, 색을 그 프로젝트에서 가져온다
+   새로 꾸미지 않는다
+4. 없으면 PRD만으로 회색 와이어를 만든다
+5. 화면 1개 = wireFrame/issue/{id}.html
+6. wireFrame/index.json 과 spec/{id}.manifest.json 을 맞춘다
 ```
 
 팀은 프론트 도메인의 `/wireFrame`에서 본다. 도메인은 상관없다.
