@@ -52,16 +52,11 @@ export function Sidebar({ registry, activeProjectNo, activeFeature, activeScreen
         {epics.map((epic) => {
           const selected = epic.feature === activeEpic?.feature;
           return (
-            <details
-              key={epic.feature}
-              {...({ defaultOpen: selected } as object)}
-            >
-            <summary
-              className={`wfs-tree-parent${selected ? " is-active" : ""}`}
-            >
-              <span className="wfs-issue-tab-id">{epic.prdNo}</span>
-              <span>{epic.title}</span>
-            </summary>
+            <details key={epic.feature} open={selected}>
+              <summary className={`wfs-tree-parent${selected ? " is-active" : ""}`}>
+                <span className="wfs-issue-tab-id">{epic.prdNo}</span>
+                <span>{epic.title}</span>
+              </summary>
               {(kids[epic.feature] ?? epic.children ?? []).map((child) => (
                 <NavLink
                   key={child.slug}
