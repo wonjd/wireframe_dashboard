@@ -1,27 +1,23 @@
 {
-  "name": "wireframe-dashboard",
+  "name": "wireframe-studio",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.34.5",
   "scripts": {
-    "dev": "next dev -p 3210",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "preinstall": "node scripts/only-pnpm.mjs",
+    "dev": "pnpm --parallel --filter @wireframe-studio/api --filter @wireframe-studio/viewer dev",
+    "dev:viewer": "pnpm --filter @wireframe-studio/viewer dev",
+    "dev:api": "pnpm --filter @wireframe-studio/api dev",
+    "build": "pnpm --filter @wireframe-studio/viewer build",
+    "preview": "pnpm --filter @wireframe-studio/viewer preview",
+    "typecheck": "pnpm -r typecheck",
+    "wf": "pnpm --filter @wireframe-studio/cli start",
+    "db:push": "pnpm --filter @wireframe-studio/db db:push",
+    "db:seed": "pnpm --filter @wireframe-studio/db db:seed",
+    "db:setup": "pnpm db:push && pnpm db:seed"
   },
-  "dependencies": {
-    "next": "^15.5.24",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4.3.3",
-    "@types/node": "^26.4.0",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.5",
-    "postcss": "^8.5.26",
-    "tailwindcss": "^4.3.3",
-    "typescript": "^5.9.3"
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=10"
   }
 }

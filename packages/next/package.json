@@ -1,0 +1,29 @@
+{
+  "name": "@wireframe-studio/next",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/page.tsx",
+    "./actions": "./src/actions.ts",
+    "./styles.css": "./src/styles.css"
+  },
+  "scripts": { "typecheck": "tsc --noEmit" },
+  "dependencies": {
+    "@wireframe-studio/core": "workspace:*",
+    "@wireframe-studio/server": "workspace:*",
+    "@wireframe-studio/viewer": "workspace:*",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "next": ">=14"
+  }
+}

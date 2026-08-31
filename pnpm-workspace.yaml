@@ -1,0 +1,13 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "cli"
+
+# pnpm 10 은 의존성의 postinstall 을 기본 차단합니다.
+# prisma 는 postinstall 에서 client 를 생성하므로 반드시 허용해야 합니다
+# (없으면 @prisma/client 가 런타임에 "did not initialize yet" 으로 죽습니다).
+onlyBuiltDependencies:
+  - "@prisma/client"
+  - "@prisma/engines"
+  - prisma
+  - esbuild

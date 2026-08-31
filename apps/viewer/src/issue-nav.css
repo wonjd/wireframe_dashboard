@@ -1,0 +1,13 @@
+.wfs-issue-tabs { display: flex; flex-direction: column; gap: 2px; margin-bottom: 16px; }
+.wfs-issue-tab {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  width: 100%; padding: 8px 10px; border: 1px solid transparent; border-radius: 4px;
+  background: none; color: #525252; text-align: left; cursor: pointer;
+}
+.wfs-issue-tab:hover { background: #eee; }
+.wfs-issue-tab.is-active { background: #fff; border-color: #a3a3a3; color: #262626; font-weight: 600; }
+.wfs-issue-tab-id { font-size: 11px; font-weight: 500; color: #a3a3a3; }
+.wfs-issue-screens { padding-top: 8px; border-top: 1px solid #d4d4d4; }
+.wfs-child-link { display: block; padding: 6px 10px; font-size: 13px; color: #737373; border-radius: 4px; }
+.wfs-child-link:hover { background: #eee; }
+.wfs-child-link.is-active { color: #262626; font-weight: 600; background: #fff; border: 1px solid #d4d4d4; }

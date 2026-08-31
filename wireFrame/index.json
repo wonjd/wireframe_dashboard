@@ -1,0 +1,24 @@
+{
+  "projects": [
+    {
+      "no": "01",
+      "slug": "crm_frontend",
+      "folder": "wireFrame",
+      "title": "CRM Frontend",
+      "prds": [
+        {
+          "prdNo": "PRD-001",
+          "feature": "growth-pause",
+          "title": "일시정지 연장 현황",
+          "status": "review",
+          "screenCount": 3,
+          "children": [
+            { "slug": "01-list", "title": "목록", "issueNo": "01" },
+            { "slug": "02-detail", "title": "상세", "issueNo": "02" },
+            { "slug": "03-modal", "title": "연장 모달", "issueNo": "03" }
+          ]
+        }
+      ]
+    }
+  ]
+}
