@@ -13,6 +13,6 @@
 5. wireFrame/index.json 과 spec/{id}.manifest.json 을 맞춘다
 ```
 
-팀은 `npm run dev` 후 `/wireFrame`에서 본다.
+팀은 프론트 도메인의 `/wireFrame`에서 본다. 도메인은 상관없다.
 
 팀 MySQL이 필요하면 `wireframe_issue.sql`을 클론 프로젝트 DB에 한 번만 실행한다. 이 레포는 DB를 갖지 않는다.
