@@ -7,6 +7,7 @@
  *
  * 필요:
  *   - @wireframe-studio/react, @wireframe-studio/server workspace 의존성
- *   - DATABASE_URL + prisma (packages/db 참조)
+ *   - 클론 프로젝트 MySQL에 wireframe_issue (integrations/mysql/wireframe_issue.sql)
+ *   - DATABASE_URL = 클론 프로젝트 MySQL
  */
 export { default } from "@wireframe-studio/react";

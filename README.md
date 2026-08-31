@@ -3,27 +3,24 @@
 **워크플로우:** `git clone` → `PRD` → **[existing만 감지]** → `HTML`
 자세히: [WORKFLOW.md](./WORKFLOW.md)
 
-**이슈 트리:** 최상위(epic) → 하위(screen) · HTML은 `issue_versions`
+**이슈 트리:** 최상위(epic) → 하위(screen) · HTML은 `wireframe_issue.html`
 
 ## DB
 
+이 레포는 DB를 갖지 않는다. **클론한 프로젝트 MySQL**만 사용한다.
+
+- 테이블: `wireframe_issue` 하나 (`integrations/mysql/wireframe_issue.sql`)
+- `DATABASE_URL` = 클론 프로젝트 MySQL (SSH 터널이면 로컬 포트)
+- 없으면 뷰어는 `wireFrame/` 파일만 본다
+
 ```bash
 pnpm install
-pnpm db:setup          # push + seed
 pnpm dev               # API :3001 + viewer :5173
 ```
 
 - `/wireframe/01/growth-pause` — epic
 - `/wireframe/01/growth-pause/screens/01-list` — 하위 이슈
 - HTML: `GET /api/html/:projectNo/:epicSlug/:screenSlug`
-
-API 없으면 `projects/` 정적 파일로 fallback.
-
-## 스키마
-
-`Workspace` → `Project` → `Issue`(epic/screen, parentId) → `IssueVersion`(html)
-
-Turso/Postgres로 옮길 때 `packages/db/prisma/schema.prisma` datasource만 변경.
 
 ## 클론 프로젝트 통합 (detect → integrate)
 
@@ -54,10 +51,11 @@ wireframe-studio/
 ├── packages/react/       # client-only WireframeApp (Vite/Pages)
 ├── packages/next/        # Next App Router (Server Actions)
 ├── packages/renderer/    # 프롬프트 + HTML shell
-├── integrations/         # detect/integrate 템플릿
+├── packages/server/      # mysql2 — 클론 MySQL 조회
+├── integrations/         # detect/integrate 템플릿 + MySQL DDL
 ├── design-kit/           # NEW 프로젝트 공통 컴포넌트
-├── projects/             # 산출물 (manifest + screens)
-└── cli/                  # wf generate | detect | integrate
+├── wireFrame/            # 산출물 (spec + issue HTML)
+└── cli/                  # wf start | generate
 ```
 
 ## 실행
@@ -87,7 +85,7 @@ pnpm wf generate --project new-landing --feature onboarding --prd ./prd.md --mod
 ```
 
 1. `prompt.txt`를 Claude Code / Artifact에 붙여넣기
-2. `screens/*.html` 저장 (화면 1개당 파일 1개)
+2. `wireFrame/issue/{id}.html` 저장 (화면 1개당 파일 1개)
 3. `manifest.json`의 `screens` 배열 갱신
 4. 뷰어에서 확인
 

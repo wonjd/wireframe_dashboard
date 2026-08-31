@@ -8,5 +8,4 @@ build/
 .DS_Store
 tsconfig.tsbuildinfo
 *.local
-packages/db/prisma/dev.db
-packages/db/prisma/dev.db-journal
+packages/db/

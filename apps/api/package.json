@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.3",
-    "@wireframe-studio/db": "workspace:*",
     "@wireframe-studio/server": "workspace:*",
     "hono": "^4.9.6"
   },

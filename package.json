@@ -11,10 +11,7 @@
     "build": "pnpm --filter @wireframe-studio/viewer build",
     "preview": "pnpm --filter @wireframe-studio/viewer preview",
     "typecheck": "pnpm -r typecheck",
-    "wf": "pnpm --filter @wireframe-studio/cli start",
-    "db:push": "pnpm --filter @wireframe-studio/db db:push",
-    "db:seed": "pnpm --filter @wireframe-studio/db db:seed",
-    "db:setup": "pnpm db:push && pnpm db:seed"
+    "wf": "pnpm --filter @wireframe-studio/cli start"
   },
   "engines": {
     "node": ">=20",

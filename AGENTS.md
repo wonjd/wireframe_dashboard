@@ -4,7 +4,10 @@
 
 ## DB
 
+이 레포는 DB를 갖지 않는다. **클론한 프로젝트 MySQL**만 사용한다.
+
 테이블은 **`wireframe_issue` 하나**. 행 하나 = 이슈 하나.
+DDL: `integrations/mysql/wireframe_issue.sql`
 
 ```
 parentId = null   → 최상위 이슈 (좌측 탭)
@@ -25,10 +28,8 @@ parentId = {id}   → 하위 이슈 (화면). id/slug로 구분
 - 하위 화면: `parentId = 최상위.id`
 - 화면 HTML: 그 행의 `html`
 
-Workspace / Member / Project / IssueVersion 테이블 없음.
-
-스키마: `packages/db/prisma/schema.prisma`  
-기존 MySQL에 이 테이블만 추가하면 됨 (`provider`를 `mysql`로).
+`DATABASE_URL` = 클론 프로젝트 MySQL (SSH 터널이면 로컬 포트).
+없으면 뷰어는 `wireFrame/` 파일만 본다.
 
 ## 산출물
 

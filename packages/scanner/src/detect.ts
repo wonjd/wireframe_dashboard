@@ -62,14 +62,14 @@ async function detectRouter(dir: string, hasNext: boolean, allDeps: Record<strin
 }
 
 function buildIntegration(framework: ProjectFramework, router: ProjectRouter, bundler: ProjectBundler): ProjectIntegration {
-  const common = ["DATABASE_URL 설정", "pnpm db:setup"];
+  const common = ["create wireframe_issue on clone MySQL (integrations/mysql/wireframe_issue.sql)"];
   if (framework === "next" && router === "next-app") {
     return {
       kind: "next-page",
       file: "app/wireframe/[[...slug]]/page.tsx",
       template: "integrations/next/wireframe.page.tsx",
       package: "@wireframe-studio/next",
-      extraSteps: [...common, "transpilePackages 설정"],
+      extraSteps: [...common, "set transpilePackages"],
     };
   }
   if (framework === "next") {
@@ -78,7 +78,7 @@ function buildIntegration(framework: ProjectFramework, router: ProjectRouter, bu
       file: "pages/wireframe/[[...slug]].tsx",
       template: "integrations/next-pages/wireframe.page.tsx",
       package: "@wireframe-studio/react",
-      extraSteps: [...common, "pages/api/wireframe/[...path].ts 추가"],
+      extraSteps: [...common, "add pages/api/wireframe/[...path].ts"],
     };
   }
   if (framework === "react") {
@@ -88,7 +88,7 @@ function buildIntegration(framework: ProjectFramework, router: ProjectRouter, bu
       file,
       template: "integrations/react/wireframe.route.tsx",
       package: "@wireframe-studio/react",
-      extraSteps: [...common, "/wireframe/api 프록시", "Router에 /wireframe/* 추가"],
+      extraSteps: [...common, "proxy /wireframe/api", "add /wireframe/* to Router"],
     };
   }
   return {
@@ -96,7 +96,7 @@ function buildIntegration(framework: ProjectFramework, router: ProjectRouter, bu
     file: "src/wireframe.tsx",
     template: "integrations/react/wireframe.route.tsx",
     package: "@wireframe-studio/react",
-    extraSteps: ["framework 수동 확인", ...common],
+    extraSteps: ["confirm framework", ...common],
   };
 }
 

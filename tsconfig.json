@@ -4,7 +4,6 @@
     { "path": "./apps/viewer" },
     { "path": "./apps/api" },
     { "path": "./packages/core" },
-    { "path": "./packages/db" },
     { "path": "./packages/renderer" },
     { "path": "./packages/scanner" },
     { "path": "./packages/server" },

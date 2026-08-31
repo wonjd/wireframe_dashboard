@@ -63,10 +63,13 @@ pnpm wf integrate --repo ../my-app
 
 ## 데이터
 
+이 레포는 DB를 갖지 않는다. 클론한 프로젝트 MySQL만 사용한다.
+
+- 테이블: `wireframe_issue` 하나 (`integrations/mysql/wireframe_issue.sql`)
 - App Router: Server Actions (`@wireframe-studio/next`)
 - Pages / SPA: `/wireframe/api/*` → `handleWireframeApi` (`@wireframe-studio/server/routes`)
 - HTML은 iframe `srcDoc`으로 표시
-- `DATABASE_URL` + `pnpm db:setup`
+- `DATABASE_URL` = 클론 프로젝트 MySQL (없으면 `wireFrame/` 파일 fallback)
 
 ## 스튜디오 로컬 개발
 
