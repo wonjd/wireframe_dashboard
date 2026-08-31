@@ -7,80 +7,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// 배포/클론 단위 워크스페이스 (팀)
-model Workspace {
-  id        String    @id @default(cuid())
-  name      String
-  slug      String    @unique
-  createdAt DateTime  @default(now())
-  projects  Project[]
-  members   Member[]
-}
+/// 이슈 하나 = 행 하나. parentId 없으면 좌측 탭, 있으면 하위 화면.
+model WireframeIssue {
+  id           String           @id @default(cuid())
+  parentId     String?
+  parent       WireframeIssue?  @relation("IssueTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children     WireframeIssue[] @relation("IssueTree")
+  projectNo    String
+  projectSlug  String
+  projectTitle String
+  slug         String
+  title        String
+  issueNo      String
+  html         String           @default("")
+  sortOrder    Int              @default(0)
+  route        String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
-model Member {
-  id          String    @id @default(cuid())
-  workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  email       String
-  name        String?
-  role        String    @default("editor")
-  createdAt   DateTime  @default(now())
-
-  @@unique([workspaceId, email])
-}
-
-/// 제품 repo 단위 (#01 crm_frontend)
-model Project {
-  id          String    @id @default(cuid())
-  workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  no          String
-  slug        String
-  title       String
-  createdAt   DateTime  @default(now())
-  issues      Issue[]
-
-  @@unique([workspaceId, no])
-  @@unique([workspaceId, slug])
-}
-
-/// 이슈 트리: parentId null = 최상위(epic), 있으면 하위(screen)
-model Issue {
-  id        String         @id @default(cuid())
-  projectId String
-  project   Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  parentId  String?
-  parent    Issue?         @relation("IssueTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children  Issue[]        @relation("IssueTree")
-  kind      String
-  issueNo   String
-  slug      String
-  title     String
-  status    String         @default("draft")
-  sortOrder Int            @default(0)
-  mode      String?
-  body      String?
-  badge     String?
-  related   String?
-  route     String?
-  metaJson  String?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  versions  IssueVersion[]
-
-  @@index([projectId, parentId])
-  @@index([projectId, slug])
-}
-
-/// 하위 이슈(screen) HTML 버전
-model IssueVersion {
-  id        String   @id @default(cuid())
-  issueId   String
-  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  version   Int
-  html      String
-  source    String   @default("manual")
-  createdAt DateTime @default(now())
-
-  @@unique([issueId, version])
+  @@index([projectNo, parentId])
+  @@index([projectNo, slug])
+  @@map("wireframe_issue")
 }
