@@ -13,20 +13,55 @@ Hermes는 CLI 껍데기만 둔다.
 화면 디자이너가 없다. 요청이 이메일로 들어오고, 화면 없이 개발이 시작되니
 UX가 어긋난다. 요청자가 **먼저 화면을 보고 고쳐서** 넘기면 그게 사라진다.
 
-## 한 줄 흐름
-
-```
-crm_frontend / crm_backend / DB(via WONJD)
-        → projects/{slug}/ 추출 스냅샷
-        → PRD만 입력
-        → domain 판정 → plan → shell 위 화면 생성
-        → 화면 단위 반복 → 확정 → 개발자
-```
+## 파이프라인
 
 요청자가 만지는 md는 **PRD(`wireFrame/input/{run}.md`)뿐**이다.
 `design.md` 등은 프로젝트 세팅 때 선택이다. 없으면 가정 잡고 `assumptions[]`에 남긴다.
 
-자세한 구현안: [PIPELINE.md](./PIPELINE.md)
+```mermaid
+flowchart LR
+  subgraph SRC["원천 · 읽기 전용"]
+    FE[crm_frontend]
+    BE[crm_backend]
+    DB[(CRM DB<br/>via WONJD)]
+  end
+
+  subgraph ASSET["자산 · 오래 감 · 증분"]
+    EX[extract]
+    DJ[design.json]
+    RJ[routes.json]
+    AJ[api.json]
+    DBJ[db.json]
+    SH[shell.html]
+  end
+
+  subgraph RUN["소모품 · PRD마다"]
+    PRD(["PRD 입력"])
+    I1[① intake]
+    I2[② domain]
+    I3[③ plan]
+    I4[④ render]
+    HTML[화면 HTML × N]
+    IT{{⑤ 화면 1개만 재생성}}
+    OK[⑥ confirm]
+    DEV[개발자 인계]
+  end
+
+  FE --> EX
+  BE --> EX
+  DB --> EX
+  EX --> DJ & RJ & AJ & DBJ
+  DJ --> SH
+
+  PRD --> I1 --> I2 --> I3 --> I4 --> HTML
+  DBJ -.->|구조 판정 1회| I2
+  SH --> I4
+  HTML --> IT --> HTML
+  HTML --> OK --> DEV
+```
+
+자산은 코드/스키마가 바뀔 때만 다시 뽑는다. Run은 PRD → 무인 생성 → 화면 단위 반복 → 확정.  
+DB 질의는 extract / domain 밖에서는 0회. 자세한 구현안: [PIPELINE.md](./PIPELINE.md) · [pipeline.html](./pipeline.html)
 
 ## 어디로 가나
 
