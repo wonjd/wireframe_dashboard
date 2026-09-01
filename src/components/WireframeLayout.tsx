@@ -8,7 +8,7 @@ export function WireframeLayout() {
   const { loadRegistry } = useWireframeData();
   const [registry, setRegistry] = useState<Registry | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { projectNo, feature, screenId } = useParams();
+  const { projectNo, feature } = useParams();
 
   useEffect(() => {
     loadRegistry()
@@ -21,7 +21,7 @@ export function WireframeLayout() {
 
   return (
     <div className="wfs-layout">
-      <Sidebar registry={registry} activeProjectNo={projectNo} activeFeature={feature} activeScreen={screenId} />
+      <Sidebar registry={registry} activeProjectNo={projectNo} activeFeature={feature} />
       <main className="wfs-main">
         <Outlet context={{ registry }} />
       </main>

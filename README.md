@@ -1,37 +1,61 @@
 # Wireframe
 
-비개발자가 자연어 PRD를 넣으면 상세한 화면 HTML이 나온다.
-마음에 들 때까지 직접 돌리고, 확정한 걸 개발자에게 넘긴다.
+비개발자가 자연어 PRD 하나만 넣으면, 기존 CRM 프론트·백·DB·디자인 자산 위에서
+상세한 화면 HTML이 나온다. 마음에 들 때까지 화면 단위로 돌리고, 확정한 걸 개발자에게 넘긴다.
 
-팀은 프론트 도메인의 `/wireFrame`에서 본다. 도메인은 상관없다.
+로컬이 1차 목표다. 파이프라인 본진은 **이 레포**. CRM은 읽기 전용 소스, WONJD는 DB 조회 도구,
+Hermes는 CLI 껍데기만 둔다.
+
+팀은 `/wireFrame`에서 본다.
 
 ## 왜
 
 화면 디자이너가 없다. 요청이 이메일로 들어오고, 화면 없이 개발이 시작되니
 UX가 어긋난다. 요청자가 **먼저 화면을 보고 고쳐서** 넘기면 그게 사라진다.
 
+## 한 줄 흐름
+
+```
+crm_frontend / crm_backend / DB(via WONJD)
+        → projects/{slug}/ 추출 스냅샷
+        → PRD만 입력
+        → domain 판정 → plan → shell 위 화면 생성
+        → 화면 단위 반복 → 확정 → 개발자
+```
+
+요청자가 만지는 md는 **PRD(`wireFrame/input/{run}.md`)뿐**이다.
+`design.md` 등은 프로젝트 세팅 때 선택이다. 없으면 가정 잡고 `assumptions[]`에 남긴다.
+
+자세한 구현안: [PIPELINE.md](./PIPELINE.md)
+
 ## 어디로 가나
 
 와이어프레임은 **첫 번째 vertical**이다. 최종 목표는 도메인별 에이전트를 탭으로
 관리하는 사내 도구고, 루프는 산출물 종류가 바뀌어도 같다 — 입력 · 무인 생성 ·
-단위별 반복 · 확정 · 인계. 그래서 이름을 처음부터 중립적으로 뒀다
-(`run` · `artifact` · `kind`). 자세한 건 [SPEC.md 확장](./SPEC.md#확장).
+단위별 반복 · 확정 · 인계. 이름은 처음부터 중립 (`run` · `artifact` · `kind`).
+자세한 건 [SPEC.md 확장](./SPEC.md#확장).
 
-## 핵심 두 가지
+## 핵심
 
 **자산과 소모품을 나눈다.**
-기존 코드베이스와 DB에서 뽑은 규격(`projects/{slug}/`)은 오래 간다.
-화면 HTML은 소모품이라 얼마든지 갈아엎는다.
-자산이 안 흔들리니 20번을 돌려도 톤과 구조가 유지된다.
+코드베이스·DB에서 뽑은 규격(`projects/{slug}/`)은 오래 간다.
+화면 HTML은 소모품이라 갈아엎는다. 자산이 안 흔들리니 20번을 돌려도 톤·구조가 유지된다.
 
 **생성 단위는 산출물 1개다.**
-지시한 화면만 다시 그리고 나머지는 건드리지 않는다.
-셋 중 하나 고쳐달랬는데 셋 다 바뀌면 그 도구는 두 번째 시도에서 버려진다.
+지시한 화면만 다시 그린다. 잠금(`locked`)된 화면은 전체 재생성에도 유지한다.
+
+**DB 질의는 반복 루프 밖이다.**
+추출·구조 판정(`domain`)에서만 WONJD/DB를 본다. 화면 재생성 때는 `domain.json`만 읽는다.
+
+**저장: 파일 + MySQL 메타. SQLite 없음.**
+PRD·manifest·HTML은 파일(git). run/잠금/확정 공유용 메타만 MySQL.
+로컬도 배포와 같은 MySQL을 쓴다 — SQLite로 우회하지 않는다.
 
 ## 문서
 
 | | |
 | --- | --- |
+| [PIPELINE.md](./PIPELINE.md) | 로컬 구현 파이프라인 — 추출 · run · MySQL · CLI |
 | [AGENTS.md](./AGENTS.md) | 에이전트 계약 — 단계별 입출력과 하드 룰 |
 | [WORKFLOW.md](./WORKFLOW.md) | 사람 흐름 — 요청자 반복, 개발자 인계 |
 | [SPEC.md](./SPEC.md) | 파일 스펙 — 자산 · manifest · 규칙층 |
@@ -44,27 +68,23 @@ projects/{slug}/          자산 — 프로젝트당 1회 + 증분
   routes.json               추출층: 라우트 ↔ 파일 ↔ 화면
   api.json                  추출층: 엔드포인트 · 필드
   db.json                   추출층: 테이블 · FK · 코드값 · 규모
-  design.md                 규칙층: 사람이 쓴다. 재추출에 안 덮인다
-  domain.md                 규칙층
-  glossary.md               규칙층: 업무 용어 ↔ DB ↔ 화면 라벨
+  design.md                 규칙층(선택): 재추출에 안 덮임
+  domain.md / glossary.md   규칙층(선택)
   shell.html                공통 골격
 
 wireFrame/                소모품 — PRD마다
   index.json                프로젝트 · run 레지스트리
-  input/{run}.md            PRD 원문
-  spec/{run}.manifest.json       산출물 목록 · 잠금 · 지시 로그
-  spec/{run}.domain.json         구조 판정
-  artifacts/{run}/{id}.html      산출물 (화면 HTML)
+  input/{run}.md            PRD 원문 ← 사람 입력은 여기만
+  spec/{run}.manifest.json  산출물 목록 · 잠금 · 지시 로그
+  spec/{run}.domain.json    구조 판정
+  artifacts/{run}/{id}.html 화면 HTML
 ```
 
-## 이 레포는 DB를 갖지 않는다
-
-산출물은 전부 파일이고 git에 들어간다.
-벡터 인덱스도 쓰지 않는다 — 이유는 [SPEC.md](./SPEC.md#왜-파일인가).
-
-## 뷰어
+## 뷰어 (지금)
 
 ```bash
 npm install
 npm run dev      # http://localhost:5173/wireFrame
 ```
+
+CLI(`wireframe extract|run|render`)와 MySQL API는 [PIPELINE.md](./PIPELINE.md) 구현 순서대로 이 레포에 추가한다.

@@ -10,14 +10,14 @@ type Props = {
   registry: Registry;
   activeProjectNo?: string;
   activeFeature?: string;
-  activeScreen?: string;
 };
 
-export function Sidebar({ registry, activeProjectNo, activeFeature, activeScreen }: Props) {
+export function Sidebar({ registry, activeProjectNo, activeFeature }: Props) {
   const data = useWireframeData();
   const project = activeProjectNo ? findProject(registry, activeProjectNo) : registry.projects[0];
   const epics = project?.prds ?? [];
   const [kids, setKids] = useState<Record<string, Child[]>>({});
+  const [openEpics, setOpenEpics] = useState<Record<string, boolean>>({});
   const activeEpic = epics.find((e) => e.feature === activeFeature) ?? epics[0];
 
   useEffect(() => {
@@ -52,7 +52,11 @@ export function Sidebar({ registry, activeProjectNo, activeFeature, activeScreen
         {epics.map((epic) => {
           const selected = epic.feature === activeEpic?.feature;
           return (
-            <details key={epic.feature} open={selected}>
+            <details
+              key={epic.feature}
+              open={openEpics[epic.feature] ?? selected}
+              onToggle={(e) => setOpenEpics((p) => ({ ...p, [epic.feature]: e.currentTarget.open }))}
+            >
               <summary className={`wfs-tree-parent${selected ? " is-active" : ""}`}>
                 <span className="wfs-issue-tab-id">{epic.prdNo}</span>
                 <span>{epic.title}</span>
@@ -61,7 +65,9 @@ export function Sidebar({ registry, activeProjectNo, activeFeature, activeScreen
                 <NavLink
                   key={child.slug}
                   to={`/${project.no}/${epic.feature}/screens/${child.slug}`}
-                  className={`wfs-tree-child${activeScreen === child.slug && selected ? " is-active" : ""}`}
+                  className={({ isActive }) =>
+                    `wfs-tree-child${isActive ? " is-active" : ""}`
+                  }
                 >
                   {child.issueNo ? <span className="wfs-tree-id">{child.issueNo}</span> : null}
                   <span>{child.title}</span>
