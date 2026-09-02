@@ -1,29 +1,125 @@
-import type { Manifest, ProjectEntry, Registry } from "../types";
+import type { Manifest, ProjectEntry, Registry, Screen } from "../types";
 
-/**
- * 모듈 스코프에 한 번만 만든다.
- *
- * 렌더마다 새 객체를 돌려주면 이 함수들이 들어간 useEffect 의존성 배열이
- * 매번 바뀌어서 effect → setState → 렌더 → effect 무한 루프가 된다.
- * (React가 "Maximum update depth exceeded"로 업데이트를 포기해 라우팅이 멈춘다.)
- * 컴포넌트 스코프에 의존하는 값이 없으므로 밖에 두면 아이덴티티가 고정된다.
- */
+type RawRunEntry = {
+  runId: string;
+  no: string;
+  title: string;
+  status?: string;
+  artifactCount?: number;
+};
+
+type RawProjectEntry = {
+  no: string;
+  slug: string;
+  title: string;
+  folder?: string;
+  runs?: RawRunEntry[];
+  prds?: ProjectEntry["prds"];
+};
+
+type RawRegistry = {
+  projects: RawProjectEntry[];
+};
+
+type RawManifest = {
+  runId?: string;
+  no?: string;
+  title?: string;
+  mode?: "existing" | "new";
+  artifacts?: Array<{
+    id: string;
+    no: number;
+    label: string;
+    file: string;
+    wireframe?: { route?: string };
+  }>;
+  screens?: Screen[];
+  projectNo?: string;
+  projectSlug?: string;
+  prdNo?: string;
+  feature?: string;
+};
+
+function normalizeProject(project: RawProjectEntry): ProjectEntry {
+  if (project.prds?.length) {
+    return {
+      no: project.no,
+      slug: project.slug,
+      folder: project.folder ?? project.slug,
+      title: project.title,
+      prds: project.prds,
+    };
+  }
+
+  return {
+    no: project.no,
+    slug: project.slug,
+    folder: project.folder ?? project.slug,
+    title: project.title,
+    prds: (project.runs ?? []).map((run) => ({
+      prdNo: run.no,
+      feature: run.runId,
+      title: run.title,
+      status: run.status,
+      screenCount: run.artifactCount,
+    })),
+  };
+}
+
+function normalizeManifest(raw: RawManifest, project: ProjectEntry, feature: string): Manifest {
+  if (raw.screens?.length) {
+    return raw as Manifest;
+  }
+
+  return {
+    projectNo: project.no,
+    projectSlug: project.slug,
+    prdNo: raw.no ?? feature,
+    feature: raw.runId ?? feature,
+    title: raw.title ?? feature,
+    mode: raw.mode === "new" ? "new" : "existing",
+    screens: (raw.artifacts ?? []).map((artifact) => ({
+      id: artifact.id,
+      no: artifact.no,
+      label: artifact.label,
+      file: artifact.file,
+      route: artifact.wireframe?.route,
+    })),
+  };
+}
+
 const wireframeData = {
   async loadRegistry(): Promise<Registry> {
     const res = await fetch("/wireFrame/index.json");
     if (!res.ok) throw new Error("wireFrame/index.json 없음");
-    return (await res.json()) as Registry;
+    const raw = (await res.json()) as RawRegistry;
+    return {
+      projects: raw.projects.map(normalizeProject),
+    };
   },
 
   async loadManifest(project: ProjectEntry, feature: string): Promise<Manifest> {
-    const res = await fetch(`/wireFrame/spec/${feature}.manifest.json`);
-    if (!res.ok) throw new Error(`manifest 없음: ${feature}`);
-    return (await res.json()) as Manifest;
+    const res = await fetch(`/wireFrame/runs/${feature}/spec/manifest.json`);
+    if (!res.ok) {
+      const legacy = await fetch(`/wireFrame/spec/${feature}.manifest.json`);
+      if (!legacy.ok) throw new Error(`manifest 없음: ${feature}`);
+      const raw = (await legacy.json()) as RawManifest;
+      return normalizeManifest(raw, project, feature);
+    }
+    const raw = (await res.json()) as RawManifest;
+    return normalizeManifest(raw, project, feature);
   },
 
-  async loadHtml(_project: ProjectEntry, _manifest: Manifest, screenId: string): Promise<string | null> {
-    const res = await fetch(`/wireFrame/issue/${screenId}.html`);
-    return res.ok ? res.text() : null;
+  async loadHtml(_project: ProjectEntry, manifest: Manifest, screenId: string): Promise<string | null> {
+    const screen = manifest.screens.find((entry) => entry.id === screenId);
+    if (!screen) return null;
+
+    const runPath = `/wireFrame/runs/${manifest.feature}/artifacts/${screen.file}`;
+    const runRes = await fetch(runPath);
+    if (runRes.ok) return runRes.text();
+
+    const legacy = await fetch(`/wireFrame/issue/${screenId}.html`);
+    return legacy.ok ? legacy.text() : null;
   },
 };
 

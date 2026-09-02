@@ -1,0 +1,5848 @@
+{
+  "source": "wonjd",
+  "extractedAt": "2026-09-01T05:43:12.777Z",
+  "entities": [
+    "ent",
+    "account"
+  ],
+  "tables": [
+    {
+      "name": "ACCOUNT_MT",
+      "rows": 1540,
+      "columns": [
+        {
+          "name": "ACCOUNT_ID",
+          "type": "int",
+          "null": false
+        },
+        {
+          "name": "ACCOUNT_DIV_CD",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "agency",
+              "count": 1202
+            },
+            {
+              "value": "management",
+              "count": 175
+            },
+            {
+              "value": "creator",
+              "count": 49
+            },
+            {
+              "value": "wonjd",
+              "count": 44
+            },
+            {
+              "value": "important",
+              "count": 36
+            },
+            {
+              "value": "",
+              "count": 34
+            }
+          ]
+        },
+        {
+          "name": "PLATFORM",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 1285
+            },
+            {
+              "value": "123",
+              "count": 5
+            },
+            {
+              "value": "클립아트코리아",
+              "count": 3
+            },
+            {
+              "value": "미드저니",
+              "count": 3
+            },
+            {
+              "value": "베오3",
+              "count": 2
+            },
+            {
+              "value": "Microsoft365",
+              "count": 2
+            },
+            {
+              "value": "크리플래닛 (인플루언서 모집, 조건희본부장)",
+              "count": 2
+            },
+            {
+              "value": "클립아트코리아 (이미지/영상)",
+              "count": 2
+            },
+            {
+              "value": "베오3(아트비 계정(예전))",
+              "count": 2
+            },
+            {
+              "value": "원정대 인스타그램 계정",
+              "count": 2
+            },
+            {
+              "value": "아비크 외부 나스 경로",
+              "count": 2
+            },
+            {
+              "value": "산돌구름",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "name": "ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 737
+            },
+            {
+              "value": "wonjd203",
+              "count": 20
+            },
+            {
+              "value": "biz@wonjd.com",
+              "count": 17
+            },
+            {
+              "value": "admin",
+              "count": 10
+            },
+            {
+              "value": "tmslzjaosldk",
+              "count": 8
+            },
+            {
+              "value": "won203",
+              "count": 7
+            },
+            {
+              "value": "risingpd2919",
+              "count": 6
+            },
+            {
+              "value": "tangomkt3@gmail.com",
+              "count": 6
+            },
+            {
+              "value": "olive2020",
+              "count": 5
+            },
+            {
+              "value": "wrinkleback",
+              "count": 5
+            },
+            {
+              "value": "dermayouth4",
+              "count": 4
+            },
+            {
+              "value": "tangosns",
+              "count": 4
+            }
+          ]
+        },
+        {
+          "name": "SUB_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 1132
+            },
+            {
+              "value": "wonjd",
+              "count": 33
+            },
+            {
+              "value": "qndnsdudwk1",
+              "count": 7
+            },
+            {
+              "value": "dnjswjdeo",
+              "count": 6
+            },
+            {
+              "value": "marketing",
+              "count": 5
+            },
+            {
+              "value": "wonjungdae",
+              "count": 5
+            },
+            {
+              "value": "mommygfa",
+              "count": 5
+            },
+            {
+              "value": "vilaragency01",
+              "count": 4
+            },
+            {
+              "value": "won1",
+              "count": 4
+            },
+            {
+              "value": "pinchhouse1",
+              "count": 4
+            },
+            {
+              "value": "metawon",
+              "count": 3
+            },
+            {
+              "value": "wjd123",
+              "count": 3
+            }
+          ]
+        },
+        {
+          "name": "PASSWORD",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 776
+            },
+            {
+              "value": "Adnjswjdeo1!",
+              "count": 17
+            },
+            {
+              "value": "Gasanslt1!!@",
+              "count": 12
+            },
+            {
+              "value": "dnjswjdeo1!",
+              "count": 12
+            },
+            {
+              "value": "Qkdlxkfrktks1!",
+              "count": 7
+            },
+            {
+              "value": "A원정대1!",
+              "count": 7
+            },
+            {
+              "value": "dnjswjdeo1!!",
+              "count": 7
+            },
+            {
+              "value": "dnjswjdeo12",
+              "count": 5
+            },
+            {
+              "value": "!rpd2026",
+              "count": 5
+            },
+            {
+              "value": "atb2025!",
+              "count": 5
+            },
+            {
+              "value": "dnjswjdeo12!@",
+              "count": 5
+            },
+            {
+              "value": "dnjswjdeoxla1!",
+              "count": 5
+            }
+          ]
+        },
+        {
+          "name": "MEMO",
+          "type": "text",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 1079
+            },
+            {
+              "value": "https://deepmind.google/models/veo/",
+              "count": 6
+            },
+            {
+              "value": "https://www.instagram.com/",
+              "count": 4
+            },
+            {
+              "value": "https://dermayouth.kr/surl/P/11",
+              "count": 3
+            },
+            {
+              "value": "공유X",
+              "count": 3
+            },
+            {
+              "value": "https://routineup.co.kr/product/detail.html?product_no=76",
+              "count": 2
+            },
+            {
+              "value": "https://adagency.a-bly.com/login",
+              "count": 2
+            },
+            {
+              "value": "메모로젠\n\nGFA :  https://truelabs.kr/surl/P/34\n\n오르비전\n\nGFA : https://truelabs.kr/surl/P/35\nMETA : https://truelabs.kr/surl/P/37",
+              "count": 2
+            },
+            {
+              "value": "https://www.toxwell.co.kr/admin\n기존 회원 로그인",
+              "count": 2
+            },
+            {
+              "value": "https://uaderm.co.kr/product/detail.html?product_no=187",
+              "count": 2
+            },
+            {
+              "value": "dsd",
+              "count": 2
+            },
+            {
+              "value": "https://lemaha.co.kr/product/detail.html?product_no=17",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "name": "ENT_ID",
+          "type": "int",
+          "null": true
+        },
+        {
+          "name": "CREATED_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "system",
+              "count": 1236
+            },
+            {
+              "value": "tangobiz",
+              "count": 101
+            },
+            {
+              "value": "master",
+              "count": 89
+            },
+            {
+              "value": "rladms1515",
+              "count": 30
+            },
+            {
+              "value": "yay0515",
+              "count": 26
+            },
+            {
+              "value": "camellia99sh",
+              "count": 12
+            },
+            {
+              "value": "admin",
+              "count": 7
+            },
+            {
+              "value": "mjsmkang",
+              "count": 6
+            },
+            {
+              "value": "콘텐츠_영상팀",
+              "count": 5
+            },
+            {
+              "value": "dudtkdxla",
+              "count": 5
+            },
+            {
+              "value": "dnmopi",
+              "count": 4
+            },
+            {
+              "value": "dlehdcns0",
+              "count": 3
+            }
+          ]
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "UPDATED_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "tangobiz",
+              "count": 81
+            },
+            {
+              "value": "master",
+              "count": 43
+            },
+            {
+              "value": "aywmd1",
+              "count": 39
+            },
+            {
+              "value": "rladms1515",
+              "count": 36
+            },
+            {
+              "value": "cheyongyun",
+              "count": 36
+            },
+            {
+              "value": "cnk2338",
+              "count": 36
+            },
+            {
+              "value": "iinn02",
+              "count": 25
+            },
+            {
+              "value": "thdus7535",
+              "count": 25
+            },
+            {
+              "value": "camellia99sh",
+              "count": 24
+            },
+            {
+              "value": "jieun96",
+              "count": 23
+            },
+            {
+              "value": "djba123",
+              "count": 23
+            },
+            {
+              "value": "yay0515",
+              "count": 22
+            }
+          ]
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "DELETED_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "tangobiz",
+              "count": 38
+            },
+            {
+              "value": "camellia99sh",
+              "count": 16
+            },
+            {
+              "value": "yay0515",
+              "count": 11
+            },
+            {
+              "value": "admin",
+              "count": 9
+            },
+            {
+              "value": "master1",
+              "count": 6
+            },
+            {
+              "value": "master",
+              "count": 4
+            },
+            {
+              "value": "green951104",
+              "count": 4
+            },
+            {
+              "value": "경영/관리팀",
+              "count": 2
+            },
+            {
+              "value": "dudtkdxla",
+              "count": 2
+            },
+            {
+              "value": "green2384",
+              "count": 2
+            },
+            {
+              "value": "mjsmkang",
+              "count": 2
+            },
+            {
+              "value": "콘텐츠_영상팀",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "DELETED_AT",
+          "type": "datetime",
+          "null": true
+        }
+      ]
+    },
+    {
+      "name": "AD_CONTENT_MT",
+      "rows": 0,
+      "columns": [
+        {
+          "name": "BANNER_ID",
+          "type": "int",
+          "null": false
+        },
+        {
+          "name": "BANNER_SN",
+          "type": "int",
+          "null": false
+        },
+        {
+          "name": "NAS_PATH",
+          "type": "varchar",
+          "null": true
+        },
+        {
+          "name": "STATUS",
+          "type": "varchar",
+          "null": true
+        },
+        {
+          "name": "GENERATED_ID",
+          "type": "varchar",
+          "null": true
+        },
+        {
+          "name": "GENERATED_DATE",
+          "type": "char",
+          "null": true
+        },
+        {
+          "name": "CREATED_ID",
+          "type": "varchar",
+          "null": true
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "UPDATED_ID",
+          "type": "varchar",
+          "null": true
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "DELETED_ID",
+          "type": "varchar",
+          "null": true
+        },
+        {
+          "name": "DELETED_AT",
+          "type": "datetime",
+          "null": true
+        }
+      ]
+    },
+    {
+      "name": "CONTENT_MT",
+      "rows": 44643,
+      "columns": [
+        {
+          "name": "CONTENT_ID",
+          "type": "int",
+          "null": false
+        },
+        {
+          "name": "CONTENT_DIV_CD",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "C025A",
+              "count": 32690
+            },
+            {
+              "value": "C025B",
+              "count": 11953
+            }
+          ]
+        },
+        {
+          "name": "PROD_METHOD",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "GUIDE",
+              "count": 9
+            },
+            {
+              "value": "FREE",
+              "count": 6
+            }
+          ]
+        },
+        {
+          "name": "LANDING_URL",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "https://bbomyo.co.kr/event/summer",
+              "count": 5
+            },
+            {
+              "value": "naver.com",
+              "count": 4
+            },
+            {
+              "value": "sadasd",
+              "count": 1
+            },
+            {
+              "value": "naver.com전지혜naver.com전지혜",
+              "count": 1
+            },
+            {
+              "value": "디크솔디크솔디크솔디크솔",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "TARGET",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "30-40대 반려묘 양육 여성",
+              "count": 1
+            },
+            {
+              "value": "첫 구매 고객",
+              "count": 1
+            },
+            {
+              "value": "호호",
+              "count": 1
+            },
+            {
+              "value": "12312",
+              "count": 1
+            },
+            {
+              "value": "2312",
+              "count": 1
+            },
+            {
+              "value": "테스트123",
+              "count": 1
+            },
+            {
+              "value": "123123",
+              "count": 1
+            },
+            {
+              "value": "naver.com",
+              "count": 1
+            },
+            {
+              "value": "naver.comnaver.com",
+              "count": 1
+            },
+            {
+              "value": "naver.com전지혜naver.com전지혜",
+              "count": 1
+            },
+            {
+              "value": "디크솔디크솔디크솔디크솔",
+              "count": 1
+            },
+            {
+              "value": "asdasd",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "REF_TYPE",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "FILE",
+              "count": 8
+            },
+            {
+              "value": "LINK",
+              "count": 3
+            },
+            {
+              "value": "NONE",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "REF_LINK",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 9
+            },
+            {
+              "value": "https://bbomyo.co.kr/event/summer",
+              "count": 2
+            },
+            {
+              "value": "naver.com",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "PLAN_INTENT",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "PIVOT",
+              "count": 6
+            },
+            {
+              "value": "NEW",
+              "count": 5
+            },
+            {
+              "value": "DEVELOP",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "PLAN_INTENT_DETAIL",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 5
+            },
+            {
+              "value": "\\\\nas\\소재\\뻠뽀요\\2026-08\\이미지_A안",
+              "count": 1
+            },
+            {
+              "value": "https://bbomyo.co.kr/event/summer",
+              "count": 1
+            },
+            {
+              "value": "naver.com",
+              "count": 1
+            },
+            {
+              "value": "naver.comnaver.com",
+              "count": 1
+            },
+            {
+              "value": "naver.com전지혜naver.com전지혜",
+              "count": 1
+            },
+            {
+              "value": "디크솔디크솔",
+              "count": 1
+            },
+            {
+              "value": "asdsad",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "EXTRA_USP",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 3
+            },
+            {
+              "value": "13",
+              "count": 1
+            },
+            {
+              "value": "12312",
+              "count": 1
+            },
+            {
+              "value": "123",
+              "count": 1
+            },
+            {
+              "value": "테스트123",
+              "count": 1
+            },
+            {
+              "value": "https://bbomyo.co.kr/event/summer",
+              "count": 1
+            },
+            {
+              "value": "naver.com",
+              "count": 1
+            },
+            {
+              "value": "naver.comnaver.com",
+              "count": 1
+            },
+            {
+              "value": "naver.com전지혜naver.com전지혜",
+              "count": 1
+            },
+            {
+              "value": "디크솔디크솔",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "MUST_INCLUDE",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 3
+            },
+            {
+              "value": "213213",
+              "count": 1
+            },
+            {
+              "value": "3123",
+              "count": 1
+            },
+            {
+              "value": "123",
+              "count": 1
+            },
+            {
+              "value": "테스트123",
+              "count": 1
+            },
+            {
+              "value": "https://bbomyo.co.kr/event/summer",
+              "count": 1
+            },
+            {
+              "value": "naver.com",
+              "count": 1
+            },
+            {
+              "value": "naver.comnaver.com",
+              "count": 1
+            },
+            {
+              "value": "naver.com전지혜naver.com전지혜",
+              "count": 1
+            },
+            {
+              "value": "디크솔디크솔",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "SUB_COPY",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 7
+            },
+            {
+              "value": "30일 사용 후기 100건 검증",
+              "count": 1
+            },
+            {
+              "value": "3123",
+              "count": 1
+            },
+            {
+              "value": "테스트123",
+              "count": 1
+            },
+            {
+              "value": "naver.comnaver.comnaver.com",
+              "count": 1
+            },
+            {
+              "value": "naver.com전지혜naver.com전지혜",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "MUST_KEEP",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 10
+            },
+            {
+              "value": "디크솔디크솔디크솔디크솔",
+              "count": 1
+            },
+            {
+              "value": "asdasdasd",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "CONTENT_STATE_CD",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "C026E",
+              "count": 18717
+            },
+            {
+              "value": "C026D",
+              "count": 12482
+            },
+            {
+              "value": "C026C",
+              "count": 11284
+            },
+            {
+              "value": "C026A",
+              "count": 2160
+            }
+          ]
+        },
+        {
+          "name": "ENT_ID",
+          "type": "int",
+          "null": true,
+          "fk": "ENT_MT.ENT_ID"
+        },
+        {
+          "name": "CONTENT_DATE",
+          "type": "char",
+          "null": true,
+          "codes": [
+            {
+              "value": "20251229",
+              "count": 171
+            },
+            {
+              "value": "20251222",
+              "count": 170
+            },
+            {
+              "value": "20251112",
+              "count": 169
+            },
+            {
+              "value": "20260324",
+              "count": 167
+            },
+            {
+              "value": "20251230",
+              "count": 167
+            },
+            {
+              "value": "20251223",
+              "count": 166
+            },
+            {
+              "value": "20251027",
+              "count": 165
+            },
+            {
+              "value": "20251117",
+              "count": 165
+            },
+            {
+              "value": "20260126",
+              "count": 163
+            },
+            {
+              "value": "20251201",
+              "count": 162
+            },
+            {
+              "value": "20251210",
+              "count": 161
+            },
+            {
+              "value": "20260115",
+              "count": 161
+            }
+          ]
+        },
+        {
+          "name": "CONTENT_COUNT",
+          "type": "int",
+          "null": true
+        },
+        {
+          "name": "AD_SPACE",
+          "type": "text",
+          "null": true,
+          "codes": [
+            {
+              "value": "피드",
+              "count": 13313
+            },
+            {
+              "value": "",
+              "count": 5444
+            },
+            {
+              "value": "숏폼",
+              "count": 2806
+            },
+            {
+              "value": "배너",
+              "count": 2329
+            },
+            {
+              "value": "피드 ",
+              "count": 876
+            },
+            {
+              "value": "쇼핑",
+              "count": 459
+            },
+            {
+              "value": "스채",
+              "count": 420
+            },
+            {
+              "value": "홈피드",
+              "count": 377
+            },
+            {
+              "value": "피드 4",
+              "count": 315
+            },
+            {
+              "value": "CF",
+              "count": 284
+            },
+            {
+              "value": "영상",
+              "count": 280
+            },
+            {
+              "value": "피드 숏츠형",
+              "count": 269
+            }
+          ]
+        },
+        {
+          "name": "USP",
+          "type": "text",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 12150
+            },
+            {
+              "value": "-",
+              "count": 603
+            },
+            {
+              "value": "디벨롭",
+              "count": 95
+            },
+            {
+              "value": "제작 시 참고하실 레퍼런스 웍스로 전달드리겠습니다.",
+              "count": 49
+            },
+            {
+              "value": "치크팩",
+              "count": 46
+            },
+            {
+              "value": "아이패치",
+              "count": 43
+            },
+            {
+              "value": "12차 완판 기념 최대 52% 할인\n임상시험 완료 – 색소침착 78.73% 개선\n2주 78% 멜라닌 감소\n멜라닌/착색 3중케어\n별점 4.9 만족도 98% (24년 8월 19일 자사몰 기준)\n끈적임 없는 산뜻한 발림성\n누적 판매량 50,000개 이상\n불만족시 100% 환불\n\n색소침착 개선율 77.4%\n멜라닌 컬러 개선율 78.73%",
+              "count": 37
+            },
+            {
+              "value": "팔자패치",
+              "count": 36
+            },
+            {
+              "value": "**45% 할인\n**셀룰라이트 앰플\n\n팔뚝/복부/허벅지 집중 케어\n에스테틱 관리 느낌 그대\n무리한 운동 없이, 홈케어로\n\n셀룰라이트 개선\n바디라인 탄력 강화\n붓기 완화\n임상테스트 완료\n빠른 흡수력\n50% 할인\n백화점보다 60% 저렴\n뷰티에스테틱 살롱 공급 (VIP셀럽전용)\nPCT 국제특허 인증",
+              "count": 35
+            },
+            {
+              "value": "성과소재 디벨롭",
+              "count": 35
+            },
+            {
+              "value": "할인",
+              "count": 35
+            },
+            {
+              "value": "** 7초에 한개씩 팔리는 퍼믹 콘크리트 앰플\n\n** 누적 판매량 100만병\n\n** 47% 할인 기간한정 특가 (비밀링크)\n\n*불만족시 100% 환불\n\n아시아나 승무원 출신 류이서 동안비결 (전직 승무원 류이서가 극찬한~)\n\n국내 업계 최초 레티키나 도입\n\n주름/탄력/모공/피부노화 전반적인 안티에이징 솔루션\n\n동안피부 탄력앰플\n\n1개 3만원대\n\n모공 58.06% 개선\n\n팔자주름 22.96% 개선\n\n눈가주름 41.59% 개선\n\n피부 보습 개선 130.99%\n\n2주 사용 후 만족도 100%",
+              "count": 34
+            }
+          ]
+        },
+        {
+          "name": "AD_COPY",
+          "type": "text",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 27802
+            },
+            {
+              "value": "-",
+              "count": 1673
+            },
+            {
+              "value": "- 피부톤이 달라졌다는 이야기 듣는 이유가 다 있어요\n- 결과에 자신 있으니까, 환불 보장 해드릴게요\n- 글로벌 1위가 인정한 꾸준히 쓰는 이유가 있는 조합템\n- 써보시면 후회하세요 왜 이 조합을 알았는지\n- 못 믿을 것 같아 그래서 저희는 환불 보장을 붙였습니다\n- 저희 회사 퇴사하신 분들도 사서 쓰고 있어요",
+              "count": 19
+            },
+            {
+              "value": "드라이브에서 신규 소스들 적극 활용 부탁드립니다!\n\n이전에 전달드렸던 보건소 지적사항 참고해서 반려될 수 있는, 문제되는 워딩 사용 절대금지 부탁드립니다!\n\n* 통증, 완화, 염증, 재활, 혈액순환, 혈류개선 워딩 등 사용 절대금지 *\n\nhttps://drive.google.com/drive/u/0/folders/1nXUBmy-OU4FHhYhiiO7f2YeDAUi8WtOI",
+              "count": 17
+            },
+            {
+              "value": "이전에 전달드렸던 보건소 지적사항 참고해서 반려될 수 있는, 문제되는 워딩 사용 절대금지 부탁드립니다!\n\n* 통증, 완화, 염증, 재활, 혈액순환, 혈류개선 워딩 등 사용 절대금지 *\n\nhttps://drive.google.com/drive/u/0/folders/1nXUBmy-OU4FHhYhiiO7f2YeDAUi8WtOI\n\n추가 소스 활용시 최신 소스 활용 부탁드립니다",
+              "count": 17
+            },
+            {
+              "value": "베컨 전달드리겠습니다",
+              "count": 17
+            },
+            {
+              "value": "성과소재 참고 및 디밸롭 부탁드립니다!",
+              "count": 15
+            },
+            {
+              "value": "물이 한방울도 안넣은 '진짜' 착즙주스\n사장님이 남는거 없이 다 퍼드린다는 주스 맛집\n여기는 진짜 유명한 주스 맛집임\n사장님 땅파서 장사하신답니다 \n기존에 알고 있는 주스랑은 다를겁니다",
+              "count": 14
+            },
+            {
+              "value": "또렷 눈매 타투라이너\n이별 후 펑펑 울어도 번지지 않는 또렷 눈매\n인생라이너 7천원대 특가!\n제발 쌀 때 사세요..! 나만 알고 싶은 워터프루프 탑 아이라이너 할인\n수정 화장 1도 없이 처음 그린 라인 그대로 픽스-!\n\n울어도 살아있다. 미친 고정력\n\n쓱 그으면 끝. 덧그릴 필요도 없음\n\n수정화장이 뭐죠?\n\n수정화장 필요없는 역대급 타투라이너\n\n판다 탈출. 진짜 안 번진다\n\n딱 붙는다. 안 번진다. 걍 미쳤다\n\n눈 비비고도 살아있는 유일한 라인\n\n라인 망한 날? 이젠 없음\n\n더럽게 안 지워짐. 그래서 좋음\n\n아침에 그린 라인, 저녁까지 살아있음\n\n한 번 그리면 밤까지 지워질 걱정 없음\n\n똥손도 한번에 슥 - \n\n눈 위에 쓴 타투처럼. 절대 안 무너짐\n\n딱 3초. 끝. 고정력 미쳤다\n\n유분에도 끄떡없는 아이라이너",
+              "count": 13
+            },
+            {
+              "value": "기존 레이아웃 및 인물과는 다르게 부탁드립니다!\n*비슷한 소재의 결로 인한 광고 피로도 대표님께서 말씀주셔서 매번 다르게해서 \n테스트 후 성과소재 찾으면 디밸롭해야할 것 같습니다!",
+              "count": 12
+            },
+            {
+              "value": "\n※주의※ 눈앞 실 같은 게 떠다닌다면.. 늦기 전에 확인하세요\n\n※주의※ 눈앞 날파리 지금 무시하면, 나중에 후회할 지도..?  \n\n눈 앞 날파리, 안보이는 사람은 클릭하지 마세요 \n\n눈 앞 지렁이 떠다닌다면 바로 관리해야 합니다. 메디로즈 브로멜라인 40% 파격특가\n\n눈 앞 아른아른 떠다니는 날파리... 지긋지긋해 죽겠다면\n\n※주의※ 아른아른 날파리, 그냥 넘기면 안 되는 이유\n\n실같은 게 계속 떠다니는데요..? >> 방치하면 큰일납니다\n\n눈앞에 뭐가 스윽 지나가면… 그냥 넘기지 마세요\n\n흐릿한 거 신경 쓰이기 시작하면, 지금이 타이밍\n\n시야에 뭔가 떠다니면… 지금 바로 확인\n\n※주의※ 눈앞에 실같은 거… 지금 시작일 수 있습니다\n\n눈앞 날파리 무시했다가? 후회하는 사람 많아요\n\n실 같은 거 계속 보이시죠? 그냥 넘어가면 안 돼요\n\n눈앞 날파리, 이제는 진짜 잡아야 할 때\n\n아무도 몰랐던 눈앞 날파리 원인\n❗️눈앞 날파리 계속 보이신다면, 반드시 읽어보세요❗️\n※주의※  눈앞 날파리.. 지금 무시하면, 나중에 후회할 수도 있습니다\n\"그냥 피곤한 줄 알았다\"는 말, 나중엔 통하지 않습니다\n\n눈앞 날파리 안보이는 사람은 절대 클릭하지 마세요\n",
+              "count": 12
+            },
+            {
+              "value": "베컨 전달드리겠습니다!",
+              "count": 12
+            }
+          ]
+        },
+        {
+          "name": "MEMO",
+          "type": "text",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 1883
+            },
+            {
+              "value": "https://repurely.com/product/detail.html?product_no=72",
+              "count": 190
+            },
+            {
+              "value": "https://smartstore.naver.com/arume/products/9102645092",
+              "count": 146
+            },
+            {
+              "value": "https://brand.naver.com/antinol/products/8903608549",
+              "count": 134
+            },
+            {
+              "value": "https://smartstore.naver.com/pinchhouse/products/10504145883",
+              "count": 107
+            },
+            {
+              "value": "https://smartstore.naver.com/pinchhouse/products/11779172419",
+              "count": 106
+            },
+            {
+              "value": "https://brand.naver.com/dirtylinen/products/10103216163",
+              "count": 93
+            },
+            {
+              "value": "https://brand.naver.com/kklizen/products/10058839033",
+              "count": 86
+            },
+            {
+              "value": "https://m.pira.kr/product/detail.html?product_no=77",
+              "count": 86
+            },
+            {
+              "value": "랜딩 페이지: https://smartstore.naver.com/ollie/products/9518674847",
+              "count": 80
+            },
+            {
+              "value": "https://racelturn.co.kr/surl/P/38",
+              "count": 79
+            },
+            {
+              "value": "https://www.youngranu.co.kr/product/detail.html?product_no=190",
+              "count": 77
+            }
+          ]
+        },
+        {
+          "name": "NAS_PATH",
+          "type": "text",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2269
+            },
+            {
+              "value": "\\\\172.30.20.46\\종합광고팀\\3. 컨텐츠\\밀잇\\영상",
+              "count": 36
+            },
+            {
+              "value": "\\\\172.30.20.46\\종합광고팀\\3. 컨텐츠\\퓨리슨\\영상",
+              "count": 20
+            },
+            {
+              "value": "\\\\172.30.20.46\\종합광고팀\\3. 컨텐츠\\바노바기\\영상",
+              "count": 19
+            },
+            {
+              "value": "\\\\172.30.20.46\\종합광고팀\\3. 컨텐츠\\소휘\\이미지\\GFA",
+              "count": 17
+            },
+            {
+              "value": "\\\\tango\\종합광고팀\\3. 컨텐츠\\쑥쑥메이트\\영상",
+              "count": 15
+            },
+            {
+              "value": "\\\\tango\\종합광고팀\\3. 컨텐츠\\리퓨어리\\영상",
+              "count": 15
+            },
+            {
+              "value": "\\\\172.30.20.46\\종합광고팀\\3. 컨텐츠\\셀로비스\\영상",
+              "count": 15
+            },
+            {
+              "value": "\\\\tango\\종합광고팀\\3. 컨텐츠\\라셀턴\\영상\\최종본",
+              "count": 14
+            },
+            {
+              "value": "\\\\172.30.20.46\\종합광고팀\\3. 컨텐츠\\온슬로(피라)\\영상\\최종본\\콜라겐 치크팩",
+              "count": 13
+            },
+            {
+              "value": "\\\\172.30.20.46\\종합광고팀\\3. 컨텐츠\\파르셀\\영상",
+              "count": 11
+            },
+            {
+              "value": "\\\\172.30.20.46\\종합광고팀\\3. 컨텐츠\\온슬로(피라)\\영상\\최종본\\미간패치",
+              "count": 11
+            }
+          ]
+        },
+        {
+          "name": "REQUEST_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "aywmd1",
+              "count": 2703
+            },
+            {
+              "value": "iinn02",
+              "count": 2496
+            },
+            {
+              "value": "azmlsxnk",
+              "count": 2068
+            },
+            {
+              "value": "jieun96",
+              "count": 1759
+            },
+            {
+              "value": "asc3371",
+              "count": 1706
+            },
+            {
+              "value": "yurim12",
+              "count": 1675
+            },
+            {
+              "value": "yjock0107",
+              "count": 1672
+            },
+            {
+              "value": "nojaewoong1",
+              "count": 1667
+            },
+            {
+              "value": "youbin21208",
+              "count": 1662
+            },
+            {
+              "value": "am9410",
+              "count": 1634
+            },
+            {
+              "value": "elvjfdk",
+              "count": 1595
+            },
+            {
+              "value": "yeonse0225",
+              "count": 1590
+            }
+          ]
+        },
+        {
+          "name": "WORKER_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "kimsujung97",
+              "count": 2609
+            },
+            {
+              "value": "gmlwjd926",
+              "count": 2587
+            },
+            {
+              "value": "han06020",
+              "count": 2498
+            },
+            {
+              "value": "yeonuoh18",
+              "count": 2262
+            },
+            {
+              "value": "anxiw",
+              "count": 2229
+            },
+            {
+              "value": "sonin2333",
+              "count": 2181
+            },
+            {
+              "value": "jeon251",
+              "count": 2150
+            },
+            {
+              "value": "sontaewon032",
+              "count": 2112
+            },
+            {
+              "value": "zieun17",
+              "count": 1762
+            },
+            {
+              "value": "nolooo",
+              "count": 1720
+            },
+            {
+              "value": "inah1102",
+              "count": 1536
+            },
+            {
+              "value": "iemily",
+              "count": 1478
+            }
+          ]
+        },
+        {
+          "name": "MANAGER_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "kimsujung97",
+              "count": 2500
+            },
+            {
+              "value": "gmlwjd926",
+              "count": 2480
+            },
+            {
+              "value": "han06020",
+              "count": 2395
+            },
+            {
+              "value": "",
+              "count": 2274
+            },
+            {
+              "value": "yeonuoh18",
+              "count": 2195
+            },
+            {
+              "value": "anxiw",
+              "count": 2152
+            },
+            {
+              "value": "jeon251",
+              "count": 2073
+            },
+            {
+              "value": "sonin2333",
+              "count": 2017
+            },
+            {
+              "value": "sontaewon032",
+              "count": 2007
+            },
+            {
+              "value": "zieun17",
+              "count": 1622
+            },
+            {
+              "value": "nolooo",
+              "count": 1612
+            },
+            {
+              "value": "inah1102",
+              "count": 1371
+            }
+          ]
+        },
+        {
+          "name": "CREATED_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "aywmd1",
+              "count": 2714
+            },
+            {
+              "value": "iinn02",
+              "count": 2503
+            },
+            {
+              "value": "azmlsxnk",
+              "count": 2038
+            },
+            {
+              "value": "jieun96",
+              "count": 1755
+            },
+            {
+              "value": "asc3371",
+              "count": 1693
+            },
+            {
+              "value": "yurim12",
+              "count": 1673
+            },
+            {
+              "value": "yjock0107",
+              "count": 1668
+            },
+            {
+              "value": "youbin21208",
+              "count": 1662
+            },
+            {
+              "value": "nojaewoong1",
+              "count": 1655
+            },
+            {
+              "value": "am9410",
+              "count": 1625
+            },
+            {
+              "value": "elvjfdk",
+              "count": 1581
+            },
+            {
+              "value": "yeonse0225",
+              "count": 1577
+            }
+          ]
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "UPDATED_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "kimsujung97",
+              "count": 2297
+            },
+            {
+              "value": "han06020",
+              "count": 2144
+            },
+            {
+              "value": "anxiw",
+              "count": 1965
+            },
+            {
+              "value": "gmlwjd926",
+              "count": 1919
+            },
+            {
+              "value": "yeonuoh18",
+              "count": 1904
+            },
+            {
+              "value": "jeon251",
+              "count": 1854
+            },
+            {
+              "value": "sonin2333",
+              "count": 1810
+            },
+            {
+              "value": "sontaewon032",
+              "count": 1793
+            },
+            {
+              "value": "nolooo",
+              "count": 1447
+            },
+            {
+              "value": "zieun17",
+              "count": 1377
+            },
+            {
+              "value": "iemily",
+              "count": 1303
+            },
+            {
+              "value": "inah1102",
+              "count": 1147
+            }
+          ]
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "DELETED_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "iinn02",
+              "count": 288
+            },
+            {
+              "value": "wooree4321",
+              "count": 109
+            },
+            {
+              "value": "elvjfdk",
+              "count": 94
+            },
+            {
+              "value": "youbin21208",
+              "count": 83
+            },
+            {
+              "value": "cnk2338",
+              "count": 73
+            },
+            {
+              "value": "djba123",
+              "count": 70
+            },
+            {
+              "value": "akakwlgus4",
+              "count": 67
+            },
+            {
+              "value": "yurim12",
+              "count": 60
+            },
+            {
+              "value": "jec8729",
+              "count": 57
+            },
+            {
+              "value": "ghkd7331",
+              "count": 57
+            },
+            {
+              "value": "hyj0714",
+              "count": 48
+            },
+            {
+              "value": "asc3371",
+              "count": 48
+            }
+          ]
+        },
+        {
+          "name": "DELETED_AT",
+          "type": "datetime",
+          "null": true
+        }
+      ]
+    },
+    {
+      "name": "ENT_MT",
+      "rows": 2589,
+      "columns": [
+        {
+          "name": "ENT_ID",
+          "type": "int",
+          "null": false
+        },
+        {
+          "name": "ENT_NM",
+          "type": "varchar",
+          "null": false,
+          "codes": [
+            {
+              "value": "주식회사 로우톤",
+              "count": 11
+            },
+            {
+              "value": "라이징프로덕트",
+              "count": 11
+            },
+            {
+              "value": "바이탈스코프 주식회사",
+              "count": 10
+            },
+            {
+              "value": "주식회사 솔라릭스",
+              "count": 10
+            },
+            {
+              "value": "빌라르",
+              "count": 10
+            },
+            {
+              "value": "주식회사 킥더허들",
+              "count": 7
+            },
+            {
+              "value": "지투컴퍼니",
+              "count": 7
+            },
+            {
+              "value": "주식회사 바스케이션",
+              "count": 7
+            },
+            {
+              "value": "주식회사 더티린넨",
+              "count": 7
+            },
+            {
+              "value": "주식회사 쥬베라",
+              "count": 7
+            },
+            {
+              "value": "주식회사 그릭스",
+              "count": 6
+            },
+            {
+              "value": "케어클",
+              "count": 6
+            }
+          ]
+        },
+        {
+          "name": "ENT_NUMBER",
+          "type": "varchar",
+          "null": false,
+          "codes": [
+            {
+              "value": "테스트",
+              "count": 53
+            },
+            {
+              "value": "4478603331",
+              "count": 15
+            },
+            {
+              "value": "4443501477",
+              "count": 14
+            },
+            {
+              "value": "8728102926",
+              "count": 14
+            },
+            {
+              "value": "1231112345",
+              "count": 12
+            },
+            {
+              "value": "1728701305",
+              "count": 11
+            },
+            {
+              "value": "5218803481",
+              "count": 11
+            },
+            {
+              "value": "123456789",
+              "count": 11
+            },
+            {
+              "value": "7512102038",
+              "count": 10
+            },
+            {
+              "value": "123",
+              "count": 9
+            },
+            {
+              "value": "1558702819",
+              "count": 9
+            },
+            {
+              "value": "2278702109",
+              "count": 8
+            }
+          ]
+        },
+        {
+          "name": "ENT_CONTACT_NAME",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 167
+            },
+            {
+              "value": "현슬민",
+              "count": 41
+            },
+            {
+              "value": "테스트",
+              "count": 31
+            },
+            {
+              "value": "test123",
+              "count": 12
+            },
+            {
+              "value": "김혜진",
+              "count": 12
+            },
+            {
+              "value": "엄인섭",
+              "count": 11
+            },
+            {
+              "value": "이예찬",
+              "count": 11
+            },
+            {
+              "value": "박민서",
+              "count": 11
+            },
+            {
+              "value": "김현준",
+              "count": 10
+            },
+            {
+              "value": "신동혁",
+              "count": 10
+            },
+            {
+              "value": "이연우",
+              "count": 10
+            },
+            {
+              "value": "담당자",
+              "count": 9
+            }
+          ]
+        },
+        {
+          "name": "ENT_CONTACT_POSITION",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "대표",
+              "count": 737
+            },
+            {
+              "value": "",
+              "count": 466
+            },
+            {
+              "value": "대표님",
+              "count": 417
+            },
+            {
+              "value": "팀장",
+              "count": 197
+            },
+            {
+              "value": "담당자",
+              "count": 110
+            },
+            {
+              "value": "이사",
+              "count": 55
+            },
+            {
+              "value": "팀장님",
+              "count": 55
+            },
+            {
+              "value": "대리",
+              "count": 49
+            },
+            {
+              "value": "매니저",
+              "count": 46
+            },
+            {
+              "value": "과장",
+              "count": 43
+            },
+            {
+              "value": "테스트",
+              "count": 30
+            },
+            {
+              "value": "과장님",
+              "count": 24
+            }
+          ]
+        },
+        {
+          "name": "ENT_CONTACT_NUMBER",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 343
+            },
+            {
+              "value": "010-8544-4704",
+              "count": 35
+            },
+            {
+              "value": "테스트",
+              "count": 28
+            },
+            {
+              "value": "010-5090-6298",
+              "count": 12
+            },
+            {
+              "value": "010-2171-7110",
+              "count": 12
+            },
+            {
+              "value": "010-5462-0971",
+              "count": 11
+            },
+            {
+              "value": "010-3639-9718",
+              "count": 11
+            },
+            {
+              "value": "010-2988-7993",
+              "count": 10
+            },
+            {
+              "value": "010-3139-3370",
+              "count": 10
+            },
+            {
+              "value": "010-2676-1386",
+              "count": 10
+            },
+            {
+              "value": "010-4174-4895",
+              "count": 8
+            },
+            {
+              "value": "010-7409-6557",
+              "count": 8
+            }
+          ]
+        },
+        {
+          "name": "ENT_CONTACT_EMAIL",
+          "type": "text",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 375
+            },
+            {
+              "value": "테스트",
+              "count": 30
+            },
+            {
+              "value": "ha_9823@wonjd.com",
+              "count": 12
+            },
+            {
+              "value": "test123",
+              "count": 12
+            },
+            {
+              "value": "clobusiness@naver.com",
+              "count": 12
+            },
+            {
+              "value": "hello@lowtone.kr",
+              "count": 11
+            },
+            {
+              "value": "shin72217@naver.com",
+              "count": 9
+            },
+            {
+              "value": "tpwls8122@gmail.com",
+              "count": 9
+            },
+            {
+              "value": "mkt240101@gmail.com",
+              "count": 8
+            },
+            {
+              "value": "ceo@balance.site",
+              "count": 8
+            },
+            {
+              "value": "daeun@nozcorporation.com",
+              "count": 8
+            },
+            {
+              "value": "honeytip0326@naver.com",
+              "count": 8
+            }
+          ]
+        },
+        {
+          "name": "ENT_NOTES",
+          "type": "text",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 619
+            },
+            {
+              "value": "-",
+              "count": 20
+            },
+            {
+              "value": "테스트",
+              "count": 17
+            },
+            {
+              "value": "특이사항 없음",
+              "count": 5
+            },
+            {
+              "value": "[ 영상 형 / 30만원 / 15일 / 450만원 ] ",
+              "count": 4
+            },
+            {
+              "value": "연우팀장님 주관 브랜드별 교육 별도 진행 예정으로 해당 교육을 통해 내용 확인 및 업무 진행에 참고해주시기 바랍니다",
+              "count": 4
+            },
+            {
+              "value": "[ 영상 형 / 일 예산 30만원 / 15일 / 450만원 ] ",
+              "count": 4
+            },
+            {
+              "value": "mp영업팀 테스트",
+              "count": 3
+            },
+            {
+              "value": "하준영 크독 테스트",
+              "count": 3
+            },
+            {
+              "value": "★마케팅팀 전달사항★\n",
+              "count": 3
+            },
+            {
+              "value": "하준영 신규 등록 테스트",
+              "count": 3
+            },
+            {
+              "value": "하준영 신규 등록 테스트 2",
+              "count": 3
+            }
+          ]
+        },
+        {
+          "name": "B_NAME",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "빌라르",
+              "count": 10
+            },
+            {
+              "value": "리퓨어리",
+              "count": 8
+            },
+            {
+              "value": "더티린넨",
+              "count": 7
+            },
+            {
+              "value": "위니쿨",
+              "count": 7
+            },
+            {
+              "value": "마미케어",
+              "count": 6
+            },
+            {
+              "value": "오다다",
+              "count": 6
+            },
+            {
+              "value": "케어클",
+              "count": 6
+            },
+            {
+              "value": "피로민",
+              "count": 6
+            },
+            {
+              "value": "힘가네",
+              "count": 6
+            },
+            {
+              "value": "휴브론",
+              "count": 5
+            },
+            {
+              "value": "닥터메카닉",
+              "count": 5
+            },
+            {
+              "value": "로로스키니",
+              "count": 5
+            }
+          ]
+        },
+        {
+          "name": "H_NAME",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "카페24",
+              "count": 1036
+            },
+            {
+              "value": "스마트스토어",
+              "count": 830
+            },
+            {
+              "value": "브랜드스토어",
+              "count": 212
+            },
+            {
+              "value": "에이블리",
+              "count": 161
+            },
+            {
+              "value": "아임웹",
+              "count": 113
+            },
+            {
+              "value": "메이크샵",
+              "count": 78
+            },
+            {
+              "value": "고도몰",
+              "count": 75
+            },
+            {
+              "value": "",
+              "count": 27
+            },
+            {
+              "value": "후이즈몰",
+              "count": 4
+            },
+            {
+              "value": "위드소프트",
+              "count": 4
+            },
+            {
+              "value": "워드프레스",
+              "count": 3
+            },
+            {
+              "value": "위사",
+              "count": 3
+            }
+          ]
+        },
+        {
+          "name": "P_NAME",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "이미지+영상",
+              "count": 1361
+            },
+            {
+              "value": "이미지",
+              "count": 827
+            },
+            {
+              "value": "",
+              "count": 295
+            },
+            {
+              "value": "영상",
+              "count": 104
+            },
+            {
+              "value": "10%",
+              "count": 1
+            },
+            {
+              "value": "영상(아직 사용금지)",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "P_KIND",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2589
+            }
+          ]
+        },
+        {
+          "name": "P_URLS",
+          "type": "text",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 315
+            },
+            {
+              "value": "테스트",
+              "count": 28
+            },
+            {
+              "value": "https://racelturn.co.kr/product/detail.html?product_no=11",
+              "count": 5
+            },
+            {
+              "value": "https://wrinkleback.co.kr/surl/P/11",
+              "count": 5
+            },
+            {
+              "value": "https://juvicut.co.kr/surl/P/11",
+              "count": 5
+            },
+            {
+              "value": "https://smartstore.naver.com/carecl/products/9615399062",
+              "count": 4
+            },
+            {
+              "value": "https://dexcanic.kr/product/detail.html?product_no=10&cate_no=28&display_group=1",
+              "count": 4
+            },
+            {
+              "value": "https://smartstore.naver.com/skinguardian/products/12321487752",
+              "count": 4
+            },
+            {
+              "value": "https://dazar.co.kr/product/%EB%8B%A4%EC%9E%90%EB%A5%B4-%EC%8A%A4%ED%85%9C%EC%97%91%EC%8A%A4-%ED%97%A4%EC%96%B4-%EC%95%B0%ED%94%8C/11/category/1/display/2/",
+              "count": 4
+            },
+            {
+              "value": "https://smartstore.naver.com/eclmoi/products/12150030464",
+              "count": 4
+            },
+            {
+              "value": "https://repurely.com/product/detail.html?product_no=72",
+              "count": 4
+            },
+            {
+              "value": "https://smartstore.naver.com/cellinshot/products/10133539635",
+              "count": 4
+            }
+          ]
+        },
+        {
+          "name": "TYPE",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "domestic",
+              "count": 1576
+            },
+            {
+              "value": "overseas",
+              "count": 719
+            },
+            {
+              "value": "search",
+              "count": 285
+            },
+            {
+              "value": "overseas_sa",
+              "count": 9
+            }
+          ]
+        },
+        {
+          "name": "SALESMAN_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "wonjdmkt",
+              "count": 471
+            },
+            {
+              "value": "siasia7581@wonjd.com",
+              "count": 263
+            },
+            {
+              "value": "yualswl515@wonjd.com",
+              "count": 251
+            },
+            {
+              "value": "ha_9823",
+              "count": 231
+            },
+            {
+              "value": "ww0748",
+              "count": 178
+            },
+            {
+              "value": "jy475947",
+              "count": 124
+            },
+            {
+              "value": "chooogun1",
+              "count": 109
+            },
+            {
+              "value": "wkdduddn123",
+              "count": 106
+            },
+            {
+              "value": "sedoll97",
+              "count": 101
+            },
+            {
+              "value": "dlfbsrhks",
+              "count": 97
+            },
+            {
+              "value": "tpwls8122",
+              "count": 80
+            },
+            {
+              "value": "ghs3117",
+              "count": 80
+            }
+          ]
+        },
+        {
+          "name": "IS_CONV_TRACK",
+          "type": "tinyint",
+          "null": true
+        },
+        {
+          "name": "IS_TRANSFER_CHECK",
+          "type": "tinyint",
+          "null": true
+        },
+        {
+          "name": "IS_CONTRACT_SIGN",
+          "type": "tinyint",
+          "null": true
+        },
+        {
+          "name": "CONTRACT_SIGN",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 1604
+            },
+            {
+              "value": "계약서를 입력해주세요",
+              "count": 224
+            },
+            {
+              "value": "계약서 서명(테스트)",
+              "count": 4
+            },
+            {
+              "value": "ㅁㄴㅇ",
+              "count": 4
+            },
+            {
+              "value": "계약 취소 되었음(기간만료)",
+              "count": 4
+            },
+            {
+              "value": "매체 수수료형 광고 대행 계약서_주식회사 노즈워크(페노비스)",
+              "count": 3
+            },
+            {
+              "value": "통합 광고 대행 계약서_주식회사 더티린넨(더티린넨) (6971d3ee24b6b97a6d8af0a9)",
+              "count": 3
+            },
+            {
+              "value": "통합 광고 대행 계약서_주식회사 라이즈비(달루) (6971d3ee24b6b97a6d8af0a9)",
+              "count": 3
+            },
+            {
+              "value": "통합 광고 대행 계약서_주식회사 더앤비(에끌무아) (69684e699cffdb58575bd036)",
+              "count": 3
+            },
+            {
+              "value": "테스트",
+              "count": 2
+            },
+            {
+              "value": "국내 매체 계약서_퓨어팟 주식회사(퓨어팟)",
+              "count": 2
+            },
+            {
+              "value": "국내 매체 계약서_주식회사 트리사이드(트리드)",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "name": "CONTRACT_SIGN_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "CONTRACT_SIGN_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "dnmopi",
+              "count": 260
+            },
+            {
+              "value": "mjsmkang",
+              "count": 216
+            },
+            {
+              "value": "yay0515",
+              "count": 128
+            },
+            {
+              "value": "rladms1515",
+              "count": 88
+            },
+            {
+              "value": "tangobiz",
+              "count": 60
+            },
+            {
+              "value": "tpwls8122",
+              "count": 10
+            },
+            {
+              "value": "admin",
+              "count": 1
+            },
+            {
+              "value": "baejh",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "IS_TAX_INVOICE_ISSUED",
+          "type": "tinyint",
+          "null": true
+        },
+        {
+          "name": "TAX_INVOICE_ISSUED",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "0",
+              "count": 2571
+            },
+            {
+              "value": "3",
+              "count": 8
+            },
+            {
+              "value": "2",
+              "count": 6
+            },
+            {
+              "value": "1",
+              "count": 4
+            }
+          ]
+        },
+        {
+          "name": "TAX_INVOICE_EMAIL",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2152
+            },
+            {
+              "value": "lowtone.finance@gmail.com",
+              "count": 9
+            },
+            {
+              "value": "mkt240101@gmail.com",
+              "count": 5
+            },
+            {
+              "value": "adp@abic.co.kr",
+              "count": 4
+            },
+            {
+              "value": "sohwi_official@naver.com",
+              "count": 4
+            },
+            {
+              "value": "bhagwanshin@gmail.com",
+              "count": 4
+            },
+            {
+              "value": "테스트",
+              "count": 3
+            },
+            {
+              "value": "accountwct@naver.com",
+              "count": 3
+            },
+            {
+              "value": "admin@ywfnb.com",
+              "count": 3
+            },
+            {
+              "value": "miming@miming.kr",
+              "count": 3
+            },
+            {
+              "value": "hanna@pinchhouse.kr",
+              "count": 3
+            },
+            {
+              "value": "daeater@naver.com",
+              "count": 3
+            }
+          ]
+        },
+        {
+          "name": "IS_ACCOUNT_PERMISSION_GRANTED",
+          "type": "tinyint",
+          "null": true
+        },
+        {
+          "name": "IS_AD_CHARGE_REPLY_RECEIVED",
+          "type": "tinyint",
+          "null": true
+        },
+        {
+          "name": "MEDIA",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "GFA",
+              "count": 1334
+            },
+            {
+              "value": "META",
+              "count": 555
+            },
+            {
+              "value": "NAVER_SA",
+              "count": 280
+            },
+            {
+              "value": "ABLY",
+              "count": 189
+            },
+            {
+              "value": "TikTok",
+              "count": 134
+            },
+            {
+              "value": "KAKAO",
+              "count": 34
+            },
+            {
+              "value": "GOOGLE",
+              "count": 30
+            },
+            {
+              "value": "당근",
+              "count": 10
+            },
+            {
+              "value": "토스",
+              "count": 9
+            },
+            {
+              "value": "GOOGLE_SA",
+              "count": 9
+            },
+            {
+              "value": "KAKAO_SA",
+              "count": 5
+            }
+          ]
+        },
+        {
+          "name": "D_ACCOUNT_NUMBER",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 1329
+            },
+            {
+              "value": "테스트",
+              "count": 14
+            },
+            {
+              "value": "123456",
+              "count": 5
+            },
+            {
+              "value": "1354716",
+              "count": 4
+            },
+            {
+              "value": "1577439",
+              "count": 3
+            },
+            {
+              "value": "15111",
+              "count": 3
+            },
+            {
+              "value": "29230",
+              "count": 3
+            },
+            {
+              "value": "17564",
+              "count": 3
+            },
+            {
+              "value": "89317",
+              "count": 3
+            },
+            {
+              "value": "1677008",
+              "count": 3
+            },
+            {
+              "value": "38484",
+              "count": 3
+            },
+            {
+              "value": "16099",
+              "count": 3
+            }
+          ]
+        },
+        {
+          "name": "D_ACCOUNT_NM",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 1307
+            },
+            {
+              "value": "테스트",
+              "count": 13
+            },
+            {
+              "value": "테스트2",
+              "count": 3
+            },
+            {
+              "value": "테스트1",
+              "count": 2
+            },
+            {
+              "value": "유니베라 보타니티",
+              "count": 2
+            },
+            {
+              "value": "수올림",
+              "count": 2
+            },
+            {
+              "value": "케어클",
+              "count": 2
+            },
+            {
+              "value": "쌍둥이농장",
+              "count": 2
+            },
+            {
+              "value": "힘가네_3",
+              "count": 2
+            },
+            {
+              "value": "비나잇",
+              "count": 2
+            },
+            {
+              "value": "멜리언스",
+              "count": 2
+            },
+            {
+              "value": "사노셀 GFA",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "name": "O_BUSINESS_ACCOUNT_NM",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2027
+            },
+            {
+              "value": "테스트",
+              "count": 12
+            },
+            {
+              "value": "주식회사 원정대",
+              "count": 5
+            },
+            {
+              "value": "쥬베라 메타광고 최신",
+              "count": 3
+            },
+            {
+              "value": "500185913661137",
+              "count": 3
+            },
+            {
+              "value": "1011426337068763",
+              "count": 3
+            },
+            {
+              "value": "521130877294469",
+              "count": 2
+            },
+            {
+              "value": "1037121014406143",
+              "count": 2
+            },
+            {
+              "value": "7468494166390194177",
+              "count": 2
+            },
+            {
+              "value": "7462191097905840145",
+              "count": 2
+            },
+            {
+              "value": "1205918067358404",
+              "count": 2
+            },
+            {
+              "value": "7462191624026701841",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "name": "O_PROGRESS_METHOD",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 1862
+            },
+            {
+              "value": "후불(광고주 충전)",
+              "count": 572
+            },
+            {
+              "value": "선불(광고주 충전)",
+              "count": 104
+            },
+            {
+              "value": "선불(원정대 충전)",
+              "count": 51
+            }
+          ]
+        },
+        {
+          "name": "O_PAYER_NM",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2084
+            },
+            {
+              "value": "테스트",
+              "count": 13
+            },
+            {
+              "value": "주식회사 로우톤",
+              "count": 11
+            },
+            {
+              "value": "주식회사 솔라릭스",
+              "count": 9
+            },
+            {
+              "value": "바이탈스코프 주식회사",
+              "count": 8
+            },
+            {
+              "value": "(주)와이즈플래닛컴퍼니",
+              "count": 5
+            },
+            {
+              "value": "신성민",
+              "count": 4
+            },
+            {
+              "value": "오로라에스",
+              "count": 4
+            },
+            {
+              "value": "주식회사 디테",
+              "count": 4
+            },
+            {
+              "value": "아비크라이프(주)",
+              "count": 4
+            },
+            {
+              "value": "주식회사 핀치하우스",
+              "count": 4
+            },
+            {
+              "value": "에이스전자(주)",
+              "count": 3
+            }
+          ]
+        },
+        {
+          "name": "O_AGENT_FEE",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 1459
+            },
+            {
+              "value": "C028A",
+              "count": 298
+            },
+            {
+              "value": "C028C",
+              "count": 217
+            },
+            {
+              "value": "C028B",
+              "count": 75
+            },
+            {
+              "value": "C028D",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "name": "S_ACCOUNT_NUMBER",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 1991
+            },
+            {
+              "value": "2400075",
+              "count": 2
+            },
+            {
+              "value": "60911",
+              "count": 2
+            },
+            {
+              "value": "1224479",
+              "count": 2
+            },
+            {
+              "value": "2449711",
+              "count": 2
+            },
+            {
+              "value": "301308",
+              "count": 2
+            },
+            {
+              "value": "ASD",
+              "count": 2
+            },
+            {
+              "value": "2336607",
+              "count": 2
+            },
+            {
+              "value": "1266898",
+              "count": 2
+            },
+            {
+              "value": "1744464",
+              "count": 2
+            },
+            {
+              "value": "1947868",
+              "count": 2
+            },
+            {
+              "value": "3155314",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "name": "S_SEARCH_AD_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2378
+            },
+            {
+              "value": "딥코어",
+              "count": 2
+            },
+            {
+              "value": "스노우플러스_SA_WJD",
+              "count": 2
+            },
+            {
+              "value": "swy03167:naver",
+              "count": 2
+            },
+            {
+              "value": "djfeo26:naver",
+              "count": 2
+            },
+            {
+              "value": "siasia7581",
+              "count": 1
+            },
+            {
+              "value": "GWONHO:nvaer.com",
+              "count": 1
+            },
+            {
+              "value": "이동춘 검색업체2",
+              "count": 1
+            },
+            {
+              "value": "이동춘 검색업체3",
+              "count": 1
+            },
+            {
+              "value": "park0737:naver",
+              "count": 1
+            },
+            {
+              "value": "원일홀딩스",
+              "count": 1
+            },
+            {
+              "value": "botanity",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "S_PRODUCT",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2291
+            },
+            {
+              "value": "쇼핑+일반",
+              "count": 109
+            },
+            {
+              "value": "쇼핑검색",
+              "count": 67
+            },
+            {
+              "value": "쇼핑+일반+브검",
+              "count": 30
+            },
+            {
+              "value": "쇼검+파워링크",
+              "count": 28
+            },
+            {
+              "value": "쇼핑+파워+브검",
+              "count": 21
+            },
+            {
+              "value": "일반검색",
+              "count": 21
+            },
+            {
+              "value": "쇼핑+브검",
+              "count": 6
+            },
+            {
+              "value": "파워링크",
+              "count": 5
+            },
+            {
+              "value": "브검",
+              "count": 4
+            },
+            {
+              "value": "일반+쇼핑",
+              "count": 2
+            },
+            {
+              "value": "일반+브검",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "IS_MAIN_ACCOUNT_PERMISSION_CHECKED",
+          "type": "tinyint",
+          "null": true
+        },
+        {
+          "name": "IS_PIXEL_INSTALLED",
+          "type": "tinyint",
+          "null": true
+        },
+        {
+          "name": "LIVE",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "end",
+              "count": 1761
+            },
+            {
+              "value": "ready",
+              "count": 529
+            },
+            {
+              "value": "start",
+              "count": 240
+            },
+            {
+              "value": "divide",
+              "count": 32
+            },
+            {
+              "value": "stop",
+              "count": 27
+            }
+          ]
+        },
+        {
+          "name": "LIVE_REQUEST_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "LIVE_DIVIDE_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "LIVE_START_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "LIVE_RESTART_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "LIVE_STOP_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "LIVE_END_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "MARKETER_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "choijiwon052",
+              "count": 100
+            },
+            {
+              "value": "ro01oo2",
+              "count": 77
+            },
+            {
+              "value": "lgh88132",
+              "count": 71
+            },
+            {
+              "value": "cnk2338",
+              "count": 70
+            },
+            {
+              "value": "elvjfdk",
+              "count": 67
+            },
+            {
+              "value": "djba123",
+              "count": 67
+            },
+            {
+              "value": "azmlsxnk",
+              "count": 67
+            },
+            {
+              "value": "am9410",
+              "count": 66
+            },
+            {
+              "value": "cheyongyun",
+              "count": 64
+            },
+            {
+              "value": "asc3371",
+              "count": 59
+            },
+            {
+              "value": "iinn02",
+              "count": 57
+            },
+            {
+              "value": "gkro1457",
+              "count": 54
+            }
+          ]
+        },
+        {
+          "name": "DESIGNER_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "패션MP_이미지",
+              "count": 203
+            },
+            {
+              "value": "han06020",
+              "count": 118
+            },
+            {
+              "value": "zieun17",
+              "count": 116
+            },
+            {
+              "value": "inah1102",
+              "count": 104
+            },
+            {
+              "value": "sontaewon032",
+              "count": 96
+            },
+            {
+              "value": "kimsujung97",
+              "count": 95
+            },
+            {
+              "value": "sonin2333",
+              "count": 94
+            },
+            {
+              "value": "anxiw",
+              "count": 88
+            },
+            {
+              "value": "jeon251",
+              "count": 76
+            },
+            {
+              "value": "gmlwjd926",
+              "count": 74
+            },
+            {
+              "value": "myzaeseo",
+              "count": 74
+            },
+            {
+              "value": "yybb0609",
+              "count": 73
+            }
+          ]
+        },
+        {
+          "name": "CREATOR_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 101
+            },
+            {
+              "value": "yys0844",
+              "count": 99
+            },
+            {
+              "value": "msjmin11",
+              "count": 59
+            },
+            {
+              "value": "green9511",
+              "count": 55
+            },
+            {
+              "value": "daeyeno0516",
+              "count": 54
+            },
+            {
+              "value": "jjuny7846",
+              "count": 51
+            },
+            {
+              "value": "jojunso1",
+              "count": 51
+            },
+            {
+              "value": "leemkr12r",
+              "count": 50
+            },
+            {
+              "value": "78qwert78",
+              "count": 49
+            },
+            {
+              "value": "kimjs9647",
+              "count": 48
+            },
+            {
+              "value": "seungmi6726",
+              "count": 48
+            },
+            {
+              "value": "ysy200105",
+              "count": 47
+            }
+          ]
+        },
+        {
+          "name": "TEAM_ACCOUNT",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 576
+            },
+            {
+              "value": "C022C",
+              "count": 546
+            },
+            {
+              "value": "C022A",
+              "count": 533
+            },
+            {
+              "value": "C022B",
+              "count": 477
+            },
+            {
+              "value": "C022D",
+              "count": 388
+            },
+            {
+              "value": "C022J",
+              "count": 20
+            }
+          ]
+        },
+        {
+          "name": "CREATED_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "siasia7581@wonjd.com",
+              "count": 262
+            },
+            {
+              "value": "ha_9823",
+              "count": 247
+            },
+            {
+              "value": "yualswl515@wonjd.com",
+              "count": 236
+            },
+            {
+              "value": "wonjdmkt",
+              "count": 226
+            },
+            {
+              "value": "ww0748",
+              "count": 194
+            },
+            {
+              "value": "chooogun1",
+              "count": 140
+            },
+            {
+              "value": "jy475947",
+              "count": 126
+            },
+            {
+              "value": "wkdduddn123",
+              "count": 111
+            },
+            {
+              "value": "sedoll97",
+              "count": 99
+            },
+            {
+              "value": "dlfbsrhks",
+              "count": 97
+            },
+            {
+              "value": "tpwls8122",
+              "count": 81
+            },
+            {
+              "value": "kcwkin1234",
+              "count": 81
+            }
+          ]
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "UPDATED_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "camellia99sh",
+              "count": 261
+            },
+            {
+              "value": "choijiwon052",
+              "count": 89
+            },
+            {
+              "value": "mj011633",
+              "count": 82
+            },
+            {
+              "value": "master",
+              "count": 78
+            },
+            {
+              "value": "tpwls8122",
+              "count": 77
+            },
+            {
+              "value": "aywmd1",
+              "count": 73
+            },
+            {
+              "value": "cnk2338",
+              "count": 73
+            },
+            {
+              "value": "lgh88132",
+              "count": 67
+            },
+            {
+              "value": "ro01oo2",
+              "count": 64
+            },
+            {
+              "value": "iinn02",
+              "count": 63
+            },
+            {
+              "value": "yurim12",
+              "count": 56
+            },
+            {
+              "value": "ha_9823",
+              "count": 52
+            }
+          ]
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "DELETED_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "ha_9823",
+              "count": 104
+            },
+            {
+              "value": "tpwls8122",
+              "count": 95
+            },
+            {
+              "value": "master",
+              "count": 65
+            },
+            {
+              "value": "ww0748",
+              "count": 46
+            },
+            {
+              "value": "wonjdmkt",
+              "count": 32
+            },
+            {
+              "value": "siasia7581@wonjd.com",
+              "count": 26
+            },
+            {
+              "value": "yualswl515@wonjd.com",
+              "count": 23
+            },
+            {
+              "value": "jy475947",
+              "count": 19
+            },
+            {
+              "value": "dlfbsrhks",
+              "count": 15
+            },
+            {
+              "value": "sedoll97",
+              "count": 14
+            },
+            {
+              "value": "chooogun1",
+              "count": 11
+            },
+            {
+              "value": "sujibanker",
+              "count": 11
+            }
+          ]
+        },
+        {
+          "name": "DELETED_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "O_AD_ACCOUNT_NM",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2005
+            },
+            {
+              "value": "테스트",
+              "count": 11
+            },
+            {
+              "value": "★",
+              "count": 5
+            },
+            {
+              "value": "원정대",
+              "count": 4
+            },
+            {
+              "value": "원정대_쥬비컷",
+              "count": 2
+            },
+            {
+              "value": "원정대_니프달",
+              "count": 2
+            },
+            {
+              "value": "쑥쑥메이트2",
+              "count": 2
+            },
+            {
+              "value": "원정대_퓨어턴28",
+              "count": 2
+            },
+            {
+              "value": "원정대_링클백",
+              "count": 2
+            },
+            {
+              "value": "원정대_라셀턴",
+              "count": 2
+            },
+            {
+              "value": "11_라셀턴_WJD",
+              "count": 2
+            },
+            {
+              "value": "2_링클백_WJD",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "name": "LIMIT_SETTING_AMOUNT",
+          "type": "int",
+          "null": true
+        },
+        {
+          "name": "CATEGORY",
+          "type": "text",
+          "null": true,
+          "codes": [
+            {
+              "value": "뷰티",
+              "count": 337
+            },
+            {
+              "value": "",
+              "count": 250
+            },
+            {
+              "value": "건강기능식품",
+              "count": 147
+            },
+            {
+              "value": "여성의류",
+              "count": 102
+            },
+            {
+              "value": "건기식",
+              "count": 89
+            },
+            {
+              "value": "식품",
+              "count": 88
+            },
+            {
+              "value": "패션",
+              "count": 68
+            },
+            {
+              "value": "리빙",
+              "count": 48
+            },
+            {
+              "value": "가전",
+              "count": 45
+            },
+            {
+              "value": "생활",
+              "count": 43
+            },
+            {
+              "value": "화장품",
+              "count": 31
+            },
+            {
+              "value": "반려용품",
+              "count": 29
+            }
+          ]
+        },
+        {
+          "name": "SETTLE_DATE",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 1220
+            },
+            {
+              "value": "25일",
+              "count": 171
+            },
+            {
+              "value": "5일",
+              "count": 104
+            },
+            {
+              "value": "10일",
+              "count": 100
+            },
+            {
+              "value": "15일",
+              "count": 66
+            },
+            {
+              "value": "없음",
+              "count": 63
+            },
+            {
+              "value": "20일",
+              "count": 41
+            }
+          ]
+        },
+        {
+          "name": "CONTRACT_PROGRESS_TYPE",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2033
+            },
+            {
+              "value": "대행권 이관",
+              "count": 552
+            },
+            {
+              "value": "계산서 위임",
+              "count": 4
+            }
+          ]
+        },
+        {
+          "name": "CONTRACT_PROGRESS_STATUS",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "INIT",
+              "count": 832
+            },
+            {
+              "value": "DONE",
+              "count": 720
+            },
+            {
+              "value": "SENT",
+              "count": 39
+            },
+            {
+              "value": "REQUESTED",
+              "count": 13
+            },
+            {
+              "value": "SIGNED",
+              "count": 13
+            }
+          ]
+        },
+        {
+          "name": "INTEGRATION_TRANSFER_STATUS",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "INIT",
+              "count": 870
+            },
+            {
+              "value": "APPROVAL_CONFIRMED",
+              "count": 634
+            },
+            {
+              "value": "TRANSFER_CONFIRMED",
+              "count": 100
+            },
+            {
+              "value": "INTEGRATION_REQUESTED",
+              "count": 8
+            },
+            {
+              "value": "TRANSFER_REQUESTED",
+              "count": 3
+            },
+            {
+              "value": "INTEGRATION_CONFIRMED",
+              "count": 1
+            },
+            {
+              "value": "APPROVAL_REQUESTED",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "ROAS",
+          "type": "text",
+          "null": true,
+          "codes": [
+            {
+              "value": "미정",
+              "count": 98
+            },
+            {
+              "value": "200%",
+              "count": 43
+            },
+            {
+              "value": "300%",
+              "count": 40
+            },
+            {
+              "value": "250%",
+              "count": 26
+            },
+            {
+              "value": "150%",
+              "count": 19
+            },
+            {
+              "value": "200%(대시보드)",
+              "count": 16
+            },
+            {
+              "value": "200",
+              "count": 10
+            },
+            {
+              "value": "(대시보드)200",
+              "count": 9
+            },
+            {
+              "value": "200 (대시보드)",
+              "count": 9
+            },
+            {
+              "value": "350%",
+              "count": 8
+            },
+            {
+              "value": "",
+              "count": 8
+            },
+            {
+              "value": "(대시보드) 250%",
+              "count": 8
+            }
+          ]
+        },
+        {
+          "name": "DAILY_AD_COST",
+          "type": "text",
+          "null": true,
+          "codes": [
+            {
+              "value": "일 30만원",
+              "count": 40
+            },
+            {
+              "value": "일 15만원",
+              "count": 32
+            },
+            {
+              "value": "30",
+              "count": 28
+            },
+            {
+              "value": "일 10만원",
+              "count": 24
+            },
+            {
+              "value": "◆ 리밋없음",
+              "count": 22
+            },
+            {
+              "value": "15",
+              "count": 20
+            },
+            {
+              "value": "30만원",
+              "count": 19
+            },
+            {
+              "value": "",
+              "count": 17
+            },
+            {
+              "value": "◆ (리밋 없음)",
+              "count": 15
+            },
+            {
+              "value": "15만원",
+              "count": 14
+            },
+            {
+              "value": "일 20만원",
+              "count": 14
+            },
+            {
+              "value": "월 900만원",
+              "count": 12
+            }
+          ]
+        },
+        {
+          "name": "INSTRUCTION",
+          "type": "text",
+          "null": true,
+          "codes": [
+            {
+              "value": "[베이직]",
+              "count": 104
+            },
+            {
+              "value": "[파트너]",
+              "count": 59
+            },
+            {
+              "value": "",
+              "count": 22
+            },
+            {
+              "value": "[파일럿]",
+              "count": 19
+            },
+            {
+              "value": "[파트너십]",
+              "count": 18
+            },
+            {
+              "value": "패션",
+              "count": 8
+            },
+            {
+              "value": "대행종료",
+              "count": 7
+            },
+            {
+              "value": "[베이직라이트]",
+              "count": 7
+            },
+            {
+              "value": "[베이직]\n",
+              "count": 6
+            },
+            {
+              "value": "[베이직라이트] 패션",
+              "count": 6
+            },
+            {
+              "value": "[그로스]",
+              "count": 3
+            },
+            {
+              "value": "최낙경 팀장 12/26\n\n-로아스 , 일 광고비 업데이트 부탁드립니다.",
+              "count": 3
+            }
+          ]
+        },
+        {
+          "name": "IS_CIGRO_LINKED",
+          "type": "tinyint",
+          "null": true
+        },
+        {
+          "name": "INVITE_EMAILS",
+          "type": "text",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 55
+            },
+            {
+              "value": "pinchhouse.all@gmail.com , yuddob515@gmail.com , biz@wonjd.com",
+              "count": 2
+            },
+            {
+              "value": "테스트",
+              "count": 1
+            },
+            {
+              "value": "경영팀 계정 - biz@wonjd.com\n씨그로 계정 - mhj6903@gmail.com\n영업담당자 계정 - sedoll97@naver.com\n광고주 계정 - blackloel123@naver.com",
+              "count": 1
+            },
+            {
+              "value": "멤버초대 이메일 주소 : viliabusiness@naver.com, leethdus7535@gmail.com, jjuny784600@gmail.com\n(광고주, 마케터, 영상담당자)",
+              "count": 1
+            },
+            {
+              "value": "mkt@bilico.com\n\njy475947@gmail.com",
+              "count": 1
+            },
+            {
+              "value": "homniz2109@nate.com\njy475947@gmail.com \nbiz@wonjd.com\nmhj6903@gmail.com",
+              "count": 1
+            },
+            {
+              "value": "ㅁㄴㅇ,ㄹㄹ,ㅈㄷㅈ,ㅂㅂㅂ",
+              "count": 1
+            },
+            {
+              "value": "abs@wonjd.com\r\naaa@wonjd.com\r\nsss@gmail.com\r\nddd@gmail.com",
+              "count": 1
+            },
+            {
+              "value": "테스트,테스트,테스트,테스트",
+              "count": 1
+            },
+            {
+              "value": "* 초대링크\n\nbiz\nhttps://business.tiktok.com/?invite_code=73c48fd8b328363eadff10c45086aaef\n\nsiasia240101\nhttps://business.tiktok.com/?invite_code=526b61e5f10636e87e70a2fc578da7a2\n\nmhj6903\nhttps://business.tiktok.com/?invite_code=207c9d24643cef77c21b5616f092bf08\n",
+              "count": 1
+            },
+            {
+              "value": "mkt240101@gmail.com (광고주 아이디)\nsedoll97@naver.com (영업사원 아이디)\nbiz@wonjd.com\nmhj6903@gmail.com",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "ACCOUNT_CURRENCY",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "KRW",
+              "count": 78
+            },
+            {
+              "value": "USD",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "REQUEST_TYPE",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "이관요청",
+              "count": 34
+            },
+            {
+              "value": "신규생성 및 이관요청",
+              "count": 23
+            },
+            {
+              "value": "신규생성",
+              "count": 21
+            }
+          ]
+        },
+        {
+          "name": "SITE_URL",
+          "type": "text",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 52
+            },
+            {
+              "value": "테스트",
+              "count": 5
+            },
+            {
+              "value": "https://vilarmall.com/",
+              "count": 2
+            },
+            {
+              "value": "https://wlcshop.co.kr/index.html",
+              "count": 2
+            },
+            {
+              "value": "https://www.pbcide.com/",
+              "count": 2
+            },
+            {
+              "value": "https://natical.shop/",
+              "count": 1
+            },
+            {
+              "value": "https://dearglam.com/",
+              "count": 1
+            },
+            {
+              "value": "https://www.dearglam.com/",
+              "count": 1
+            },
+            {
+              "value": "https://www.louisviel.com/",
+              "count": 1
+            },
+            {
+              "value": "https://dearlauren.com/",
+              "count": 1
+            },
+            {
+              "value": "www.coreadog.com",
+              "count": 1
+            },
+            {
+              "value": "https://homniz.kr/",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "MONTHLY_BUDGET",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 46
+            },
+            {
+              "value": "450만원",
+              "count": 9
+            },
+            {
+              "value": "테스트",
+              "count": 8
+            },
+            {
+              "value": "450",
+              "count": 5
+            },
+            {
+              "value": "900만원",
+              "count": 4
+            },
+            {
+              "value": "900",
+              "count": 2
+            },
+            {
+              "value": "원정대 wjd",
+              "count": 1
+            },
+            {
+              "value": "테스트1",
+              "count": 1
+            },
+            {
+              "value": "450만 원",
+              "count": 1
+            },
+            {
+              "value": "4,500,000",
+              "count": 1
+            },
+            {
+              "value": "10000000",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "PIXEL_REQUEST_TYPE",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "기존 픽셀사용",
+              "count": 49
+            },
+            {
+              "value": "픽셀생성",
+              "count": 29
+            }
+          ]
+        },
+        {
+          "name": "PIXEL_NAME",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 52
+            },
+            {
+              "value": "테스트",
+              "count": 5
+            },
+            {
+              "value": "테스트_wjd",
+              "count": 2
+            },
+            {
+              "value": "원정대_wjd",
+              "count": 2
+            },
+            {
+              "value": "달루_WJD",
+              "count": 1
+            },
+            {
+              "value": "순이엔티_픽셀_이인호",
+              "count": 1
+            },
+            {
+              "value": "웰스로만센트라린_WJD",
+              "count": 1
+            },
+            {
+              "value": "팁스헬시_WJD",
+              "count": 1
+            },
+            {
+              "value": "원정대 wjd",
+              "count": 1
+            },
+            {
+              "value": "위비아_WJD",
+              "count": 1
+            },
+            {
+              "value": "아이레놀_WJD",
+              "count": 1
+            },
+            {
+              "value": "네티컬발연구소_WJD",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "LANDING_PAGE_URL",
+          "type": "text",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 51
+            },
+            {
+              "value": "테스트",
+              "count": 7
+            },
+            {
+              "value": "https://vilarmall.com/product/%EB%B9%8C%EB%9D%BC%EB%A5%B4-%EB%AA%A9-%EC%96%B4%EA%B9%A8-%EB%B2%A0%EA%B0%9C-%EB%A7%88%EC%82%AC%EC%A7%80%EA%B8%B0/14/category/24/display/1/",
+              "count": 2
+            },
+            {
+              "value": "https://m.pira.kr/",
+              "count": 2
+            },
+            {
+              "value": "https://dearglam.com/product/detail.html?product_no=65&cate_no=1&display_group=2",
+              "count": 1
+            },
+            {
+              "value": "https://dalludays.com/",
+              "count": 1
+            },
+            {
+              "value": "https://www.pbcide.com/25/?idx=51",
+              "count": 1
+            },
+            {
+              "value": "https://www.pbcide.com/1735260767/?idx=27",
+              "count": 1
+            },
+            {
+              "value": "https://homniz.kr/product/%EB%B3%B4%EB%9E%84-%EC%97%90%EC%96%B4%EB%8D%95%ED%8A%B8-%EB%8C%80%EC%9A%A9%EB%9F%89-%EC%9D%8C%EC%8B%9D%EB%AC%BC%EC%B2%98%EB%A6%AC%EA%B8%B0-55l/31/category/1/display/3/?icid=MAIN.product_listmain_2",
+              "count": 1
+            },
+            {
+              "value": "https://prettyfreak.store/index.html",
+              "count": 1
+            },
+            {
+              "value": "테스트1",
+              "count": 1
+            },
+            {
+              "value": "링크",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "INSTALL_METHOD",
+          "type": "text",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 62
+            },
+            {
+              "value": "직접설정",
+              "count": 9
+            },
+            {
+              "value": "테스트",
+              "count": 4
+            },
+            {
+              "value": "원정대 wjd",
+              "count": 1
+            },
+            {
+              "value": "테스트1",
+              "count": 1
+            },
+            {
+              "value": "직접 설정",
+              "count": 1
+            },
+            {
+              "value": "API 연동 오류로 외주 설치",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "WORK_METHOD",
+          "type": "text",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 62
+            },
+            {
+              "value": "테스트",
+              "count": 4
+            },
+            {
+              "value": "카페24 생성하여, 부운영자 권한 요청",
+              "count": 4
+            },
+            {
+              "value": "\n픽셀 직접 설치(개발자)",
+              "count": 1
+            },
+            {
+              "value": "픽셀 직접 설치(개발자)",
+              "count": 1
+            },
+            {
+              "value": "카페24 ~",
+              "count": 1
+            },
+            {
+              "value": "개발자 통해 직접설치 or 카페24 생성하여 부운영자 권한 요청",
+              "count": 1
+            },
+            {
+              "value": "개발자 통해 직접설치 or 카페24 통해 부운영자 권한 요청\r\n",
+              "count": 1
+            },
+            {
+              "value": "테스트1",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "SUBADMIN_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 45
+            },
+            {
+              "value": "테스트",
+              "count": 7
+            },
+            {
+              "value": "viliar0108",
+              "count": 2
+            },
+            {
+              "value": "most153153",
+              "count": 2
+            },
+            {
+              "value": "pinchhouse",
+              "count": 2
+            },
+            {
+              "value": "cellovis",
+              "count": 1
+            },
+            {
+              "value": "mogrami",
+              "count": 1
+            },
+            {
+              "value": "handame ",
+              "count": 1
+            },
+            {
+              "value": "hystcorp",
+              "count": 1
+            },
+            {
+              "value": "walch0226",
+              "count": 1
+            },
+            {
+              "value": "army6028",
+              "count": 1
+            },
+            {
+              "value": "mooyamooya7",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "SUBADMIN_SUB_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 45
+            },
+            {
+              "value": "테스트",
+              "count": 7
+            },
+            {
+              "value": "wonjungdae",
+              "count": 2
+            },
+            {
+              "value": "vilaragency01",
+              "count": 2
+            },
+            {
+              "value": "dearglamgfa",
+              "count": 2
+            },
+            {
+              "value": "pinchhouse1",
+              "count": 2
+            },
+            {
+              "value": "celloviswjdtk",
+              "count": 1
+            },
+            {
+              "value": "mogramireview\n",
+              "count": 1
+            },
+            {
+              "value": "wjdwjd3",
+              "count": 1
+            },
+            {
+              "value": "expedition",
+              "count": 1
+            },
+            {
+              "value": "tipshealth1",
+              "count": 1
+            },
+            {
+              "value": "assi7",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "SUBADMIN_PASSWORD",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 44
+            },
+            {
+              "value": "테스트",
+              "count": 7
+            },
+            {
+              "value": "dnjswjdeo1!!",
+              "count": 2
+            },
+            {
+              "value": "153**most15",
+              "count": 2
+            },
+            {
+              "value": "pinchhouse12!",
+              "count": 2
+            },
+            {
+              "value": "bk2301311**\n",
+              "count": 1
+            },
+            {
+              "value": "dnjswjdeoxlrxhr4",
+              "count": 1
+            },
+            {
+              "value": "dnjswjdeo$$",
+              "count": 1
+            },
+            {
+              "value": "dnjswjdeoeoqkr@",
+              "count": 1
+            },
+            {
+              "value": "1q2w3e4r03@",
+              "count": 1
+            },
+            {
+              "value": "tipshealth1!@",
+              "count": 1
+            },
+            {
+              "value": "mooya!!0689",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "IS_MULTI_MALL",
+          "type": "tinyint",
+          "null": true
+        },
+        {
+          "name": "MALL_NAME",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 59
+            },
+            {
+              "value": "테스트",
+              "count": 6
+            },
+            {
+              "value": "빌라르",
+              "count": 2
+            },
+            {
+              "value": "온슬로",
+              "count": 2
+            },
+            {
+              "value": "김민재편백",
+              "count": 2
+            },
+            {
+              "value": "달루",
+              "count": 1
+            },
+            {
+              "value": "WEVIA",
+              "count": 1
+            },
+            {
+              "value": "기본 한국어 쇼핑몰 ",
+              "count": 1
+            },
+            {
+              "value": "테스트1",
+              "count": 1
+            },
+            {
+              "value": "(기본)프리티프릭",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "LABSA_STATUS",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "0",
+              "count": 2571
+            },
+            {
+              "value": "2",
+              "count": 12
+            },
+            {
+              "value": "1",
+              "count": 6
+            }
+          ]
+        },
+        {
+          "name": "LABSA_ACCOUNT_NM",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2582
+            },
+            {
+              "value": "아이레놀_WJD",
+              "count": 1
+            },
+            {
+              "value": "온슬로_WJD",
+              "count": 1
+            },
+            {
+              "value": "계정명",
+              "count": 1
+            },
+            {
+              "value": "계정",
+              "count": 1
+            },
+            {
+              "value": "234",
+              "count": 1
+            },
+            {
+              "value": "테스트_WJD",
+              "count": 1
+            },
+            {
+              "value": "프리티프릭_WJD",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "LABSA_ACCOUNT_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2583
+            },
+            {
+              "value": "7569542887529005057",
+              "count": 1
+            },
+            {
+              "value": "7569539605272264722",
+              "count": 1
+            },
+            {
+              "value": "계정 ID",
+              "count": 1
+            },
+            {
+              "value": "아이디",
+              "count": 1
+            },
+            {
+              "value": "46ASD46516",
+              "count": 1
+            },
+            {
+              "value": "7569541074411765777",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "LABSA_INVITE_LINK",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2586
+            },
+            {
+              "value": "초대 링크초대 링크초대 링크초대 링크초대 링크",
+              "count": 1
+            },
+            {
+              "value": "링크입니다",
+              "count": 1
+            },
+            {
+              "value": "수정 했다고 가정",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "LABSA_PIXEL_NM",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2583
+            },
+            {
+              "value": "픽셀명",
+              "count": 2
+            },
+            {
+              "value": "아이레놀_WJD",
+              "count": 1
+            },
+            {
+              "value": "온슬로_WJD_픽셀",
+              "count": 1
+            },
+            {
+              "value": "테스트_WJD",
+              "count": 1
+            },
+            {
+              "value": "프리티프릭_WJD_픽셀",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "LABSA_PIXEL_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2583
+            },
+            {
+              "value": "D48KSTRC77U1BLONOPKG",
+              "count": 1
+            },
+            {
+              "value": "D499KRRC77U69K48GBA0",
+              "count": 1
+            },
+            {
+              "value": "픽셀 ID",
+              "count": 1
+            },
+            {
+              "value": "아이디",
+              "count": 1
+            },
+            {
+              "value": "ASF65421",
+              "count": 1
+            },
+            {
+              "value": "D48O3R3C77U2VJR5MPM0",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "B_ID",
+          "type": "int",
+          "null": true
+        },
+        {
+          "name": "MONTH_BUDGET",
+          "type": "bigint",
+          "null": true
+        },
+        {
+          "name": "KPI_MONTH_BUDGET",
+          "type": "bigint",
+          "null": true
+        },
+        {
+          "name": "CREATIVE_SUBS_TYPE",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "0",
+              "count": 2290
+            },
+            {
+              "value": "1",
+              "count": 118
+            },
+            {
+              "value": "3",
+              "count": 78
+            },
+            {
+              "value": "4",
+              "count": 44
+            },
+            {
+              "value": "2",
+              "count": 30
+            },
+            {
+              "value": "5",
+              "count": 29
+            }
+          ]
+        },
+        {
+          "name": "CREATIVE_CONTRACT_DATE",
+          "type": "char",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2342
+            },
+            {
+              "value": "20260608",
+              "count": 10
+            },
+            {
+              "value": "20260515",
+              "count": 9
+            },
+            {
+              "value": "20260706",
+              "count": 9
+            },
+            {
+              "value": "20260605",
+              "count": 8
+            },
+            {
+              "value": "20260519",
+              "count": 8
+            },
+            {
+              "value": "20260316",
+              "count": 8
+            },
+            {
+              "value": "20260619",
+              "count": 7
+            },
+            {
+              "value": "20260430",
+              "count": 7
+            },
+            {
+              "value": "20260320",
+              "count": 7
+            },
+            {
+              "value": "20260709",
+              "count": 6
+            },
+            {
+              "value": "20260601",
+              "count": 5
+            }
+          ]
+        },
+        {
+          "name": "CREATIVE_PAYMENT_DATE",
+          "type": "char",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2458
+            },
+            {
+              "value": "20260316",
+              "count": 8
+            },
+            {
+              "value": "20260526",
+              "count": 7
+            },
+            {
+              "value": "20260619",
+              "count": 7
+            },
+            {
+              "value": "20260807",
+              "count": 6
+            },
+            {
+              "value": "20260706",
+              "count": 5
+            },
+            {
+              "value": "20260608",
+              "count": 4
+            },
+            {
+              "value": "20260610",
+              "count": 4
+            },
+            {
+              "value": "20260731",
+              "count": 4
+            },
+            {
+              "value": "20260625",
+              "count": 4
+            },
+            {
+              "value": "20260605",
+              "count": 4
+            },
+            {
+              "value": "20260709",
+              "count": 3
+            }
+          ]
+        },
+        {
+          "name": "CREATIVE_START_DATE",
+          "type": "char",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2268
+            },
+            {
+              "value": "20260611",
+              "count": 11
+            },
+            {
+              "value": "20260615",
+              "count": 10
+            },
+            {
+              "value": "20260601",
+              "count": 9
+            },
+            {
+              "value": "20260522",
+              "count": 9
+            },
+            {
+              "value": "20260316",
+              "count": 9
+            },
+            {
+              "value": "20260323",
+              "count": 9
+            },
+            {
+              "value": "20260713",
+              "count": 8
+            },
+            {
+              "value": "20260622",
+              "count": 8
+            },
+            {
+              "value": "20260625",
+              "count": 8
+            },
+            {
+              "value": "20260710",
+              "count": 7
+            },
+            {
+              "value": "20260720",
+              "count": 6
+            }
+          ]
+        },
+        {
+          "name": "CREATIVE_RENEW_DATE",
+          "type": "char",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2554
+            },
+            {
+              "value": "20260723",
+              "count": 5
+            },
+            {
+              "value": "20260819",
+              "count": 4
+            },
+            {
+              "value": "20260810",
+              "count": 4
+            },
+            {
+              "value": "20260818",
+              "count": 3
+            },
+            {
+              "value": "20260812",
+              "count": 3
+            },
+            {
+              "value": "20260716",
+              "count": 2
+            },
+            {
+              "value": "20260813",
+              "count": 2
+            },
+            {
+              "value": "20260720",
+              "count": 1
+            },
+            {
+              "value": "20260710",
+              "count": 1
+            },
+            {
+              "value": "20260727",
+              "count": 1
+            },
+            {
+              "value": "20260724",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "CREATIVE_END_DATE",
+          "type": "char",
+          "null": true,
+          "codes": [
+            {
+              "value": "",
+              "count": 2268
+            },
+            {
+              "value": "20260701",
+              "count": 10
+            },
+            {
+              "value": "20260422",
+              "count": 9
+            },
+            {
+              "value": "20260415",
+              "count": 9
+            },
+            {
+              "value": "20260711",
+              "count": 9
+            },
+            {
+              "value": "20260630",
+              "count": 7
+            },
+            {
+              "value": "20260916",
+              "count": 7
+            },
+            {
+              "value": "20260813",
+              "count": 7
+            },
+            {
+              "value": "20260725",
+              "count": 7
+            },
+            {
+              "value": "20260821",
+              "count": 7
+            },
+            {
+              "value": "20260715",
+              "count": 6
+            },
+            {
+              "value": "20260528",
+              "count": 6
+            }
+          ]
+        },
+        {
+          "name": "CREATIVE_VIDEO_COUNT",
+          "type": "int",
+          "null": true
+        },
+        {
+          "name": "CREATIVE_PHOTO_COUNT",
+          "type": "int",
+          "null": true
+        }
+      ]
+    },
+    {
+      "name": "GROWTH_JUDGMENT_MT",
+      "rows": 254,
+      "columns": [
+        {
+          "name": "JUDGMENT_ID",
+          "type": "bigint",
+          "null": false
+        },
+        {
+          "name": "ENT_ID",
+          "type": "bigint",
+          "null": false
+        },
+        {
+          "name": "ROUND_ID",
+          "type": "bigint",
+          "null": false
+        },
+        {
+          "name": "JUDGMENT_TYPE",
+          "type": "varchar",
+          "null": false,
+          "codes": [
+            {
+              "value": "FIRST_RENEWAL",
+              "count": 196
+            },
+            {
+              "value": "PILOT_CONVERSION",
+              "count": 50
+            },
+            {
+              "value": "LOCK_IN",
+              "count": 8
+            }
+          ]
+        },
+        {
+          "name": "STATUS",
+          "type": "varchar",
+          "null": false,
+          "codes": [
+            {
+              "value": "REJECTED",
+              "count": 148
+            },
+            {
+              "value": "PENDING",
+              "count": 98
+            },
+            {
+              "value": "CONFIRMED",
+              "count": 7
+            },
+            {
+              "value": "CANCELLED",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "CONFIRMED_YM",
+          "type": "char",
+          "null": true,
+          "codes": [
+            {
+              "value": "202607",
+              "count": 38
+            },
+            {
+              "value": "202608",
+              "count": 36
+            },
+            {
+              "value": "202606",
+              "count": 23
+            },
+            {
+              "value": "202605",
+              "count": 18
+            },
+            {
+              "value": "202604",
+              "count": 12
+            },
+            {
+              "value": "202505",
+              "count": 6
+            },
+            {
+              "value": "202512",
+              "count": 3
+            },
+            {
+              "value": "202504",
+              "count": 3
+            },
+            {
+              "value": "202509",
+              "count": 2
+            },
+            {
+              "value": "202511",
+              "count": 2
+            },
+            {
+              "value": "202501",
+              "count": 2
+            },
+            {
+              "value": "202602",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "name": "CONFIRMED_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "CONFIRMED_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "LEGACY:AUTO_BOOTSTRAP",
+              "count": 148
+            },
+            {
+              "value": "heh139811",
+              "count": 7
+            }
+          ]
+        },
+        {
+          "name": "NOTE",
+          "type": "varchar",
+          "null": true
+        },
+        {
+          "name": "OWNER_MARKETER_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "cheyongyun",
+              "count": 21
+            },
+            {
+              "value": "rkdud2848",
+              "count": 14
+            },
+            {
+              "value": "am9410",
+              "count": 13
+            },
+            {
+              "value": "adreamyworld",
+              "count": 12
+            },
+            {
+              "value": "hansemin0627",
+              "count": 12
+            },
+            {
+              "value": "dbfl4837",
+              "count": 11
+            },
+            {
+              "value": "cnk2338",
+              "count": 11
+            },
+            {
+              "value": "rlaemrwn1234",
+              "count": 10
+            },
+            {
+              "value": "alsrbwkd72",
+              "count": 10
+            },
+            {
+              "value": "asc3371",
+              "count": 10
+            },
+            {
+              "value": "aywmd1",
+              "count": 10
+            },
+            {
+              "value": "edini020910",
+              "count": 10
+            }
+          ]
+        },
+        {
+          "name": "OWNER_TEAM_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "cnk2338",
+              "count": 50
+            },
+            {
+              "value": "iinn02",
+              "count": 44
+            },
+            {
+              "value": "yurim12",
+              "count": 36
+            },
+            {
+              "value": "djba123",
+              "count": 35
+            },
+            {
+              "value": "aywmd1",
+              "count": 35
+            },
+            {
+              "value": "azmlsxnk",
+              "count": 27
+            },
+            {
+              "value": "ro01oo2",
+              "count": 7
+            },
+            {
+              "value": "lgh88132",
+              "count": 3
+            }
+          ]
+        },
+        {
+          "name": "OWNER_TEAM_NM",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "7팀",
+              "count": 50
+            },
+            {
+              "value": "3팀",
+              "count": 44
+            },
+            {
+              "value": "5팀",
+              "count": 36
+            },
+            {
+              "value": "4팀",
+              "count": 35
+            },
+            {
+              "value": "2팀",
+              "count": 35
+            },
+            {
+              "value": "6팀",
+              "count": 27
+            },
+            {
+              "value": "8팀",
+              "count": 7
+            },
+            {
+              "value": "9팀",
+              "count": 3
+            }
+          ]
+        },
+        {
+          "name": "CREATED_ID",
+          "type": "varchar",
+          "null": false,
+          "codes": [
+            {
+              "value": "LEGACY:AUTO_BOOTSTRAP",
+              "count": 242
+            },
+            {
+              "value": "heh139811",
+              "count": 12
+            }
+          ]
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "datetime",
+          "null": false
+        },
+        {
+          "name": "UPDATED_ID",
+          "type": "varchar",
+          "null": true,
+          "codes": [
+            {
+              "value": "LEGACY:AUTO_BOOTSTRAP",
+              "count": 148
+            },
+            {
+              "value": "heh139811",
+              "count": 9
+            }
+          ]
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "datetime",
+          "null": true
+        }
+      ]
+    },
+    {
+      "name": "GROWTH_OPS_EVENT_HT",
+      "rows": 776,
+      "columns": [
+        {
+          "name": "EVENT_ID",
+          "type": "bigint",
+          "null": false
+        },
+        {
+          "name": "ENT_ID",
+          "type": "bigint",
+          "null": false
+        },
+        {
+          "name": "ROUND_ID",
+          "type": "bigint",
+          "null": true
+        },
+        {
+          "name": "EVENT_TYPE",
+          "type": "varchar",
+          "null": false,
+          "codes": [
+            {
+              "value": "START",
+              "count": 255
+            },
+            {
+              "value": "DIVIDE",
+              "count": 251
+            },
+            {
+              "value": "END",
+              "count": 148
+            },
+            {
+              "value": "STOP",
+              "count": 66
+            },
+            {
+              "value": "RESTART",
+              "count": 56
+            }
+          ]
+        },
+        {
+          "name": "EVENT_AT",
+          "type": "datetime",
+          "null": false
+        },
+        {
+          "name": "EVENT_YMD",
+          "type": "char",
+          "null": false,
+          "codes": [
+            {
+              "value": "20260818",
+              "count": 21
+            },
+            {
+              "value": "20260710",
+              "count": 18
+            },
+            {
+              "value": "20260803",
+              "count": 15
+            },
+            {
+              "value": "20260709",
+              "count": 14
+            },
+            {
+              "value": "20260616",
+              "count": 14
+            },
+            {
+              "value": "20260713",
+              "count": 13
+            },
+            {
+              "value": "20260707",
+              "count": 13
+            },
+            {
+              "value": "20260810",
+              "count": 13
+            },
+            {
+              "value": "20260609",
+              "count": 13
+            },
+            {
+              "value": "20260622",
+              "count": 12
+            },
+            {
+              "value": "20260522",
+              "count": 12
+            },
+            {
+              "value": "20260612",
+              "count": 12
+            }
+          ]
+        },
+        {
+          "name": "PAUSE_DAYS",
+          "type": "int",
+          "null": false
+        },
+        {
+          "name": "CUMULATIVE_PAUSE_DAYS",
+          "type": "int",
+          "null": false
+        },
+        {
+          "name": "CREATED_ID",
+          "type": "varchar",
+          "null": false,
+          "codes": [
+            {
+              "value": "LEGACY:AUTO_BOOTSTRAP",
+              "count": 408
+            },
+            {
+              "value": "LEGACY:cheyongyun",
+              "count": 30
+            },
+            {
+              "value": "LEGACY:cnk2338",
+              "count": 22
+            },
+            {
+              "value": "LEGACY:azmlsxnk",
+              "count": 18
+            },
+            {
+              "value": "LEGACY:dbfl4837",
+              "count": 18
+            },
+            {
+              "value": "LEGACY:gkro1457",
+              "count": 17
+            },
+            {
+              "value": "LEGACY:rlaemrwn1234",
+              "count": 16
+            },
+            {
+              "value": "LEGACY:hansemin0627",
+              "count": 16
+            },
+            {
+              "value": "LEGACY:aywmd1",
+              "count": 14
+            },
+            {
+              "value": "LEGACY:adreamyworld",
+              "count": 13
+            },
+            {
+              "value": "LEGACY:asc3371",
+              "count": 13
+            },
+            {
+              "value": "LEGACY:dlehdcns0",
+              "count": 12
+            }
+          ]
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "datetime",
+          "null": false
+        }
+      ]
+    },
+    {
+      "name": "INCENTIVE_DAILY_MT",
+      "rows": 121400,
+      "columns": [
+        {
+          "name": "DAILY_ID",
+          "type": "bigint",
+          "null": false
+        },
+        {
+          "name": "INCENTIVE_ID",
+          "type": "int",
+          "null": false,
+          "fk": "INCENTIVE_MT.INCENTIVE_ID"
+        },
+        {
+          "name": "CALC_YMD",
+          "type": "char",
+          "null": false,
+          "codes": [
+            {
+              "value": "20260318",
+              "count": 363
+            },
+            {
+              "value": "20260507",
+              "count": 360
+            },
+            {
+              "value": "20260506",
+              "count": 359
+            },
+            {
+              "value": "20260503",
+              "count": 358
+            },
+            {
+              "value": "20260427",
+              "count": 357
+            },
+            {
+              "value": "20260323",
+              "count": 356
+            },
+            {
+              "value": "20260428",
+              "count": 355
+            },
+            {
+              "value": "20260316",
+              "count": 355
+            },
+            {
+              "value": "20260324",
+              "count": 355
+            },
+            {
+              "value": "20260401",
+              "count": 354
+            },
+            {
+              "value": "20260315",
+              "count": 353
+            },
+            {
+              "value": "20260422",
+              "count": 351
+            }
+          ]
+        },
+        {
+          "name": "TSV_AMOUNT",
+          "type": "bigint",
+          "null": false
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "datetime",
+          "null": true
+        }
+      ]
+    },
+    {
+      "name": "INCENTIVE_MT",
+      "rows": 16256,
+      "columns": [
+        {
+          "name": "INCENTIVE_ID",
+          "type": "int",
+          "null": false
+        },
+        {
+          "name": "BASE_YM",
+          "type": "char",
+          "null": false,
+          "codes": [
+            {
+              "value": "202607",
+              "count": 1790
+            },
+            {
+              "value": "202606",
+              "count": 1719
+            },
+            {
+              "value": "202605",
+              "count": 1625
+            },
+            {
+              "value": "202604",
+              "count": 1539
+            },
+            {
+              "value": "202603",
+              "count": 1350
+            },
+            {
+              "value": "202608",
+              "count": 1273
+            },
+            {
+              "value": "202602",
+              "count": 1254
+            },
+            {
+              "value": "202601",
+              "count": 1186
+            },
+            {
+              "value": "202512",
+              "count": 1090
+            },
+            {
+              "value": "202511",
+              "count": 991
+            },
+            {
+              "value": "202510",
+              "count": 921
+            },
+            {
+              "value": "202509",
+              "count": 845
+            }
+          ]
+        },
+        {
+          "name": "ENT_ID",
+          "type": "int",
+          "null": false
+        },
+        {
+          "name": "SALESMAN_ID",
+          "type": "varchar",
+          "null": false,
+          "codes": [
+            {
+              "value": "wonjdmkt",
+              "count": 4194
+            },
+            {
+              "value": "yualswl515@wonjd.com",
+              "count": 2049
+            },
+            {
+              "value": "siasia7581@wonjd.com",
+              "count": 1829
+            },
+            {
+              "value": "ww0748",
+              "count": 1182
+            },
+            {
+              "value": "ha_9823",
+              "count": 1154
+            },
+            {
+              "value": "wkdduddn123",
+              "count": 831
+            },
+            {
+              "value": "jy475947",
+              "count": 759
+            },
+            {
+              "value": "sedoll97",
+              "count": 695
+            },
+            {
+              "value": "chooogun1",
+              "count": 573
+            },
+            {
+              "value": "kcwkin1234",
+              "count": 396
+            },
+            {
+              "value": "scw980306",
+              "count": 385
+            },
+            {
+              "value": "ghs3117",
+              "count": 367
+            }
+          ]
+        },
+        {
+          "name": "LIVE_START_AT",
+          "type": "datetime",
+          "null": false
+        },
+        {
+          "name": "WINDOW_START_DT",
+          "type": "varchar",
+          "null": false,
+          "codes": [
+            {
+              "value": "20260718",
+              "count": 229
+            },
+            {
+              "value": "20260618",
+              "count": 229
+            },
+            {
+              "value": "20260518",
+              "count": 229
+            },
+            {
+              "value": "20260418",
+              "count": 226
+            },
+            {
+              "value": "20260318",
+              "count": 226
+            },
+            {
+              "value": "20251218",
+              "count": 212
+            },
+            {
+              "value": "20260218",
+              "count": 212
+            },
+            {
+              "value": "20260118",
+              "count": 212
+            },
+            {
+              "value": "20251118",
+              "count": 204
+            },
+            {
+              "value": "20250918",
+              "count": 199
+            },
+            {
+              "value": "20251018",
+              "count": 199
+            },
+            {
+              "value": "20250818",
+              "count": 193
+            }
+          ]
+        },
+        {
+          "name": "WINDOW_END_DT",
+          "type": "varchar",
+          "null": false,
+          "codes": [
+            {
+              "value": "20260617",
+              "count": 229
+            },
+            {
+              "value": "20260717",
+              "count": 229
+            },
+            {
+              "value": "20260817",
+              "count": 229
+            },
+            {
+              "value": "20260517",
+              "count": 226
+            },
+            {
+              "value": "20260417",
+              "count": 226
+            },
+            {
+              "value": "20260117",
+              "count": 212
+            },
+            {
+              "value": "20260317",
+              "count": 212
+            },
+            {
+              "value": "20260217",
+              "count": 212
+            },
+            {
+              "value": "20251217",
+              "count": 204
+            },
+            {
+              "value": "20251017",
+              "count": 199
+            },
+            {
+              "value": "20251117",
+              "count": 199
+            },
+            {
+              "value": "20250917",
+              "count": 193
+            }
+          ]
+        },
+        {
+          "name": "TSV_SUM",
+          "type": "bigint",
+          "null": false
+        },
+        {
+          "name": "TRANSFER_YN",
+          "type": "char",
+          "null": false,
+          "codes": [
+            {
+              "value": "N",
+              "count": 13386
+            },
+            {
+              "value": "Y",
+              "count": 2870
+            }
+          ]
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "datetime",
+          "null": true
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "datetime",
+          "null": true
+        }
+      ]
+    }
+  ]
+}

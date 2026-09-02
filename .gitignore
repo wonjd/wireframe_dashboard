@@ -1,9 +1,15 @@
 node_modules/
 dist/
+packages/**/node_modules/
+apps/**/node_modules/
+**/__pycache__/
+*.py[cod]
 .env*
 !.env.example
 .DS_Store
 tsconfig.tsbuildinfo
+wireframe.config.local.json
 *.local
 .vercel/
 board/
+packages/**/prisma/**/*.db

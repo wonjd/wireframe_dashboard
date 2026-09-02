@@ -2,21 +2,46 @@
   "projects": [
     {
       "no": "01",
-      "slug": "crm_frontend",
-      "folder": "wireFrame",
-      "title": "CRM Frontend",
-      "prds": [
+      "slug": "crm",
+      "title": "CRM",
+      "runs": [
         {
-          "prdNo": "PRD-001",
-          "feature": "growth-pause",
-          "title": "일시정지 연장 현황",
-          "status": "review",
-          "screenCount": 3,
-          "children": [
-            { "slug": "01-list", "title": "목록", "issueNo": "01" },
-            { "slug": "02-detail", "title": "상세", "issueNo": "02" },
-            { "slug": "03-modal", "title": "연장 모달", "issueNo": "03" }
-          ]
+          "runId": "creative-modal",
+          "kind": "wireframe",
+          "no": "PRD-003",
+          "title": "이미지/영상 제작 방식 개선 모달",
+          "status": "draft",
+          "prdVersion": 1,
+          "prdPath": "runs/creative-modal/input/v1.md",
+          "createdAt": "2026-09-02T07:14:04.091Z",
+          "updatedAt": "2026-09-02T07:19:09.280Z",
+          "artifactCount": 0,
+          "assetProjectSlug": "crm"
+        },
+        {
+          "runId": "plugin-smoke-test",
+          "kind": "wireframe",
+          "no": "PRD-002",
+          "title": "plugin-smoke-test",
+          "status": "draft",
+          "prdVersion": 1,
+          "prdPath": "runs/plugin-smoke-test/input/v1.md",
+          "createdAt": "2026-09-02T07:11:55.310Z",
+          "updatedAt": "2026-09-02T07:11:55.310Z",
+          "artifactCount": 0
+        },
+        {
+          "runId": "growth-pause",
+          "kind": "wireframe",
+          "no": "PRD-001",
+          "title": "이미지/ 영상 제작 분기",
+          "status": "confirmed",
+          "prdVersion": 1,
+          "prdPath": "runs/growth-pause/input/v1.md",
+          "createdAt": "2026-09-01T05:51:48.434Z",
+          "updatedAt": "2026-09-02T07:17:10.920Z",
+          "artifactCount": 0,
+          "assetProjectSlug": "crm"
         }
       ]
     }

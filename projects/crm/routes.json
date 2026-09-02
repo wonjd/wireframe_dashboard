@@ -1,0 +1,286 @@
+{
+  "source": "crm_frontend",
+  "extractedAt": "2026-09-01T05:42:30.310Z",
+  "routes": [
+    {
+      "path": "/account-info",
+      "file": "src/pages/common/AccountInfoPage.tsx",
+      "label": "계정 정보"
+    },
+    {
+      "path": "/ad-progress-list",
+      "file": "src/pages/nav4/ad-progress/ADProgressList.tsx",
+      "label": "광고 진행 리스트"
+    },
+    {
+      "path": "/approve-request",
+      "file": "src/pages/nav1/request/TotalRequstPage.tsx",
+      "label": "광고 진행 승인"
+    },
+    {
+      "path": "/black-list",
+      "file": "src/pages/nav1/call/BlackList.tsx",
+      "label": "C/S 리스트"
+    },
+    {
+      "path": "/brand",
+      "file": "src/pages/nav1/brand/BrandPage.tsx",
+      "label": "브랜드 목록"
+    },
+    {
+      "path": "/call-list",
+      "file": "src/pages/nav1/call/CallList.tsx",
+      "label": "영업관리"
+    },
+    {
+      "path": "/code",
+      "file": "src/pages/management/Code.tsx",
+      "label": "코드 관리"
+    },
+    {
+      "path": "/connect/contact",
+      "file": "src/pages/connect/contact/ContactTable.tsx",
+      "label": "콜시트"
+    },
+    {
+      "path": "/connect/contract/ended",
+      "file": "src/pages/connect/contract/EndedContractListPage.tsx",
+      "label": "종료 계약 리스트"
+    },
+    {
+      "path": "/connect/contract/ongoing",
+      "file": "src/pages/connect/contract/OngoingContractListPage.tsx",
+      "label": "진행 중 계약 리스트"
+    },
+    {
+      "path": "/connect/contract/regist",
+      "file": "src/pages/connect/contract/ContractRegisterPage.tsx",
+      "label": "신규계약 등록 페이지"
+    },
+    {
+      "path": "/connect/contract/request",
+      "file": "src/pages/connect/contract/ContractRequestPage.tsx",
+      "label": "신규계약 등록/요청"
+    },
+    {
+      "path": "/connect/dashboard",
+      "file": "src/pages/connect/dashboard/AdminDashboardPage.tsx",
+      "label": "관리자 보드"
+    },
+    {
+      "path": "/connect/dashboard/regist",
+      "file": "src/pages/connect/dashboard/AdminDashboardRegisterPage.tsx",
+      "label": "관리자 보드 등록 페이지"
+    },
+    {
+      "path": "/connect/performance",
+      "file": "src/pages/connect/performance/SalesPerformancePage.tsx",
+      "label": "개인 매출 현황"
+    },
+    {
+      "path": "/connect/settlement/point",
+      "file": "src/pages/connect/settlement/PointSettlementPage.tsx",
+      "label": "포인트 정산관리"
+    },
+    {
+      "path": "/connect/settlement/reward",
+      "file": "src/pages/connect/settlement/RewardSettlementPage.tsx",
+      "label": "리워드금액 정산관리"
+    },
+    {
+      "path": "/connect/settlement/reward/regist",
+      "file": "src/pages/connect/settlement/RewardRegisterPage.tsx",
+      "label": "리워드금액 정산 등록 페이지"
+    },
+    {
+      "path": "/connect/total-contact",
+      "file": "src/pages/connect/contact/TotalContactList.tsx",
+      "label": "통합 콜시트"
+    },
+    {
+      "path": "/content-image-list",
+      "file": "src/pages/nav3/content/ContentImageListPage.tsx",
+      "label": "이미지 소재 리스트"
+    },
+    {
+      "path": "/content-stats-page",
+      "file": "src/pages/nav3/content/ContentStatsPage.tsx",
+      "label": "소재 통계 페이지"
+    },
+    {
+      "path": "/content-video-list",
+      "file": "src/pages/nav3/content/ContentVideoListPage.tsx",
+      "label": "영상 소재 리스트"
+    },
+    {
+      "path": "/creative",
+      "file": "src/pages/nav3/content/ContentCreativePage.tsx",
+      "label": "파트너십 소재"
+    },
+    {
+      "path": "/creative/:B_ID/:CREATIVE_SUBS_TYPE",
+      "file": "src/pages/nav3/content/ContentCreativeDetailPage.tsx",
+      "label": "파트너십 소재 (브랜드)"
+    },
+    {
+      "path": "/creative/:B_ID/:CREATIVE_SUBS_TYPE/:ENT_ID",
+      "file": "src/pages/nav3/content/ContentCreativeDetailPage.tsx",
+      "label": "파트너십 소재 (매체)"
+    },
+    {
+      "path": "/improvement-request",
+      "file": "src/pages/improvement-request/ImprovementRequestPage.tsx",
+      "label": "수정 요청 / 버그 리포트"
+    },
+    {
+      "path": "/kpi/cp",
+      "file": "src/pages/nav2/tsv/KpiDashboard.tsx",
+      "label": "KPI 관리"
+    },
+    {
+      "path": "/kpi/mp",
+      "file": "src/pages/nav2/tsv/KpiDashboard.tsx",
+      "label": "KPI 관리 (MP)"
+    },
+    {
+      "path": "/live-request-list",
+      "file": "src/pages/nav1/live/LiveRequestList.tsx",
+      "label": "라이브요청 리스트"
+    },
+    {
+      "path": "/login",
+      "file": "src/pages/Login.tsx",
+      "label": "Login"
+    },
+    {
+      "path": "/menu",
+      "file": "src/pages/management/Menu.tsx",
+      "label": "메뉴 관리"
+    },
+    {
+      "path": "/no-reference-list",
+      "file": "src/pages/nav1/call/NoReferenceList.tsx",
+      "label": "레퍼런스 금지 업체"
+    },
+    {
+      "path": "/organization",
+      "file": "src/pages/common/Organization.tsx",
+      "label": "조직도"
+    },
+    {
+      "path": "/organization/group/:DEPT_ID",
+      "file": "src/pages/common/GroupPage.tsx",
+      "label": "팀원 관리"
+    },
+    {
+      "path": "/recruitment",
+      "file": "src/pages/connect/recruitment/RecruitmentPage.tsx",
+      "label": "사전모집테스트"
+    },
+    {
+      "path": "/recruitment/regist",
+      "file": "src/pages/connect/recruitment/RecruitmentRegisterPage.tsx",
+      "label": "사전모집테스트 등록"
+    },
+    {
+      "path": "/request",
+      "file": "src/pages/nav1/request/RequestPage.tsx",
+      "label": "광고 진행 요청"
+    },
+    {
+      "path": "/request/regist/:type",
+      "file": "src/pages/nav1/request/RequestRegistPage.tsx",
+      "label": "업체 추가"
+    },
+    {
+      "path": "/role",
+      "file": "src/pages/management/Role.tsx",
+      "label": "권한 관리"
+    },
+    {
+      "path": "/sales-page",
+      "file": "src/pages/SalesListPage.tsx",
+      "label": "대기리스트"
+    },
+    {
+      "path": "/sales-page/createEnt/:type",
+      "file": "src/pages/SalesEntAddPage.tsx",
+      "label": "업체 추가"
+    },
+    {
+      "path": "/sales-report-page",
+      "file": "src/pages/nav5/SalesReportPage.tsx",
+      "label": "영업팀 보고서"
+    },
+    {
+      "path": "/sample",
+      "file": "src/pages/common/SamplePage.tsx",
+      "label": "샘플 출입대장"
+    },
+    {
+      "path": "/sample/regist",
+      "file": "src/pages/common/SampleRegistPage.tsx",
+      "label": "샘플 출입대장 등록"
+    },
+    {
+      "path": "/settle-list",
+      "file": "src/pages/nav2/tsv/SettlePage.tsx",
+      "label": "정산"
+    },
+    {
+      "path": "/sign",
+      "file": "src/pages/nav1/sign/SignPage.tsx",
+      "label": "계약서 요청 리스트"
+    },
+    {
+      "path": "/tax",
+      "file": "src/pages/nav1/tax/TaxPage.tsx",
+      "label": "세금계산서 요청 리스트"
+    },
+    {
+      "path": "/total-call-list",
+      "file": "src/pages/nav1/call/TotalCallList.tsx",
+      "label": "통합 영업관리"
+    },
+    {
+      "path": "/total-live-request-list",
+      "file": "src/pages/nav1/live/TotalLiveRequestList.tsx",
+      "label": "통합 라이브요청 리스트"
+    },
+    {
+      "path": "/total-sales-list",
+      "file": "src/pages/TotalSalesList.tsx",
+      "label": "통합 대기리스트"
+    },
+    {
+      "path": "/tsv-list",
+      "file": "src/pages/nav2/tsv/TsvListPage.tsx",
+      "label": "취급고 리스트(매체별)"
+    },
+    {
+      "path": "/tsv/analysis/:entId",
+      "file": "src/pages/TsvAnalysisPopup.tsx",
+      "label": "TsvAnalysisPopup"
+    },
+    {
+      "path": "/tsv/analysis/:entId/:asOfYmd",
+      "file": "src/pages/TsvAnalysisPopup.tsx",
+      "label": "TsvAnalysisPopup"
+    },
+    {
+      "path": "/user-tsv-list",
+      "file": "src/pages/nav2/tsv/TsvStatsPage.tsx",
+      "label": "취급고 리스트(마케터)"
+    },
+    {
+      "path": "/user-tsv-list/:type/:userid/:month",
+      "file": "src/pages/TsvStatsDetailPopup.tsx",
+      "label": "TsvStatsDetailPopup"
+    },
+    {
+      "path": "/works",
+      "file": "src/pages/NaverWorksBot.tsx",
+      "label": "네이버웍스"
+    }
+  ]
+}

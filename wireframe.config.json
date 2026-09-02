@@ -1,0 +1,28 @@
+{
+  "defaultProject": "crm",
+  "paths": {
+    "wireFrame": "wireFrame"
+  },
+  "projects": {
+    "crm": {
+      "title": "CRM",
+      "sources": {
+        "frontend": "../crm_frontend",
+        "backend": "../crm_backend",
+        "wonjd": {
+          "type": "cli",
+          "cwd": "../WONJD_DB_CHAT_BOT",
+          "command": "uv",
+          "args": ["run", "db/query.py", "--json"]
+        }
+      },
+      "extract": {
+        "dbEntities": ["ent", "account"]
+      }
+    }
+  },
+  "mysql": {
+    "urlEnv": "WIREFRAME_DATABASE_URL"
+  },
+  "_comment": "팀원별 절대경로는 wireframe.config.local.json 또는 환경변수로 덮어쓴다. wireframe.config.example.json 참고."
+}

@@ -1,0 +1,16 @@
+name: wonjd-wireframe
+version: 1.0.0
+description: >-
+  Save PRD and wireframe runs to wireFrame/runs/ (PRD tab / wireframe tab SSOT).
+  Uses wireframe CLI — no file or shell tools required in chat.
+author: wireframe-dashboard
+provides_tools:
+  - wonjd_prd_save
+  - wonjd_prd_list
+  - wonjd_wireframe_build
+  - wonjd_wireframe_render
+config_schema:
+  wireframe_root:
+    type: str
+    default: ""
+    description: Absolute path to wireframe_dashboard (set by npm run mcp:install)

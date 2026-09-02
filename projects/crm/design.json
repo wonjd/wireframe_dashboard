@@ -1,0 +1,210 @@
+{
+  "source": "crm_frontend",
+  "extractedAt": "2026-09-01T05:42:30.306Z",
+  "color": {
+    "token-1": "#246beb",
+    "token-2": "#fff",
+    "token-3": "#2a5c96",
+    "token-4": "#ffffff",
+    "token-5": "#333",
+    "token-6": "#666",
+    "token-7": "#999",
+    "token-8": "#e74c3c",
+    "token-9": "#29b6f6",
+    "token-10": "#217346",
+    "token-11": "#001E3C",
+    "token-12": "#8C8C8C",
+    "token-13": "#BDBDBD",
+    "token-14": "#d9d9d9"
+  },
+  "spacing": [
+    4,
+    8,
+    12,
+    16,
+    24,
+    32
+  ],
+  "radius": {
+    "card": "4px",
+    "control": "4px"
+  },
+  "type": {
+    "family": "Pretendard, sans-serif",
+    "scale": [
+      11,
+      12,
+      13,
+      14,
+      15,
+      20
+    ]
+  },
+  "layout": {
+    "minWidth": "600px",
+    "topNavHeight": "50px",
+    "sideNavWidth": "220px"
+  },
+  "component": [
+    {
+      "name": "CommonButton",
+      "file": "src/components/common/CommonButton.tsx"
+    },
+    {
+      "name": "CommonFileModal",
+      "file": "src/components/common/CommonFileModal.tsx"
+    },
+    {
+      "name": "CommonFilePanel",
+      "file": "src/components/common/CommonFilePanel.tsx"
+    },
+    {
+      "name": "ContentStatTitleButton",
+      "file": "src/components/common/ContentStatTitleButton.tsx"
+    },
+    {
+      "name": "CreateUserModal",
+      "file": "src/components/common/CreateUserModal.tsx"
+    },
+    {
+      "name": "CreateUserModalButton",
+      "file": "src/components/common/CreateUserModalButton.tsx"
+    },
+    {
+      "name": "CustomCheckbox",
+      "file": "src/components/common/CustomCheckbox.tsx"
+    },
+    {
+      "name": "CustomConfirm",
+      "file": "src/components/common/CustomConfirm.tsx"
+    },
+    {
+      "name": "CustomMultiSelectForm",
+      "file": "src/components/common/CustomMultiSelectForm.tsx"
+    },
+    {
+      "name": "CustomSelectForm",
+      "file": "src/components/common/CustomSelectForm.tsx"
+    },
+    {
+      "name": "CustomToast",
+      "file": "src/components/common/CustomToast.tsx"
+    },
+    {
+      "name": "DataTotalCount",
+      "file": "src/components/common/DataTotalCount.tsx"
+    },
+    {
+      "name": "DeleteUserModal",
+      "file": "src/components/common/DeleteUserModal.tsx"
+    },
+    {
+      "name": "DeleteUserModalButton",
+      "file": "src/components/common/DeleteUserModalButton.tsx"
+    },
+    {
+      "name": "GroupSelect",
+      "file": "src/components/common/GroupSelect.tsx"
+    },
+    {
+      "name": "SelectLiveForm",
+      "file": "src/components/common/SelectLiveForm.tsx"
+    },
+    {
+      "name": "UpdateUserModalButton",
+      "file": "src/components/common/UpdateUserModalButton.tsx"
+    },
+    {
+      "name": "UpdateUserPwdModal",
+      "file": "src/components/common/UpdateUserPwdModal.tsx"
+    },
+    {
+      "name": "UpdateUserPwdModalButton",
+      "file": "src/components/common/UpdateUserPwdModalButton.tsx"
+    },
+    {
+      "name": "UserItem",
+      "file": "src/components/common/UserItem.tsx"
+    },
+    {
+      "name": "UserList",
+      "file": "src/components/common/UserList.tsx"
+    },
+    {
+      "name": "UserMenu",
+      "file": "src/components/common/UserMenu.tsx"
+    },
+    {
+      "name": "SideNav",
+      "file": "src/components/layout/SideNav.tsx"
+    },
+    {
+      "name": "SideNavItem",
+      "file": "src/components/layout/SideNavItem.tsx"
+    },
+    {
+      "name": "TopNav",
+      "file": "src/components/layout/TopNav.tsx"
+    },
+    {
+      "name": "ADProductSelect",
+      "file": "src/components/shared/ADProductSelect.tsx"
+    },
+    {
+      "name": "AccountCurrentcySelect",
+      "file": "src/components/shared/AccountCurrentcySelect.tsx"
+    },
+    {
+      "name": "AgentFeeRateSelect",
+      "file": "src/components/shared/AgentFeeRateSelect.tsx"
+    },
+    {
+      "name": "AgentFeeSelect",
+      "file": "src/components/shared/AgentFeeSelect.tsx"
+    },
+    {
+      "name": "BackDropLoading",
+      "file": "src/components/shared/BackDropLoading.tsx"
+    },
+    {
+      "name": "BannerMediaSelect",
+      "file": "src/components/shared/BannerMediaSelect.tsx"
+    },
+    {
+      "name": "BannerProductSelect",
+      "file": "src/components/shared/BannerProductSelect.tsx"
+    },
+    {
+      "name": "BlackStatusSelect",
+      "file": "src/components/shared/BlackStatusSelect.tsx"
+    },
+    {
+      "name": "CallCategorySelect",
+      "file": "src/components/shared/CallCategorySelect.tsx"
+    },
+    {
+      "name": "CellSelect",
+      "file": "src/components/shared/CellSelect.tsx"
+    },
+    {
+      "name": "ColorEditCell",
+      "file": "src/components/shared/ColorEditCell.tsx"
+    },
+    {
+      "name": "ColorSelect",
+      "file": "src/components/shared/ColorSelect.tsx"
+    },
+    {
+      "name": "ContentStateSelect",
+      "file": "src/components/shared/ContentStateSelect.tsx"
+    },
+    {
+      "name": "ContractDocStatusSelect",
+      "file": "src/components/shared/ContractDocStatusSelect.tsx"
+    },
+    {
+      "name": "ContractPaymentMethod",
+      "file": "src/components/shared/ContractPaymentMethod.tsx"
+    }
+  ]
+}
