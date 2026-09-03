@@ -108,7 +108,8 @@ PRD 텍스트
    ▼
 ① clarify  → /prd 채팅 · prd review/answer
              clarifications.json · ## 확인된 결정
-             화면 양식(page/modal/list/wizard) 포함 → status=ready
+             업무 미결만 → status=ready
+             ready 후 화면 양식만 (phase=layout) → 빌드 가능
    │
    ▼
 ② domain   → PRD + db.json + live DB → runs/{run}/spec/domain.json
@@ -121,7 +122,7 @@ PRD 텍스트
    │
    ▼
 ④ render   → shell CSS + domain + manifest → artifacts/{id}.html 병렬
-             한 파일 = 한 단계 · UI만 · 스크롤 없음
+             한 파일 = 한 단계 · UI만 · 가운데 비율 맞춤 · 스크롤 없음
    │
    ▼
 ⑤ iterate  → 지시 1건 → 해당 artifact만 재 render (domain 재사용)
@@ -144,14 +145,15 @@ wireframe run confirm --run-id …
 ## 3. 대시보드 — 사람 흐름
 
 ```
-① /prd        입력 → 확정·보완(화면 양식 포함) → ready
-② /wireframes 목록 → 플로우 버튼으로 HTML 1장씩 (앱 사이드바 없음)
+① /prd        입력 → 업무 보완 → ready → (이어서) 화면 양식 → 빌드
+② /wireframes 목록 → 플로우 버튼으로 HTML 1장씩 (앱 사이드바 없음 · 가운데 비율)
 ③ /wireframes CLI render로 멀티턴 · confirm
    /db         live SELECT 조회
    /assets     projects/{slug} JSON
 ```
 
-게이트: ready 전 빌드 금지. DB는 `.env`의 `SSH_*`/`DB_*` 만.
+게이트: ready 전 빌드 금지. ready여도 화면 양식(`phase=layout`) 미답이면 빌드 금지.
+DB는 `.env`의 `SSH_*`/`DB_*` 만.
 
 ```
 .env  OPENAI_API_KEY=...
@@ -174,10 +176,11 @@ status: clarifying → ready
 | 단계 | 주체 | 하는 일 |
 | --- | --- | --- |
 | 1. PRD 초안 | 실무자 | 업무 말로 붙여넣기 |
-| 2. 보완 질문 | 에이전트 | `prd review` → 쉬운 말 질문 (**화면 양식 포함**) |
-| 3. 확정 | 실무자 | 채팅으로 답 |
-| 4. 반영 | 에이전트 | `prd answer` → `## 확인된 결정` → 재검토 |
-| 5. ready | — | `run build`로 와이어프레임 생성 |
+| 2. 보완 질문 | 에이전트 | `prd review` → 쉬운 말 질문 (업무 미결만) |
+| 3. 확정 | 실무자 | 채팅으로 답 → ready |
+| 4. 화면 양식 | 에이전트 | ready 후 `phase=layout`만 질문 |
+| 5. 반영 | 에이전트 | `prd answer` → `## 확인된 결정` |
+| 6. 빌드 | — | ready + 양식 확정 후 `run build` |
 
 API (Vite dev 미들웨어):
 
@@ -205,9 +208,11 @@ API (Vite dev 미들웨어):
 
 | in | out |
 | --- | --- |
-| PRD 원문 | `runs/{run}/input/v*.md`, `spec/clarifications.json`, status clarifying→ready |
+| PRD 원문 | `runs/{run}/input/v*.md`, `spec/clarifications.json` |
 
-화면 양식(`screen_layout`)·담당·필수 등 비개발자 질문을 받는다. ready 전 build 금지.
+1. 업무 미결만 질문 → `status=ready`
+2. ready 이후 화면 양식만 (`phase=layout`, topic=`screen_layout`)
+3. 양식까지 확정되면 빌드 가능. ready 전·양식 미답 시 build 금지.
 
 ### ② domain
 
@@ -232,7 +237,7 @@ API (Vite dev 미들웨어):
 | shell styles, domain, manifest artifact, instructions[] | `runs/{run}/artifacts/{id}.html` |
 
 - 셸 CSS만. 한 파일 = 한 단계. 설명 문구 금지.
-- `uiPattern=modal` → 모달 프레임. 뷰포트 맞춤·스크롤 없음.
+- `wfs-stage`로 가운데·비율 맞춤. `uiPattern=modal` → 모달 프레임.
 - 샘플 행은 합성값. 코드값(enum)만 실제.
 - `locked: true`는 스킵.
 

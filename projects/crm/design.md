@@ -31,10 +31,11 @@
 필수 `*`, 전체폭 `wfs-field--full`, 글자수 `wfs-char-count`.
 
 ### 모달
-PRD `화면 양식=모달/팝업`이면 `wfs-modal-backdrop` + `wfs-modal` 안에 위 폼만. 설명 문구 금지.
+PRD가 ready 뒤 `화면 양식=모달/팝업`이면 `wfs-stage` 안 `wfs-modal-backdrop` + `wfs-modal`.
+설명 문구 금지. 가운데·비율 맞춤.
 
 ### 목록
-`화면 양식=목록 표`이면 필터·표·페이징.
+`화면 양식=목록 표`이면 필터·표·페이징. 동일하게 스테이지 가운데.
 
 ### 상세
 `wfs-page-head` → `wfs-dl-grid` → `wfs-actions`

@@ -19,7 +19,8 @@ UX가 어긋난다. 요청자가 **먼저 화면을 보고 고쳐서** 넘기면
 ## 제품 흐름
 
 ```
-① PRD 입력 → 모호한 부분·화면 양식 확정 → 사용자 승인(ready) → PRD 탭 저장
+① PRD 입력 → 모호한 부분 확정 → 사용자 승인(ready)
+   → (승인 후) 화면 양식만 확정 → PRD 탭 저장
 ② projects/{slug} 자산 + 승인 PRD + live DB → 와이어프레임 1차 생성
 ③ 멀티턴으로 다듬기 → 사용자 승인(confirmed) → 와이어프레임 완료
 ```
@@ -66,7 +67,7 @@ flowchart LR
 
   subgraph RUN["소모품 · PRD마다"]
     CHAT["대시보드 채팅<br/>OpenAI 에이전트"]
-    PRD(["PRD 확정 ready<br/>+ 화면 양식"])
+    PRD(["PRD ready<br/>→ 화면 양식"])
     I2[domain]
     I3[plan]
     I4[render]
@@ -101,8 +102,8 @@ flowchart LR
 **한 화면 = 한 플로우 단계 HTML.** 대시보드 사이드바·앱 크롬 없이, 상단 플로우
 버튼만으로 전환한다. HTML에는 설명 문구 없이 **UI·동작만**.
 
-**화면 양식은 PRD에서 확정한다.** 전체 페이지 폼 / 팝업·모달 / 목록 표 / 단계별
-(`uiPattern`).
+**화면 양식은 PRD 승인(ready) 뒤에만 묻는다** (`phase=layout`).  
+전체 페이지 / 팝업·모달 / 목록 표 / 단계별(`uiPattern`). HTML은 가운데·비율 맞춤.
 
 **DB 질의는 반복 루프 밖이다.** 추출·구조 판정·`run build` 1회만 live SELECT.
 재생성(`render`)은 `domain.json` 재사용.

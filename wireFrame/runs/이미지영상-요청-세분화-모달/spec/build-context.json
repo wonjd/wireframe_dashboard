@@ -2,7 +2,7 @@
   "sources": {
     "prd": {
       "path": "runs/이미지영상-요청-세분화-모달/input/v1.md",
-      "chars": 1958
+      "chars": 1947
     },
     "jsonAssets": {
       "projectSlug": "crm",
@@ -25,5 +25,5 @@
       ]
     }
   },
-  "generatedAt": "2026-09-03T04:57:06.082Z"
+  "generatedAt": "2026-09-03T05:04:14.906Z"
 }

@@ -246,17 +246,7 @@ function heuristicQuestions(
     );
   }
 
-  // Screen layout / chrome — before wireframe build
-  if (
-    !/모달|팝업|목록\s*표|테이블\s*형태|전체\s*페이지|단계별|위자드|화면\s*양식|화면\s*형태/.test(prd)
-  ) {
-    push(
-      "screen_layout",
-      "scope",
-      "화면은 어떤 형태로 보여 주면 될까요? (예: 전체 페이지 입력폼 / 팝업·모달 / 목록 표 / 단계별로 넘어가는 화면). 섞여 있으면 단계마다 적어 주세요.",
-      "와이어프레임 양식(페이지·모달·표·위자드)이 없으면 생성 레이아웃을 고를 수 없음",
-    );
-  }
+  // screen_layout is NOT asked here — only after PRD ready (see reviewPrdClarificationsCli)
 
   // Required vs optional on form-like PRDs
   if (hasForm && !/필수|선택\s*항목|미기입\s*시/.test(prd)) {
@@ -478,6 +468,26 @@ function readFlag(args: string[], flag: string): string | undefined {
   return args[index + 1];
 }
 
+function hasScreenLayoutAnswered(prd: string, covered: Set<string>): boolean {
+  if (covered.has("screen_layout")) return true;
+  const section = prd.match(/(?:^|\n)#+\s*확인된\s*결정([\s\S]*)$/m)?.[1] ?? "";
+  // Only decisions section — PRD title/body mentioning "모달" must not skip the post-ready ask
+  return /화면\s*양식|화면\s*형태|모달|팝업|목록\s*표|테이블\s*형태|전체\s*페이지|단계별\s*화면|위자드|단계별로/.test(
+    section,
+  );
+}
+
+function screenLayoutQuestion(): ClarificationItem {
+  return {
+    id: `q-${crypto.randomUUID().slice(0, 8)}`,
+    kind: "scope",
+    topic: "screen_layout",
+    question:
+      "PRD가 확정됐습니다. 화면은 어떤 형태로 보여 주면 될까요? (예: 전체 페이지 입력폼 / 팝업·모달 / 목록 표 / 단계별로 넘어가는 화면). 섞여 있으면 단계마다 적어 주세요.",
+    reason: "애매한 업무 결정 확정·승인 후에만 화면 양식을 묻는다",
+  };
+}
+
 export async function reviewPrdClarificationsCli(
   config: WireframeConfig,
   args: string[],
@@ -498,17 +508,32 @@ export async function reviewPrdClarificationsCli(
   const live = await liveDbBrief(config, assetSlug, prdContent);
   const covered = resolvedTopicsFromPrd(prdContent, prev.resolved);
 
-  const open = heuristicQuestions(prdContent, run.title, live, covered).filter((item) => {
-    // Never surface DB-code fishing to humans if live already has enums for list filters
+  const businessOpen = heuristicQuestions(prdContent, run.title, live, covered).filter((item) => {
     if (item.topic === "choice_values" && /목록에서 나누어/.test(item.question) && /codes=\[/.test(live)) {
       return false;
     }
+    // Never ask layout during ambiguity loop
+    if (item.topic === "screen_layout") return false;
     return true;
   });
 
-  const ready = open.length === 0;
+  let open: ClarificationItem[] = businessOpen;
+  let status: ClarificationsDoc["status"] = businessOpen.length === 0 ? "ready" : "clarifying";
+  let phase: "clarify" | "layout" | "ready" = "clarify";
+
+  if (businessOpen.length === 0) {
+    // PRD approved (ready) — only then ask screen form if missing
+    if (!hasScreenLayoutAnswered(prdContent, covered)) {
+      open = [screenLayoutQuestion()];
+      phase = "layout";
+    } else {
+      open = [];
+      phase = "ready";
+    }
+  }
+
   const doc: ClarificationsDoc = {
-    status: ready ? "ready" : "clarifying",
+    status,
     open,
     resolved: prev.resolved,
     rounds: prev.rounds + 1,
@@ -517,7 +542,14 @@ export async function reviewPrdClarificationsCli(
     audience: "non_developer",
   };
   await saveClarificationsDoc(config, runId, doc);
-  await setRunStatus(config, projectSlug, runId, ready ? "ready" : "clarifying");
+  await setRunStatus(config, projectSlug, runId, status);
+
+  const message =
+    phase === "clarify"
+      ? `보완 질문 ${open.length}건 — 채팅에서 확정하고 답변을 반영.`
+      : phase === "layout"
+        ? "PRD 승인(ready)됨. 화면 형태만 정해 주세요. (양식 확정 후 와이어프레임 생성)"
+        : "보완·화면 양식 확정 완료 — 와이어프레임 빌드 가능.";
 
   console.log(
     JSON.stringify(
@@ -525,6 +557,7 @@ export async function reviewPrdClarificationsCli(
         ok: true,
         runId,
         status: doc.status,
+        phase,
         audience: "non_developer",
         channel: "chat",
         open,
@@ -535,12 +568,12 @@ export async function reviewPrdClarificationsCli(
           "open 질문을 업무 말로 채팅에서 물어 부족한 결정을 채우세요.",
           "테이블·컬럼·코드값·API·경로 등 개발 개념은 사용자에게 말하지 마세요.",
           "reason·liveDbBrief는 내부용입니다. 필요하면 ‘업무 흐름을 정하려고요’ 정도만.",
-          "답 → prd_answer 도구로 반영 → 재질문. ready가 될 때까지 확정을 쌓으세요.",
-          "ready 전에는 와이어프레임 빌드를 시작하지 마세요.",
+          "답 → prd_answer 도구로 반영 → 재질문.",
+          "화면 형태(모달/표/페이지 등)는 애매한 부분이 다 확정되고 PRD가 ready인 뒤에만 묻습니다.",
+          "phase=layout이면 PRD는 이미 승인된 상태입니다. 화면 형태만 묻고 빌드는 양식 답 뒤에 하세요.",
+          "phase=ready일 때만 와이어프레임 빌드를 시작하세요.",
         ],
-        message: ready
-          ? "보완할 미결 없음 — PRD 확정(ready). 와이어프레임 빌드 가능."
-          : `보완 질문 ${open.length}건 — 채팅에서 확정하고 답변을 반영.`,
+        message,
       },
       null,
       2,

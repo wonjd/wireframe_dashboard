@@ -16,6 +16,7 @@
 ```
 ① PRD
    사용자 입력 → 모호한 부분 확정·보완 → 사용자 승인(ready)
+   → (승인 후) 화면 양식만 확정 (phase=layout)
    → PRD 탭에 저장 (wireFrame/runs/{run}/input/v*.md)
 
 ② 1차 생성
@@ -29,6 +30,7 @@
 
 게이트:
 - ① 미승인(ready 아님) → ② 금지
+- ready여도 화면 양식 미답 → ② 금지
 - ② 없이 ③만 하는 건 가능(이미 HTML 있을 때)
 - 파이프라인 내부(domain 이후 가정)에서는 사람에게 되묻지 않는다. 가정은 `assumptions[]`.
 
@@ -69,10 +71,13 @@ crm_backend   →  projects/{slug}/api.json      엔드포인트 · 필드
 **PRD는 개발 문서가 아니다.** 비개발자가 업무 말로 쓰고, AI가 빈칸·애매한 결정을
 **쉬운 말로 물어 보완**하고, 사용자가 **승인(ready)** 하면 PRD 탭에 확정본이 남는다.
 컬럼·코드·API 이름을 사용자에게 말하지 않는다.
-와이어프레임 생성 전에 **화면 양식**(전체 페이지 폼 / 팝업·모달 / 목록 표 / 단계별)도 확정한다.
+
+**화면 양식**(`page` / `modal` / `list` / `wizard`) 질문은
+애매한 업무 결정이 모두 끝나고 **PRD가 ready(승인)된 뒤**에만 한다 (`phase=layout`).
+양식 미답이면 `run build` 금지.
 
 대시보드 `/prd` OpenAI 에이전트 → CLI `prd review` / `prd answer`.
-`status: ready` 전에는 ② 와이어프레임 생성을 돌리지 않는다.
+`status: ready` + 화면 양식 확정 전에는 ② 와이어프레임 생성을 돌리지 않는다.
 
 ### 2. 구조 판정 — PRD당 1회 (승인 후)
 
@@ -114,7 +119,7 @@ CLI `run build`가 SSOT. `spec/build-context.json`과 `domain.sources`에 기록
 **렌더 하드 룰 (AI 생성):**
 - 한 HTML = 한 플로우 단계. 설명 문구 없이 UI·동작만.
 - CRM 전체 크롬(탑바·사이드) 넣지 않음. `uiPattern=modal`이면 모달 프레임만.
-- 뷰포트에 맞추고 스크롤하지 않음.
+- 모든 양식은 `wfs-stage`로 **가운데·비율 맞춤**. 스크롤하지 않음.
 
 ### 5. 멀티턴 다듬기 (③) — 승인할 때까지
 

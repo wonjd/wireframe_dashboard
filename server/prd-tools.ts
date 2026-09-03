@@ -399,6 +399,34 @@ export function prdBuild(input: {
     };
   }
 
+  // Screen layout only after PRD approval — block build if still open
+  try {
+    const clarPath = path.join(
+      input.root,
+      "wireFrame",
+      "runs",
+      hit.run.runId,
+      "spec",
+      "clarifications.json",
+    );
+    if (fs.existsSync(clarPath)) {
+      const clar = JSON.parse(fs.readFileSync(clarPath, "utf8")) as {
+        open?: Array<{ topic?: string }>;
+      };
+      if ((clar.open ?? []).some((q) => q.topic === "screen_layout")) {
+        return {
+          ok: false,
+          error:
+            "PRD는 승인됐지만 화면 형태(모달/표/페이지 등)가 아직입니다. 형태를 답한 뒤 다시 생성하세요.",
+          status: hit.run.status,
+          phase: "layout",
+        };
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+
   const realRunId = hit.run.runId;
   const result = runWireframeCli(
     input.root,

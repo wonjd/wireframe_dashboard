@@ -199,7 +199,8 @@ artifacts/{id}.html         화면 1장 = 파일 1개
 ```
 
 `uiPattern` — `page` | `modal` | `list` | `wizard` | `detail`  
-(PRD 확정 시 화면 양식 답에서 파생. 없으면 가정 + `assumptions[]`)
+PRD가 **ready(승인)된 뒤** `phase=layout` 답 / `## 확인된 결정`에서 파생.
+없으면 가정 + `assumptions[]`. 양식 open이면 build 거부.
 
 ### manifest.json
 
@@ -234,8 +235,9 @@ artifacts/{id}.html         화면 1장 = 파일 1개
 
 - 한 파일 = 한 플로우 단계. CRM 탑바·사이드 메뉴 금지.
 - 셸 CSS만. 설명/노트 금지 — UI·컨트롤·버튼만.
-- `uiPattern=modal` → `wfs-modal-backdrop` + `wfs-modal`.
-- 뷰포트 맞춤, 스크롤 없이 자름.
+- 모든 양식: `wfs-stage` + `wfs-stage-frame`으로 **가운데·비율 맞춤**.
+- `uiPattern=modal` → 그 안에 `wfs-modal-backdrop` + `wfs-modal`.
+- 스크롤하지 않음 (넘치면 자름).
 
 ---
 
@@ -252,7 +254,7 @@ artifacts/{id}.html         화면 1장 = 파일 1개
 
 | | `/prd` 에이전트 | CLI |
 | --- | --- | --- |
-| 모드 | PRD 확정·보완 (화면 양식 포함) | domain · manifest · HTML |
+| 모드 | PRD 확정·보완 → ready 후 화면 양식 | domain · manifest · HTML |
 | 키 | `OPENAI_API_KEY` | 동일 레포 툴 호출 |
 | 결과 | `확인된 결정` · `ready` | 파일 산출 |
 

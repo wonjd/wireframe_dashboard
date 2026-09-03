@@ -64,16 +64,55 @@ function wireframePageStyles(shellStyles: string): string {
       margin: 0;
       overflow: hidden;
       color: var(--text, #333);
+      background: #e8eaed;
+    }
+    .wfs-stage {
+      height: 100%;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-sizing: border-box;
+      padding: 16px;
+    }
+    .wfs-stage-frame {
+      width: min(1100px, 94vw);
+      height: min(720px, 90vh);
+      max-width: 100%;
+      max-height: 100%;
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
       background: var(--bg, #f5f6f8);
+      border-radius: 8px;
+      box-shadow: 0 8px 28px rgba(45, 53, 57, 0.14);
+    }
+    .wfs-stage-frame--modal {
+      width: min(720px, 92vw);
+      height: min(640px, 88vh);
+      aspect-ratio: 5 / 4;
+      background: transparent;
+      box-shadow: none;
+    }
+    .wfs-stage-frame--modal .wfs-modal-backdrop {
+      flex: 1;
+      min-height: 0;
+      height: 100%;
+      border-radius: 8px;
     }
     .wfs-main {
+      flex: 1;
+      min-height: 0;
       height: 100%;
-      max-height: 100%;
       overflow: hidden;
       display: flex;
       flex-direction: column;
       box-sizing: border-box;
       padding: 16px 20px 14px;
+      background: var(--bg, #f5f6f8);
     }
     .wfs-page-head { flex-shrink: 0; margin-bottom: 12px; }
     .wfs-card {
@@ -120,26 +159,24 @@ function chrome(input: {
   uiPattern?: "page" | "modal" | "list" | "wizard" | "detail";
 }): string {
   const pattern = input.uiPattern ?? "page";
-  const body =
-    pattern === "modal"
-      ? `<div class="wfs-modal-backdrop"><div class="wfs-modal" role="dialog" aria-modal="true">${input.main}</div></div>`
-      : `<main class="wfs-main">${input.main}</main>`;
+  const isModal = pattern === "modal";
+  const inner = isModal
+    ? `<div class="wfs-modal-backdrop"><div class="wfs-modal" role="dialog" aria-modal="true">${input.main}</div></div>`
+    : `<main class="wfs-main">${input.main}</main>`;
 
-  const modalCss =
-    pattern === "modal"
-      ? `
+  const modalCss = `
     .wfs-modal-backdrop {
       height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: 20px;
       box-sizing: border-box;
       background: rgba(45, 53, 57, 0.45);
       overflow: hidden;
     }
     .wfs-modal {
-      width: min(720px, 100%);
+      width: min(640px, 100%);
       max-height: 100%;
       overflow: hidden;
       display: flex;
@@ -161,8 +198,7 @@ function chrome(input: {
       display: flex;
       flex-direction: column;
     }
-  `
-      : "";
+  `;
 
   return `<!doctype html>
 <html lang="ko">
@@ -173,7 +209,9 @@ function chrome(input: {
   <style>${wireframePageStyles(input.styles)}${modalCss}</style>
 </head>
 <body>
-  ${body}
+  <div class="wfs-stage">
+    <div class="wfs-stage-frame${isModal ? " wfs-stage-frame--modal" : ""}">${inner}</div>
+  </div>
 </body>
 </html>`;
 }
