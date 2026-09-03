@@ -4,10 +4,14 @@ import type { ResolvedProject } from "../lib/config.js";
 import { resolveProjectSourcePaths } from "../lib/config.js";
 import { writeProjectJson } from "../lib/paths.js";
 
+type ScreenKind = "list" | "detail" | "form" | "other";
+
 type RouteRow = {
   path: string;
   file: string;
   label: string;
+  screenKind: ScreenKind;
+  keywords: string[];
 };
 
 function normalizeRoutePath(link: string): string {
@@ -31,6 +35,29 @@ function resolvePageFile(frontendRoot: string, importPath: string): string {
   return candidate.replaceAll("\\", "/").replace(`${frontendRoot.replaceAll("\\", "/")}/`, "");
 }
 
+function guessScreenKind(pathStr: string, label: string, file: string): ScreenKind {
+  const blob = `${pathStr} ${label} ${file}`.toLowerCase();
+  if (/regist|create|write|edit|form|요청|등록|작성|수정/.test(blob)) return "form";
+  if (/detail|view|info|상세/.test(blob)) return "detail";
+  if (/list|목록|search|관리/.test(blob) || /\/$/.test(pathStr)) return "list";
+  return "other";
+}
+
+function keywordsFrom(pathStr: string, label: string, file: string): string[] {
+  const tokens = new Set<string>();
+  for (const part of pathStr.split(/[\/\-_]/).filter(Boolean)) {
+    if (part.length >= 2) tokens.add(part.toLowerCase());
+  }
+  for (const part of label.split(/\s+/).filter((t) => t.length >= 2)) {
+    tokens.add(part.toLowerCase());
+  }
+  const base = path.basename(file, ".tsx");
+  for (const part of base.split(/(?=[A-Z])|[_\-]/).filter((t) => t.length >= 2)) {
+    tokens.add(part.toLowerCase());
+  }
+  return [...tokens].slice(0, 12);
+}
+
 function parseNavItems(navSource: string, frontendRoot: string, imports: Map<string, string>): RouteRow[] {
   const routes: RouteRow[] = [];
   const blockRe = /title:\s*"([^"]+)"[\s\S]*?element:\s*<(\w+)\s*\/?>[\s\S]*?link:\s*"([^"]+)"/g;
@@ -39,10 +66,13 @@ function parseNavItems(navSource: string, frontendRoot: string, imports: Map<str
     const [, label, componentName, link] = match;
     const importPath = imports.get(componentName);
     const file = importPath ? resolvePageFile(frontendRoot, importPath) : `src/pages/${componentName}.tsx`;
+    const routePath = normalizeRoutePath(link);
     routes.push({
-      path: normalizeRoutePath(link),
+      path: routePath,
       file,
       label,
+      screenKind: guessScreenKind(routePath, label, file),
+      keywords: keywordsFrom(routePath, label, file),
     });
   }
 
@@ -55,10 +85,14 @@ function parseRouterConfig(routerSource: string): RouteRow[] {
   for (const match of routerSource.matchAll(routeRe)) {
     const [, routePath, componentName] = match;
     if (routePath === "/") continue;
+    const file = `src/pages/${componentName}.tsx`;
+    const normalized = normalizeRoutePath(routePath);
     routes.push({
-      path: normalizeRoutePath(routePath),
-      file: `src/pages/${componentName}.tsx`,
+      path: normalized,
+      file,
       label: componentName,
+      screenKind: guessScreenKind(normalized, componentName, file),
+      keywords: keywordsFrom(normalized, componentName, file),
     });
   }
   return routes;
@@ -80,7 +114,10 @@ export async function extractRouteAssets(project: ResolvedProject): Promise<stri
 
   const merged = new Map<string, RouteRow>();
   for (const route of [...fromNav, ...fromRouter]) {
-    merged.set(route.path, route);
+    const existing = merged.get(route.path);
+    if (!existing || (existing.label === existing.file && route.label !== route.file)) {
+      merged.set(route.path, route);
+    }
   }
 
   const payload = {

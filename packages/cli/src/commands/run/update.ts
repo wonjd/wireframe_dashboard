@@ -42,6 +42,7 @@ export async function updateRun(config: WireframeConfig, args: string[]): Promis
     const prdBody = (await readPrdContent(prdPath)).trim();
     if (!prdBody) throw new Error("PRD 본문이 비어 있습니다.");
     await writeFile(getRunPrdPath(config, runId, run.prdVersion), `${prdBody}\n`, "utf8");
+    if (run.status !== "confirmed") run.status = "clarifying";
   } else if (!title) {
     throw new Error("--title 또는 --prd 중 하나는 필요합니다.");
   }
@@ -51,5 +52,6 @@ export async function updateRun(config: WireframeConfig, args: string[]): Promis
 
   console.log(`run updated: ${runId}`);
   console.log(`project: ${projectSlug}`);
+  console.log(`status: ${run.status}`);
   console.log(`index: ${indexPath}`);
 }

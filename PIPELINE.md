@@ -1,6 +1,6 @@
 # 파이프라인 — 로컬 구현안
 
-사람 입력은 **PRD 하나**. 실무에서는 **NAVER WORKS 봇 멀티턴**으로 PRD를 만든 뒤 run에 저장한다.  
+사람 입력은 **PRD 하나**. 대시보드 OpenAI 채팅으로 확정·보완한 뒤 run에 저장한다.  
 프론트·백·DB·디자인은 미리 뽑아 둔 자산을 읽고, 화면 HTML을 만든다.  
 DB 엔진은 **MySQL만** 쓴다. SQLite 금지 — 로컬 편의로 넣으면 배포 때 스키마·락·동시성이 갈라진다.
 
@@ -106,211 +106,133 @@ design.json + design.md(있으면) ──► shell.html
 PRD 텍스트
    │
    ▼
-① intake   → wireFrame/input/{run}.md 보존
-             MySQL wireframe_run row 생성 (status=draft)
+① clarify  → /prd 채팅 · prd review/answer
+             clarifications.json · ## 확인된 결정
+             화면 양식(page/modal/list/wizard) 포함 → status=ready
    │
    ▼
-② domain   → db.json + PRD → wireFrame/spec/{run}.domain.json
-             (카디널리티·코드값 수·규모·NOT NULL → 화면 구조 판정)
-             ※ 이 단계만 DB 자산을 본다. 이후 DB 질의 0회
+② domain   → PRD + db.json + live DB → runs/{run}/spec/domain.json
+             (uiPattern · 카디널리티 · 코드값 · 규모 → 화면 구조)
+             ※ domain 이후 반복에서 live DB 0회
    │
    ▼
 ③ plan     → PRD + domain + routes/design → manifest.json
-             artifacts[] · covers[] · assumptions[] · locked:false
+             artifacts[] · covers[] · assumptions[] · uiPattern
    │
    ▼
-④ render   → shell + domain + manifest → artifacts/{run}/{id}.html 병렬
-             MySQL에 artifact 메타 sync (path, locked, updatedAt)
+④ render   → shell CSS + domain + manifest → artifacts/{id}.html 병렬
+             한 파일 = 한 단계 · UI만 · 스크롤 없음
    │
    ▼
-⑤ iterate  → 지시 1건 → 해당 artifact만 locked=false로 재 render
-             instructions[] 누적 (명세)
+⑤ iterate  → 지시 1건 → 해당 artifact만 재 render (domain 재사용)
    │
    ▼
-⑥ confirm  → status=confirmed · 스냅샷 고정 · 개발자 링크
+⑥ confirm  → status=confirmed
 ```
-
-사람 입력 파일은 끝까지 **`input/{run}.md` 하나**.
 
 ```bash
-# 신규
-wireframe run create --project crm --title "일시정지 연장" --prd ./tmp/prd.md
-
-# 파이프 한 방 (로컬 기본)
-wireframe run build {run}          # intake 이후면 domain→plan→render
-
-# 화면 하나만
-wireframe render {run} --artifact 02-detail --instruction "연장 이력을 표로"
-
-# 확정
-wireframe run confirm {run}
+wireframe run create --project crm --title "…" --prd ./tmp/prd.md
+wireframe prd review --run-id …
+wireframe prd answer --run-id … --answers …
+wireframe run build --run-id … --project crm
+wireframe render --run-id … --artifact 02-step-2 --instruction "…"
+wireframe run confirm --run-id …
 ```
 
 ---
 
-## 3. Hermes workspace — 1차 플로우 (비개발자)
-
-**1차 목표는 Hermes agent workspace 내부에서만** 돈다. NAVER WORKS 봇은 §3-B (나중).
-
-비개발자(실무자) 역할: **프로젝트 선택** · **PRD 멀티턴** · **와이어프레임 멀티턴**.  
-개발자 역할: JSON 자산 extract · KB · 인계 확인.
-
-### 세 단계 구조
+## 3. 대시보드 — 사람 흐름
 
 ```
-[0] 프로젝트 JSON 선택 (유저가 명시)
-      "crm" / "erp" 등 projects/{slug}/*.json 중 하나
-      → 와이어프레임 생성·참조 시 assetProjectSlug 로 고정
+① /prd        입력 → 확정·보완(화면 양식 포함) → ready
+② /wireframes 목록 → 플로우 버튼으로 HTML 1장씩 (앱 사이드바 없음)
+③ /wireframes CLI render로 멀티턴 · confirm
+   /db         live SELECT 조회
+   /assets     projects/{slug} JSON
+```
+
+게이트: ready 전 빌드 금지. DB는 `.env`의 `SSH_*`/`DB_*` 만.
+
+```
+.env  OPENAI_API_KEY=...
       │
       ▼
-[1] PRD — 멀티턴 → PRD 탭 저장
-      Hermes 채팅: 요구사항 대화 · 누락 보완 · 조건부·필수값 질문
-      보완 완료 시: "PRD 확정" + 본문
-      → POST/PUT /api/wonjd/prd
-      → PRD 탭 (/wonjd/prd) + wireFrame/runs/{runId}/input/v1.md
+npm run dev  →  /prd  채팅
       │
       ▼
-[2] 와이어프레임 — PRD + 선택 JSON → 멀티턴 → 와이어프레임 탭
-      Hermes 채팅: "PRD X + JSON Y로 와이어프레임 생성"
-      → KB + projects/{slug}/*.json (슬라이스) + PRD → build
-      → 와이어프레임 탭 (/wonjd/wireframe) + artifacts/*.html
-      멀티턴: "2단계 지면 필수" → instructions[] → 해당 화면만 재생성
-      생성 완료: 와이어프레임 탭에서 확인 · locked · 확정
-```
-
-| 단계 | 주체 | 입력 | 산출 |
-| --- | --- | --- | --- |
-| **0. 프로젝트 선택** | 실무자 | `crm` 등 slug **명시** | `assetProjectSlug` |
-| **1. PRD** | 실무자 | 채팅 멀티턴 | PRD 탭 · `input/v1.md` |
-| **2. 와이어프레임** | 실무자 | PRD run + JSON slug | 와이어프레임 탭 · HTML |
-
-세 단계 모두 **같은 `runId`**에 쌓인다. runId는 PRD 저장 시 생성된다.
-
-### Hermes 채팅 명령 (구현됨)
-
-**PRD 저장 (신규)**
-```
-PRD 확정
-제목: 일시정지 연장
----
-# 배경
-# 요구사항
-...
-```
-
-**PRD 수정**
-```
-PRD 수정 PRD는 growth-pause
----
-(수정 본문)
-```
-
-**와이어프레임 생성**
-```
-PRD growth-pause + JSON crm 으로 와이어프레임 생성
-```
-
-구현: `parse-prd-intent.ts` · `use-prd-chat-save.ts` · `chat-screen.tsx` · `wonjd-prd-screen.tsx` · `wonjd-wireframe-screen.tsx`
-
-### PRD 저장 — Hermes PRD 탭 (SSOT)
-
-```
-Hermes 채팅 (PRD 멀티턴)
-       │
-       ▼
-POST/PUT /api/wonjd/prd
-       │
-       ▼
-Hermes UI  /wonjd/prd
-       │
-       ▼
+OpenAI tool-calling 에이전트 (server/openai-agent.ts)
+      │  tools: prd_save · prd_review · prd_answer · prd_get
+      ▼
+packages/cli  (SSOT)
+      │
+      ▼
 wireFrame/runs/{runId}/input/v1.md
+wireFrame/runs/{runId}/spec/clarifications.json
+status: clarifying → ready
 ```
 
-- PRD **저장·조회·수정 UI** = PRD 탭.
-- 와이어프레임 탭은 PRD 탭 run + **선택한 project JSON**으로 build (`prdReady` + assets).
+| 단계 | 주체 | 하는 일 |
+| --- | --- | --- |
+| 1. PRD 초안 | 실무자 | 업무 말로 붙여넣기 |
+| 2. 보완 질문 | 에이전트 | `prd review` → 쉬운 말 질문 (**화면 양식 포함**) |
+| 3. 확정 | 실무자 | 채팅으로 답 |
+| 4. 반영 | 에이전트 | `prd answer` → `## 확인된 결정` → 재검토 |
+| 5. ready | — | `run build`로 와이어프레임 생성 |
 
-### 와이어프레임 생성 — 고정 컨텍스트
-
-| 컨텍스트 | 역할 |
-| --- | --- |
-| **KB** (WONJD_KB) | 도메인 규칙·용어·화면 관례 |
-| **projects/{slug}/*.json** | 유저가 고른 slug — design·routes·api·db **슬라이스만** |
-| **PRD** (run) | PRD 탭에 저장된 본문 |
-| **shell** | CSS·컴포넌트 클래스 |
-
-### Hermes API (1차)
+API (Vite dev 미들웨어):
 
 | API | 용도 |
 | --- | --- |
-| `GET/POST/PUT /api/wonjd/prd` | PRD 목록·생성·수정 |
-| `GET/POST … /api/wonjd/wireframe` | build · artifact · readiness |
-| `wireframe project list` (CLI) | 등록된 project slug 목록 |
+| `GET /api/agent/health` | 키 설정 여부 |
+| `POST /api/agent/chat` | 멀티턴 에이전트 |
+| `GET /api/db/health` | SSH/DB env 준비 여부 (비밀값 미노출) |
+| `POST /api/db/query` 등 | SELECT 조회 (채팅/툴) |
+
+**라이브 DB 하드 룰:** 접속은 `.env`의 `SSH_*` · `DB_*` 만. SELECT 전용 계정.
+`wireframe.config.json` / UI / 채팅에 호스트·비번을 두지 않는다. 구현 진입점: `server/db-env.ts`.
 
 ---
 
-## 3-B. NAVER WORKS (2차 — Hermes와 동일 API)
+## 3-B. NAVER WORKS (나중)
 
-1차(Hermes workspace)가 안정된 뒤, 웍스 봇은 **같은 API**만 호출한다.
-
-```
-NAVER WORKS (멀티턴)
-       │
-       ▼
-Callback → POST/PUT /api/wonjd/prd  ·  /api/wonjd/wireframe
-       │
-       ▼
-PRD 탭 · 와이어프레임 탭 (Hermes UI와 동일 SSOT)
-       │
-       ▼
-(선택) HTML 직링크 → 웍스 채팅 회신
-```
-
-| 웍스 이벤트 | API |
-| --- | --- |
-| PRD 보완 | `PUT /api/wonjd/prd` |
-| PRD 확정 | `POST /api/wonjd/prd` |
-| 와이어프레임 생성 | `/api/wonjd/wireframe` build |
-| 화면 수정 | instruction → artifact render |
-| 사용자 | `userId` → `createdBy` |
-
-웍스 연동 전제: Developer Console 앱 · scope `bot`/`bot.read` · Service Account · Private Key · Bot Secret · **HTTPS Callback**.
+웍스 봇은 **같은 CLI / 같은 run 파일**을 쓰도록 붙인다. Hermes를 경유하지 않는다.
 
 ---
 
 ## 4. 단계별 입출력 (구현 계약)
 
-### ① intake
+### ① clarify (PRD 게이트)
 
 | in | out |
 | --- | --- |
-| PRD 원문, projectSlug, title | `input/{run}.md`, MySQL `wireframe_run` |
+| PRD 원문 | `runs/{run}/input/v*.md`, `spec/clarifications.json`, status clarifying→ready |
 
-되묻지 않는다. 빈칸은 ②③에서 가정.
+화면 양식(`screen_layout`)·담당·필수 등 비개발자 질문을 받는다. ready 전 build 금지.
 
 ### ② domain
 
 | in | out |
 | --- | --- |
-| `input/{run}.md`, `projects/crm/db.json`, (있으면) `api.json` | `spec/{run}.domain.json` |
+| 승인 PRD, `projects/crm/db.json`, live SELECT, api/routes | `runs/{run}/spec/domain.json` |
 
-판정만 남긴다. 스키마 덤프 금지. `db.json` 없거나 테이블 못 찾으면 `entities: []` + assumption 남기고 진행.
+판정만 남긴다 (`uiPattern`, judgements, fieldBlueprints). 스키마 덤프 금지.
 
 ### ③ plan
 
 | in | out |
 | --- | --- |
-| PRD, domain, routes, design.md(옵션) | `spec/{run}.manifest.json` |
+| PRD, domain, routes, design.md | `runs/{run}/spec/manifest.json` |
 
-화면 목록 · `type`(new/modify/extend) · route · `covers[]` · `assumptions[]`.
+`artifacts[]` · `type` · route · `uiPattern` · `covers[]` · `assumptions[]`.
 
 ### ④ render
 
 | in | out |
 | --- | --- |
-| shell.html, domain, manifest의 해당 artifact, instructions[] | `artifacts/{run}/{id}.html` |
+| shell styles, domain, manifest artifact, instructions[] | `runs/{run}/artifacts/{id}.html` |
 
-- 셸 CSS/컴포넌트만 사용. 화면 안 토큰 신규 정의 금지.
+- 셸 CSS만. 한 파일 = 한 단계. 설명 문구 금지.
+- `uiPattern=modal` → 모달 프레임. 뷰포트 맞춤·스크롤 없음.
 - 샘플 행은 합성값. 코드값(enum)만 실제.
 - `locked: true`는 스킵.
 
@@ -387,16 +309,17 @@ CRM DB 자격증명은 이 레포에 안 둔다. WONJD가 들고 툴 호출만.
 ## 7. 프로세스 구성 (로컬)
 
 ```
-Hermes workspace (1차)
-  채팅 ──► /api/wonjd/prd ──► PRD 탭 (/wonjd/prd)
-  채팅 ──► /api/wonjd/wireframe ──► wireframe CLI ──► 와이어프레임 탭 (/wonjd/wireframe)
-                              ├─ KB (WONJD_KB)
-                              └─ projects/{slug}/*.json  ← 유저가 slug 명시
+wireframe_dashboard (1차)
+  Vite /prd
+       │
+       ▼
+  /api/agent/chat  (OPENAI_API_KEY)
+       │  tools → packages/cli (prd review/answer)
+       ▼
+  wireFrame/runs/{runId}/…
 
-wireframe_dashboard
-  뷰어(Vite) · packages/cli · projects/ · wireFrame/
-
-(2차) NAVER WORKS Callback ──► 동일 API
+(다음) ready → run build → artifacts HTML
+(나중) NAVER WORKS → 동일 CLI/파일
 ```
 
 ---
@@ -425,8 +348,8 @@ wireframe_dashboard
 | 5 | run create → domain → plan → render | PRD → HTML |
 | 6 | artifact 단위 재생성 | instructions |
 | 7 | 뷰어 SPEC 맞춤 | runs/artifacts |
-| 8 | Hermes PRD 채팅 저장 | POST/PUT `/api/wonjd/prd` · PRD 탭 |
-| 9 | Hermes 와이어프레임 채팅 | project slug + PRD → build · 와이어프레임 탭 |
+| 8 | 대시보드 PRD 채팅 | `/prd` · `/api/agent/chat` |
+| 9 | (다음) 와이어프레임 빌드 | `run build` · ready 게이트 |
 | 10 | NAVER WORKS 봇 | 동일 API (2차) |
 
 1~5면 로컬 목표 달성.
@@ -446,5 +369,6 @@ wireframe_dashboard
 
 ## 11. 한 줄 요약
 
-**1차:** Hermes workspace — **프로젝트 slug 선택 → PRD 멀티턴 → PRD 탭 → (PRD+JSON) 와이어프레임 멀티턴 → 와이어프레임 탭.**  
-**2차:** NAVER WORKS → 동일 API. 자산 extract → JSON SSOT. DB 질의는 domain 밖 금지.
+**1차:** 대시보드 OpenAI 에이전트 — PRD 확정·보완 (`OPENAI_API_KEY` → `/prd`).  
+**다음:** ready 후 `run build`로 HTML. 자산 extract → JSON SSOT. DB 질의는 domain 밖 금지.  
+**나중:** NAVER WORKS → 동일 CLI/파일.

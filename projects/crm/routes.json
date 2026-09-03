@@ -1,286 +1,836 @@
 {
-  "source": "crm_frontend",
-  "extractedAt": "2026-09-01T05:42:30.310Z",
+  "source": "../crm_frontend",
+  "projectSlug": "crm",
+  "extractedAt": "2026-09-02T08:16:42.791Z",
   "routes": [
     {
       "path": "/account-info",
       "file": "src/pages/common/AccountInfoPage.tsx",
-      "label": "계정 정보"
+      "label": "계정 정보",
+      "screenKind": "detail",
+      "keywords": [
+        "account",
+        "info",
+        "계정",
+        "정보",
+        "page"
+      ]
     },
     {
       "path": "/ad-progress-list",
       "file": "src/pages/nav4/ad-progress/ADProgressList.tsx",
-      "label": "광고 진행 리스트"
+      "label": "광고 진행 리스트",
+      "screenKind": "list",
+      "keywords": [
+        "ad",
+        "progress",
+        "list",
+        "광고",
+        "진행",
+        "리스트"
+      ]
     },
     {
       "path": "/approve-request",
       "file": "src/pages/nav1/request/TotalRequstPage.tsx",
-      "label": "광고 진행 승인"
+      "label": "광고 진행 승인",
+      "screenKind": "other",
+      "keywords": [
+        "approve",
+        "request",
+        "광고",
+        "진행",
+        "승인",
+        "total",
+        "requst",
+        "page"
+      ]
     },
     {
       "path": "/black-list",
       "file": "src/pages/nav1/call/BlackList.tsx",
-      "label": "C/S 리스트"
+      "label": "C/S 리스트",
+      "screenKind": "list",
+      "keywords": [
+        "black",
+        "list",
+        "c/s",
+        "리스트"
+      ]
     },
     {
       "path": "/brand",
       "file": "src/pages/nav1/brand/BrandPage.tsx",
-      "label": "브랜드 목록"
+      "label": "브랜드 목록",
+      "screenKind": "list",
+      "keywords": [
+        "brand",
+        "브랜드",
+        "목록",
+        "page"
+      ]
     },
     {
       "path": "/call-list",
       "file": "src/pages/nav1/call/CallList.tsx",
-      "label": "영업관리"
+      "label": "영업관리",
+      "screenKind": "list",
+      "keywords": [
+        "call",
+        "list",
+        "영업관리"
+      ]
     },
     {
       "path": "/code",
       "file": "src/pages/management/Code.tsx",
-      "label": "코드 관리"
+      "label": "코드 관리",
+      "screenKind": "list",
+      "keywords": [
+        "code",
+        "코드",
+        "관리"
+      ]
     },
     {
       "path": "/connect/contact",
       "file": "src/pages/connect/contact/ContactTable.tsx",
-      "label": "콜시트"
+      "label": "콜시트",
+      "screenKind": "other",
+      "keywords": [
+        "connect",
+        "contact",
+        "콜시트",
+        "table"
+      ]
     },
     {
       "path": "/connect/contract/ended",
       "file": "src/pages/connect/contract/EndedContractListPage.tsx",
-      "label": "종료 계약 리스트"
+      "label": "종료 계약 리스트",
+      "screenKind": "list",
+      "keywords": [
+        "connect",
+        "contract",
+        "ended",
+        "종료",
+        "계약",
+        "리스트",
+        "list",
+        "page"
+      ]
     },
     {
       "path": "/connect/contract/ongoing",
       "file": "src/pages/connect/contract/OngoingContractListPage.tsx",
-      "label": "진행 중 계약 리스트"
+      "label": "진행 중 계약 리스트",
+      "screenKind": "list",
+      "keywords": [
+        "connect",
+        "contract",
+        "ongoing",
+        "진행",
+        "계약",
+        "리스트",
+        "list",
+        "page"
+      ]
     },
     {
       "path": "/connect/contract/regist",
       "file": "src/pages/connect/contract/ContractRegisterPage.tsx",
-      "label": "신규계약 등록 페이지"
+      "label": "신규계약 등록 페이지",
+      "screenKind": "form",
+      "keywords": [
+        "connect",
+        "contract",
+        "regist",
+        "신규계약",
+        "등록",
+        "페이지",
+        "register",
+        "page"
+      ]
     },
     {
       "path": "/connect/contract/request",
       "file": "src/pages/connect/contract/ContractRequestPage.tsx",
-      "label": "신규계약 등록/요청"
+      "label": "신규계약 등록/요청",
+      "screenKind": "form",
+      "keywords": [
+        "connect",
+        "contract",
+        "request",
+        "신규계약",
+        "등록/요청",
+        "page"
+      ]
     },
     {
       "path": "/connect/dashboard",
       "file": "src/pages/connect/dashboard/AdminDashboardPage.tsx",
-      "label": "관리자 보드"
+      "label": "관리자 보드",
+      "screenKind": "list",
+      "keywords": [
+        "connect",
+        "dashboard",
+        "관리자",
+        "보드",
+        "admin",
+        "page"
+      ]
     },
     {
       "path": "/connect/dashboard/regist",
       "file": "src/pages/connect/dashboard/AdminDashboardRegisterPage.tsx",
-      "label": "관리자 보드 등록 페이지"
+      "label": "관리자 보드 등록 페이지",
+      "screenKind": "form",
+      "keywords": [
+        "connect",
+        "dashboard",
+        "regist",
+        "관리자",
+        "보드",
+        "등록",
+        "페이지",
+        "admin",
+        "register",
+        "page"
+      ]
     },
     {
       "path": "/connect/performance",
       "file": "src/pages/connect/performance/SalesPerformancePage.tsx",
-      "label": "개인 매출 현황"
+      "label": "개인 매출 현황",
+      "screenKind": "form",
+      "keywords": [
+        "connect",
+        "performance",
+        "개인",
+        "매출",
+        "현황",
+        "sales",
+        "page"
+      ]
     },
     {
       "path": "/connect/settlement/point",
       "file": "src/pages/connect/settlement/PointSettlementPage.tsx",
-      "label": "포인트 정산관리"
+      "label": "포인트 정산관리",
+      "screenKind": "list",
+      "keywords": [
+        "connect",
+        "settlement",
+        "point",
+        "포인트",
+        "정산관리",
+        "page"
+      ]
     },
     {
       "path": "/connect/settlement/reward",
       "file": "src/pages/connect/settlement/RewardSettlementPage.tsx",
-      "label": "리워드금액 정산관리"
+      "label": "리워드금액 정산관리",
+      "screenKind": "list",
+      "keywords": [
+        "connect",
+        "settlement",
+        "reward",
+        "리워드금액",
+        "정산관리",
+        "page"
+      ]
     },
     {
       "path": "/connect/settlement/reward/regist",
       "file": "src/pages/connect/settlement/RewardRegisterPage.tsx",
-      "label": "리워드금액 정산 등록 페이지"
+      "label": "리워드금액 정산 등록 페이지",
+      "screenKind": "form",
+      "keywords": [
+        "connect",
+        "settlement",
+        "reward",
+        "regist",
+        "리워드금액",
+        "정산",
+        "등록",
+        "페이지",
+        "register",
+        "page"
+      ]
     },
     {
       "path": "/connect/total-contact",
       "file": "src/pages/connect/contact/TotalContactList.tsx",
-      "label": "통합 콜시트"
+      "label": "통합 콜시트",
+      "screenKind": "list",
+      "keywords": [
+        "connect",
+        "total",
+        "contact",
+        "통합",
+        "콜시트",
+        "list"
+      ]
     },
     {
       "path": "/content-image-list",
       "file": "src/pages/nav3/content/ContentImageListPage.tsx",
-      "label": "이미지 소재 리스트"
+      "label": "이미지 소재 리스트",
+      "screenKind": "list",
+      "keywords": [
+        "content",
+        "image",
+        "list",
+        "이미지",
+        "소재",
+        "리스트",
+        "page"
+      ]
     },
     {
       "path": "/content-stats-page",
       "file": "src/pages/nav3/content/ContentStatsPage.tsx",
-      "label": "소재 통계 페이지"
+      "label": "소재 통계 페이지",
+      "screenKind": "other",
+      "keywords": [
+        "content",
+        "stats",
+        "page",
+        "소재",
+        "통계",
+        "페이지"
+      ]
     },
     {
       "path": "/content-video-list",
       "file": "src/pages/nav3/content/ContentVideoListPage.tsx",
-      "label": "영상 소재 리스트"
+      "label": "영상 소재 리스트",
+      "screenKind": "list",
+      "keywords": [
+        "content",
+        "video",
+        "list",
+        "영상",
+        "소재",
+        "리스트",
+        "page"
+      ]
     },
     {
       "path": "/creative",
       "file": "src/pages/nav3/content/ContentCreativePage.tsx",
-      "label": "파트너십 소재"
+      "label": "파트너십 소재",
+      "screenKind": "other",
+      "keywords": [
+        "creative",
+        "파트너십",
+        "소재",
+        "content",
+        "page"
+      ]
     },
     {
       "path": "/creative/:B_ID/:CREATIVE_SUBS_TYPE",
       "file": "src/pages/nav3/content/ContentCreativeDetailPage.tsx",
-      "label": "파트너십 소재 (브랜드)"
+      "label": "파트너십 소재 (브랜드)",
+      "screenKind": "detail",
+      "keywords": [
+        "creative",
+        ":b",
+        "id",
+        ":creative",
+        "subs",
+        "type",
+        "파트너십",
+        "소재",
+        "(브랜드)",
+        "content",
+        "detail",
+        "page"
+      ]
     },
     {
       "path": "/creative/:B_ID/:CREATIVE_SUBS_TYPE/:ENT_ID",
       "file": "src/pages/nav3/content/ContentCreativeDetailPage.tsx",
-      "label": "파트너십 소재 (매체)"
+      "label": "파트너십 소재 (매체)",
+      "screenKind": "detail",
+      "keywords": [
+        "creative",
+        ":b",
+        "id",
+        ":creative",
+        "subs",
+        "type",
+        ":ent",
+        "파트너십",
+        "소재",
+        "(매체)",
+        "content",
+        "detail"
+      ]
+    },
+    {
+      "path": "/growth/account-view",
+      "file": "src/pages/growth/AccountGrowthViewPage.tsx",
+      "label": "계정 성장 뷰",
+      "screenKind": "detail",
+      "keywords": [
+        "growth",
+        "account",
+        "view",
+        "계정",
+        "성장",
+        "page"
+      ]
+    },
+    {
+      "path": "/growth/contract-backfill",
+      "file": "src/pages/growth/ContractBackfillPage.tsx",
+      "label": "계약 정보 관리",
+      "screenKind": "list",
+      "keywords": [
+        "growth",
+        "contract",
+        "backfill",
+        "계약",
+        "정보",
+        "관리",
+        "page"
+      ]
+    },
+    {
+      "path": "/growth/marketer-view",
+      "file": "src/pages/growth/MarketerGrowthViewPage.tsx",
+      "label": "마케터 성장 뷰",
+      "screenKind": "detail",
+      "keywords": [
+        "growth",
+        "marketer",
+        "view",
+        "마케터",
+        "성장",
+        "page"
+      ]
+    },
+    {
+      "path": "/growth/team-view",
+      "file": "src/pages/growth/TeamGrowthViewPage.tsx",
+      "label": "팀 성장 뷰",
+      "screenKind": "detail",
+      "keywords": [
+        "growth",
+        "team",
+        "view",
+        "성장",
+        "page"
+      ]
     },
     {
       "path": "/improvement-request",
       "file": "src/pages/improvement-request/ImprovementRequestPage.tsx",
-      "label": "수정 요청 / 버그 리포트"
+      "label": "수정 요청 / 버그 리포트",
+      "screenKind": "form",
+      "keywords": [
+        "improvement",
+        "request",
+        "수정",
+        "요청",
+        "버그",
+        "리포트",
+        "page"
+      ]
     },
     {
       "path": "/kpi/cp",
       "file": "src/pages/nav2/tsv/KpiDashboard.tsx",
-      "label": "KPI 관리"
+      "label": "KPI 관리",
+      "screenKind": "list",
+      "keywords": [
+        "kpi",
+        "cp",
+        "관리",
+        "dashboard"
+      ]
     },
     {
       "path": "/kpi/mp",
       "file": "src/pages/nav2/tsv/KpiDashboard.tsx",
-      "label": "KPI 관리 (MP)"
+      "label": "KPI 관리 (MP)",
+      "screenKind": "list",
+      "keywords": [
+        "kpi",
+        "mp",
+        "관리",
+        "(mp)",
+        "dashboard"
+      ]
     },
     {
       "path": "/live-request-list",
       "file": "src/pages/nav1/live/LiveRequestList.tsx",
-      "label": "라이브요청 리스트"
+      "label": "라이브요청 리스트",
+      "screenKind": "form",
+      "keywords": [
+        "live",
+        "request",
+        "list",
+        "라이브요청",
+        "리스트"
+      ]
     },
     {
       "path": "/login",
       "file": "src/pages/Login.tsx",
-      "label": "Login"
+      "label": "Login",
+      "screenKind": "other",
+      "keywords": [
+        "login"
+      ]
     },
     {
       "path": "/menu",
       "file": "src/pages/management/Menu.tsx",
-      "label": "메뉴 관리"
+      "label": "메뉴 관리",
+      "screenKind": "list",
+      "keywords": [
+        "menu",
+        "메뉴",
+        "관리"
+      ]
     },
     {
       "path": "/no-reference-list",
       "file": "src/pages/nav1/call/NoReferenceList.tsx",
-      "label": "레퍼런스 금지 업체"
+      "label": "레퍼런스 금지 업체",
+      "screenKind": "list",
+      "keywords": [
+        "no",
+        "reference",
+        "list",
+        "레퍼런스",
+        "금지",
+        "업체"
+      ]
     },
     {
       "path": "/organization",
       "file": "src/pages/common/Organization.tsx",
-      "label": "조직도"
+      "label": "조직도",
+      "screenKind": "other",
+      "keywords": [
+        "organization",
+        "조직도"
+      ]
     },
     {
       "path": "/organization/group/:DEPT_ID",
       "file": "src/pages/common/GroupPage.tsx",
-      "label": "팀원 관리"
+      "label": "팀원 관리",
+      "screenKind": "list",
+      "keywords": [
+        "organization",
+        "group",
+        ":dept",
+        "id",
+        "팀원",
+        "관리",
+        "page"
+      ]
     },
     {
       "path": "/recruitment",
       "file": "src/pages/connect/recruitment/RecruitmentPage.tsx",
-      "label": "사전모집테스트"
+      "label": "사전모집테스트",
+      "screenKind": "other",
+      "keywords": [
+        "recruitment",
+        "사전모집테스트",
+        "page"
+      ]
     },
     {
       "path": "/recruitment/regist",
       "file": "src/pages/connect/recruitment/RecruitmentRegisterPage.tsx",
-      "label": "사전모집테스트 등록"
+      "label": "사전모집테스트 등록",
+      "screenKind": "form",
+      "keywords": [
+        "recruitment",
+        "regist",
+        "사전모집테스트",
+        "등록",
+        "register",
+        "page"
+      ]
     },
     {
       "path": "/request",
       "file": "src/pages/nav1/request/RequestPage.tsx",
-      "label": "광고 진행 요청"
+      "label": "광고 진행 요청",
+      "screenKind": "form",
+      "keywords": [
+        "request",
+        "광고",
+        "진행",
+        "요청",
+        "page"
+      ]
     },
     {
       "path": "/request/regist/:type",
       "file": "src/pages/nav1/request/RequestRegistPage.tsx",
-      "label": "업체 추가"
+      "label": "업체 추가",
+      "screenKind": "form",
+      "keywords": [
+        "request",
+        "regist",
+        ":type",
+        "업체",
+        "추가",
+        "page"
+      ]
     },
     {
       "path": "/role",
       "file": "src/pages/management/Role.tsx",
-      "label": "권한 관리"
+      "label": "권한 관리",
+      "screenKind": "list",
+      "keywords": [
+        "role",
+        "권한",
+        "관리"
+      ]
     },
     {
       "path": "/sales-page",
       "file": "src/pages/SalesListPage.tsx",
-      "label": "대기리스트"
+      "label": "대기리스트",
+      "screenKind": "list",
+      "keywords": [
+        "sales",
+        "page",
+        "대기리스트",
+        "list"
+      ]
     },
     {
       "path": "/sales-page/createEnt/:type",
       "file": "src/pages/SalesEntAddPage.tsx",
-      "label": "업체 추가"
+      "label": "업체 추가",
+      "screenKind": "form",
+      "keywords": [
+        "sales",
+        "page",
+        "createent",
+        ":type",
+        "업체",
+        "추가",
+        "ent",
+        "add"
+      ]
     },
     {
       "path": "/sales-report-page",
       "file": "src/pages/nav5/SalesReportPage.tsx",
-      "label": "영업팀 보고서"
+      "label": "영업팀 보고서",
+      "screenKind": "other",
+      "keywords": [
+        "sales",
+        "report",
+        "page",
+        "영업팀",
+        "보고서"
+      ]
     },
     {
       "path": "/sample",
       "file": "src/pages/common/SamplePage.tsx",
-      "label": "샘플 출입대장"
+      "label": "샘플 출입대장",
+      "screenKind": "other",
+      "keywords": [
+        "sample",
+        "샘플",
+        "출입대장",
+        "page"
+      ]
     },
     {
       "path": "/sample/regist",
       "file": "src/pages/common/SampleRegistPage.tsx",
-      "label": "샘플 출입대장 등록"
+      "label": "샘플 출입대장 등록",
+      "screenKind": "form",
+      "keywords": [
+        "sample",
+        "regist",
+        "샘플",
+        "출입대장",
+        "등록",
+        "page"
+      ]
     },
     {
       "path": "/settle-list",
       "file": "src/pages/nav2/tsv/SettlePage.tsx",
-      "label": "정산"
+      "label": "정산",
+      "screenKind": "list",
+      "keywords": [
+        "settle",
+        "list",
+        "정산",
+        "page"
+      ]
     },
     {
       "path": "/sign",
       "file": "src/pages/nav1/sign/SignPage.tsx",
-      "label": "계약서 요청 리스트"
+      "label": "계약서 요청 리스트",
+      "screenKind": "form",
+      "keywords": [
+        "sign",
+        "계약서",
+        "요청",
+        "리스트",
+        "page"
+      ]
     },
     {
       "path": "/tax",
       "file": "src/pages/nav1/tax/TaxPage.tsx",
-      "label": "세금계산서 요청 리스트"
+      "label": "세금계산서 요청 리스트",
+      "screenKind": "form",
+      "keywords": [
+        "tax",
+        "세금계산서",
+        "요청",
+        "리스트",
+        "page"
+      ]
     },
     {
       "path": "/total-call-list",
       "file": "src/pages/nav1/call/TotalCallList.tsx",
-      "label": "통합 영업관리"
+      "label": "통합 영업관리",
+      "screenKind": "list",
+      "keywords": [
+        "total",
+        "call",
+        "list",
+        "통합",
+        "영업관리"
+      ]
     },
     {
       "path": "/total-live-request-list",
       "file": "src/pages/nav1/live/TotalLiveRequestList.tsx",
-      "label": "통합 라이브요청 리스트"
+      "label": "통합 라이브요청 리스트",
+      "screenKind": "form",
+      "keywords": [
+        "total",
+        "live",
+        "request",
+        "list",
+        "통합",
+        "라이브요청",
+        "리스트"
+      ]
     },
     {
       "path": "/total-sales-list",
       "file": "src/pages/TotalSalesList.tsx",
-      "label": "통합 대기리스트"
+      "label": "통합 대기리스트",
+      "screenKind": "list",
+      "keywords": [
+        "total",
+        "sales",
+        "list",
+        "통합",
+        "대기리스트"
+      ]
     },
     {
       "path": "/tsv-list",
       "file": "src/pages/nav2/tsv/TsvListPage.tsx",
-      "label": "취급고 리스트(매체별)"
+      "label": "취급고 리스트(매체별)",
+      "screenKind": "list",
+      "keywords": [
+        "tsv",
+        "list",
+        "취급고",
+        "리스트(매체별)",
+        "page"
+      ]
     },
     {
       "path": "/tsv/analysis/:entId",
       "file": "src/pages/TsvAnalysisPopup.tsx",
-      "label": "TsvAnalysisPopup"
+      "label": "TsvAnalysisPopup",
+      "screenKind": "other",
+      "keywords": [
+        "tsv",
+        "analysis",
+        ":entid",
+        "tsvanalysispopup",
+        "popup"
+      ]
     },
     {
       "path": "/tsv/analysis/:entId/:asOfYmd",
       "file": "src/pages/TsvAnalysisPopup.tsx",
-      "label": "TsvAnalysisPopup"
+      "label": "TsvAnalysisPopup",
+      "screenKind": "other",
+      "keywords": [
+        "tsv",
+        "analysis",
+        ":entid",
+        ":asofymd",
+        "tsvanalysispopup",
+        "popup"
+      ]
     },
     {
       "path": "/user-tsv-list",
       "file": "src/pages/nav2/tsv/TsvStatsPage.tsx",
-      "label": "취급고 리스트(마케터)"
+      "label": "취급고 리스트(마케터)",
+      "screenKind": "list",
+      "keywords": [
+        "user",
+        "tsv",
+        "list",
+        "취급고",
+        "리스트(마케터)",
+        "stats",
+        "page"
+      ]
     },
     {
       "path": "/user-tsv-list/:type/:userid/:month",
       "file": "src/pages/TsvStatsDetailPopup.tsx",
-      "label": "TsvStatsDetailPopup"
+      "label": "TsvStatsDetailPopup",
+      "screenKind": "detail",
+      "keywords": [
+        "user",
+        "tsv",
+        "list",
+        ":type",
+        ":userid",
+        ":month",
+        "tsvstatsdetailpopup",
+        "stats",
+        "detail",
+        "popup"
+      ]
     },
     {
       "path": "/works",
       "file": "src/pages/NaverWorksBot.tsx",
-      "label": "네이버웍스"
+      "label": "네이버웍스",
+      "screenKind": "other",
+      "keywords": [
+        "works",
+        "네이버웍스",
+        "naver",
+        "bot"
+      ]
     }
   ]
 }

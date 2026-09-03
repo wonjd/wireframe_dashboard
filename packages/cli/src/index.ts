@@ -14,6 +14,10 @@ import { updateRun } from "./commands/run/update.js";
 import { renderRun } from "./commands/render.js";
 import { buildShell } from "./commands/shell.js";
 import { loadConfig } from "./lib/config.js";
+import {
+  answerPrdClarificationsCli,
+  reviewPrdClarificationsCli,
+} from "./pipeline/prd-clarify.js";
 
 const USAGE = `wireframe config validate [--project crm | --all] [--entities ent,account]
 wireframe project list
@@ -25,6 +29,8 @@ wireframe run update --run-id slug [--project crm] [--title "제목"] [--prd ./f
 wireframe run build --run-id slug [--project crm] [--asset-project crm]
 wireframe run confirm --run-id slug [--project crm]
 wireframe run list [--project crm]
+wireframe prd review --run-id slug [--project crm] [--asset-project crm]
+wireframe prd answer --run-id slug --answers '[{"id":"q1","answer":"..."}]' [--project crm]
 wireframe render --run-id slug [--project crm] [--artifact id] [--instruction text]
 
 Paths: wireframe.config.json + wireframe.config.local.json (gitignored)
@@ -102,6 +108,15 @@ export async function runCli(argv: string[]): Promise<void> {
   }
   if (command === "render") {
     await renderRun(config, argvTail(subcommand, rest));
+    return;
+  }
+
+  if (command === "prd" && subcommand === "review") {
+    await reviewPrdClarificationsCli(config, rest);
+    return;
+  }
+  if (command === "prd" && subcommand === "answer") {
+    await answerPrdClarificationsCli(config, rest);
     return;
   }
 

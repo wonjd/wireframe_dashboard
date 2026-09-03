@@ -4,11 +4,11 @@ import type { WireframeConfig } from "../lib/config.js";
 import {
   buildDomain,
   buildManifest,
-  loadProjectAssets,
   renderArtifactHtml,
   type ManifestArtifact,
   type ManifestSpec,
 } from "../pipeline/build-pipeline.js";
+import { loadBuildContext } from "../pipeline/build-context.js";
 import {
   ensureRunDirs,
   getProject,
@@ -83,15 +83,24 @@ export async function renderRun(config: WireframeConfig, args: string[]): Promis
 
   const prdAbsolute = getRunPrdPath(config, parsed.runId, run.prdVersion);
   const prdContent = await readFile(prdAbsolute, "utf8");
-  const assets = await loadProjectAssets(assetProjectSlug);
+
+  // Same triple context as build: PRD + JSON + live DB (rebuilds blueprints)
+  const ctx = await loadBuildContext({
+    config,
+    projectSlug: parsed.projectSlug,
+    assetProjectSlug,
+    prdPath: run.prdPath,
+    prdContent,
+  });
 
   const domain = buildDomain({
     runId: parsed.runId,
     projectSlug: parsed.projectSlug,
     assetProjectSlug,
     prdTitle: run.title,
-    prdContent,
-    assets,
+    prdContent: ctx.prdContent,
+    assets: ctx.assets,
+    sources: ctx.sources,
   });
 
   const runRoot = getRunRoot(config, parsed.runId);
@@ -111,6 +120,7 @@ export async function renderRun(config: WireframeConfig, args: string[]): Promis
     projectSlug: parsed.projectSlug,
     assetProjectSlug,
     domain,
+    assets: ctx.assets,
   });
 
   if (existingManifest) {
@@ -157,9 +167,9 @@ export async function renderRun(config: WireframeConfig, args: string[]): Promis
     const html = renderArtifactHtml({
       artifact,
       runTitle: run.title,
-      prdContent,
+      prdContent: ctx.prdContent,
       domain,
-      assets,
+      assets: ctx.assets,
     });
     await writeFile(path.join(artifactsDir, artifact.file), html, "utf8");
   }
@@ -169,7 +179,13 @@ export async function renderRun(config: WireframeConfig, args: string[]): Promis
   run.updatedAt = new Date().toISOString();
   await saveIndex(config, index);
 
+  const fieldCounts = (domain.fieldBlueprints ?? [])
+    .filter((bp) => bp.screenKind === "wizard-step")
+    .map((bp) => `${bp.stepNo}:${bp.fields.length}`)
+    .join(",");
+
   console.log(`wireframe rendered: ${parsed.runId}`);
-  console.log(`artifacts: ${targets.length}/${manifest.artifacts.length}`);
+  console.log(`targets: ${targets.length}/${manifest.artifacts.length}`);
+  console.log(`blueprints: ${fieldCounts || "none"}`);
   if (parsed.artifactId) console.log(`target: ${parsed.artifactId}`);
 }

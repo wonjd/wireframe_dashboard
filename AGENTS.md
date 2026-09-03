@@ -2,7 +2,35 @@
 
 클론 후 이 파일만 보면 된다. 파일 형식은 [SPEC.md](./SPEC.md).
 
-PRD 입력 이후는 전부 무인이다. 사람에게 되묻지 않는다.
+## 목적
+
+**비개발자**가 본인 업무 지식 + PRD로 와이어프레임을 만든다.  
+**개발자**는 이미 확정된 화면·결정 로그를 받아 **시간 단축**한다.
+
+요청자가 먼저 보고 고친 뒤 넘긴다. 개발은 “그림 없는 이메일 요청”으로 시작하지 않는다.
+
+---
+
+## 사람 흐름 (제품 SSOT)
+
+```
+① PRD
+   사용자 입력 → 모호한 부분 확정·보완 → 사용자 승인(ready)
+   → PRD 탭에 저장 (wireFrame/runs/{run}/input/v*.md)
+
+② 1차 생성
+   projects/{slug} JSON 자산 + 승인된 PRD
+   → 와이어프레임 1차 HTML (domain → plan → render)
+
+③ 멀티턴 다듬기
+   사용자 지시 → 해당 화면만 재생성 → 승인할 때까지 반복
+   → 와이어프레임 생성 완료 (confirmed)
+```
+
+게이트:
+- ① 미승인(ready 아님) → ② 금지
+- ② 없이 ③만 하는 건 가능(이미 HTML 있을 때)
+- 파이프라인 내부(domain 이후 가정)에서는 사람에게 되묻지 않는다. 가정은 `assumptions[]`.
 
 ---
 
@@ -34,14 +62,19 @@ crm_backend   →  projects/{slug}/api.json      엔드포인트 · 필드
 레이아웃 골격, 컴포넌트 CSS, 버튼·표·모달·상태 뱃지 스타일을 여기서 확정한다.
 **화면은 셸을 참조만 하고 컴포넌트를 새로 정의하지 않는다.**
 
-### 1. 정규화 — PRD당 1회
+### 1. PRD 확정·보완 (+ 승인 게이트)
 
-자연어 PRD → `wireFrame/input/{run}.md` (원문 그대로 보존)
+자연어 PRD → `wireFrame/runs/{run}/input/v*.md` (원문 보존) + `## 확인된 결정`
 
-빠진 정보는 되묻지 않는다. 가정을 세우고 진행하되 `manifest.assumptions[]`에
-남긴다. 사람이 뭘 채웠는지 알아야 고칠 데를 안다.
+**PRD는 개발 문서가 아니다.** 비개발자가 업무 말로 쓰고, AI가 빈칸·애매한 결정을
+**쉬운 말로 물어 보완**하고, 사용자가 **승인(ready)** 하면 PRD 탭에 확정본이 남는다.
+컬럼·코드·API 이름을 사용자에게 말하지 않는다.
+와이어프레임 생성 전에 **화면 양식**(전체 페이지 폼 / 팝업·모달 / 목록 표 / 단계별)도 확정한다.
 
-### 2. 구조 판정 — PRD당 1회
+대시보드 `/prd` OpenAI 에이전트 → CLI `prd review` / `prd answer`.
+`status: ready` 전에는 ② 와이어프레임 생성을 돌리지 않는다.
+
+### 2. 구조 판정 — PRD당 1회 (승인 후)
 
 `db.json` + PRD → `wireFrame/spec/{run}.domain.json`
 
@@ -59,21 +92,34 @@ crm_backend   →  projects/{slug}/api.json      엔드포인트 · 필드
 **이 단계는 반복 루프 안에서 절대 돌지 않는다.** 요청자가 재생성을 20번 눌러도
 DB 질의는 0회다.
 
-### 3. 화면 설계
+### 3. 화면 설계 (② 1차 생성)
 
 PRD + `domain.json` + `design.md` → `manifest.json`
 
 화면 목록, `type`(new/modify/extend), 라우트, 그리고 **요구사항 ↔ 화면 매핑**.
 
-### 4. 화면 생성
+### 4. 화면 1차 생성 (②)
 
-셸 위에서 화면 HTML을 만든다. `wireFrame/artifacts/{run}/{id}.html`
+**빌드 1회에 세 소스를 함께 참조한다 (triple context):**
 
+1. PRD — `wireFrame/runs/{run}/input/v*.md` (승인본)
+2. JSON 자산 — `projects/{slug}/{design,routes,api,db}.json` + `shell.html`
+3. live DB — `.env` SSH/DB로 SELECT 조회 후 JSON `db`와 병합
+
+CLI `run build`가 SSOT. `spec/build-context.json`과 `domain.sources`에 기록한다.
+
+셸 위에서 화면 HTML을 만든다. `wireFrame/runs/{run}/artifacts/{id}.html`
 화면끼리 서로 몰라도 되므로 **병렬로 생성한다.**
 
-### 5. 반복 — 요청자가 돌린다
+**렌더 하드 룰 (AI 생성):**
+- 한 HTML = 한 플로우 단계. 설명 문구 없이 UI·동작만.
+- CRM 전체 크롬(탑바·사이드) 넣지 않음. `uiPattern=modal`이면 모달 프레임만.
+- 뷰포트에 맞추고 스크롤하지 않음.
+
+### 5. 멀티턴 다듬기 (③) — 승인할 때까지
 
 지시가 들어온 화면 **하나만** 다시 그린다. 나머지는 파일을 그대로 둔다.
+재생성은 **domain.json 재사용** — live DB를 다시 치지 않는다.
 
 ```
 locked: true   → 건드리지 않는다. 기존 HTML 재사용
@@ -83,11 +129,14 @@ locked: false  → 이번 지시 대상
 지시는 `artifacts[].instructions[]`에 누적된다. **이 로그가 개발자에게 가는 실제
 명세다** — 화면은 그림이고, 로그가 "왜 이렇게 생겼나"다.
 
+사용자가 승인하면 `confirmed` — 와이어프레임 생성 완료.
+
 ---
 
 ## 하드 룰
 
-**멈추지 않는다.** 사람이 없으므로 막히면 대기가 아니라 열화(degrade)한다.
+**파이프라인 내부에서는 멈추지 않는다.** ② 생성 중 정보가 모자라면 대기가 아니라
+열화(degrade)하고 `assumptions[]`에 남긴다. (①·③의 사람 승인과는 별개)
 
 | 상황 | 하는 것 | 하지 않는 것 |
 | --- | --- | --- |
@@ -104,20 +153,44 @@ locked: false  → 이번 지시 대상
 시각 효과가 자세한 게 아니다. 상한을 안 박으면 피드백이 그쪽으로 흘러간다.
 
 **개인정보를 넣지 않는다.** 코드값(enum)은 실제 값을 쓰되, 표의 샘플 행은 합성값을
-쓴다. `/wireFrame`은 팀 전체가 본다.
+쓴다. 대시보드(루트 도메인)는 팀 전체가 본다.
+
+**라이브 DB는 환경변수만 쓴다.** SSH·DB 계정은 `.env`의 `SSH_*` / `DB_*` 만.
+config·UI·채팅에 접속 정보를 두지 않는다. 계정은 **SELECT 전용**.
+`server/db-env.ts`가 유일한 읽기 지점이다.
 
 ---
 
 ## 실행
 
-파이프라인 코드는 이 레포에 산다. Hermes에는 CLI를 부르는 껍데기 툴만 등록한다 —
-채팅과 폼이 완전히 같은 경로를 타야 한다.
+파이프라인 SSOT는 **이 레포 CLI**다. 대시보드 OpenAI 에이전트는 CLI를 툴로 호출한다
+(`prd review` / `prd answer` / 이후 `run build`). 채팅과 CLI가 같은 경로를 탄다.
+
+로컬:
+
+```bash
+# .env
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4.1-mini   # optional
+
+# Live DB — SSH + SELECT 계정 (필수 키는 .env.example)
+SSH_HOST=...
+SSH_USER=...
+SSH_KEY_PATH=...            # or SSH_PASSWORD
+DB_NAME=...
+DB_USER=...                 # SELECT only
+DB_PASSWORD=...
+
+npm run dev                 # http://localhost:5173/prd
+```
+
+CLI:
 
 ```
-wireframe intake  {run}      ① 정규화
-wireframe domain  {run}      ② 구조 판정
-wireframe plan    {run}      ③ 화면 설계
-wireframe render  {run} [--artifact {id}]   ④ 생성 / ⑤ 재생성
+wireframe run create|update …
+wireframe prd review|answer …
+wireframe run build …
+wireframe render …
 ```
 
 `--artifact` 없는 `render`는 `locked: false`인 산출물 전부를 병렬로 다시 그린다.

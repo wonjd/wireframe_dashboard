@@ -4,10 +4,19 @@ import type { ResolvedProject } from "../lib/config.js";
 import { resolveProjectSourcePaths } from "../lib/config.js";
 import { writeProjectJson } from "../lib/paths.js";
 
+type FieldMeta = {
+  name: string;
+  optional: boolean;
+};
+
 type Endpoint = {
   method: string;
   path: string;
   fields: string[];
+  requestFields: string[];
+  responseFields: string[];
+  resource: string;
+  sharedType?: string;
   controller: string;
 };
 
@@ -35,6 +44,13 @@ function joinPaths(base: string, routePath: string): string {
   return `${base}${suffix}`.replace(/\/+/g, "/");
 }
 
+function resourceFromPath(apiPath: string): string {
+  const parts = apiPath.split("/").filter(Boolean);
+  // skip version-ish segments
+  const meaningful = parts.filter((part) => !/^v\d+$/i.test(part) && !/^api$/i.test(part));
+  return meaningful[0] ?? "root";
+}
+
 function parseControllerMethods(controllerSource: string): Array<{ method: string; path: string }> {
   const routes: Array<{ method: string; path: string }> = [];
   const routeRe = /router\.(get|post|put|delete|patch)\(\s*["']([^"']*)["']/gi;
@@ -44,20 +60,37 @@ function parseControllerMethods(controllerSource: string): Array<{ method: strin
   return routes;
 }
 
-async function readTypeFields(backendRoot: string, controllerFile: string): Promise<string[]> {
+function dedupeFields(fields: FieldMeta[]): FieldMeta[] {
+  const seen = new Set<string>();
+  const out: FieldMeta[] = [];
+  for (const field of fields) {
+    if (seen.has(field.name)) continue;
+    seen.add(field.name);
+    out.push(field);
+  }
+  return out;
+}
+
+async function readTypeFields(
+  backendRoot: string,
+  controllerFile: string,
+): Promise<{ fields: FieldMeta[]; sharedType?: string }> {
   const baseName = path.basename(controllerFile, ".ts").replace(/Controller$/, "");
   const typeName = `${baseName.charAt(0).toUpperCase()}${baseName.slice(1)}Type`;
   const typePath = path.join(backendRoot, "src/types", `${typeName}.ts`);
   try {
     const source = await readFile(typePath, "utf8");
-    const fields: string[] = [];
+    const fields: FieldMeta[] = [];
     const fieldRe = /^\s+([A-Z][A-Z0-9_]+)(\?)?:/gm;
     for (const match of source.matchAll(fieldRe)) {
-      fields.push(match[1]);
+      fields.push({
+        name: match[1],
+        optional: Boolean(match[2]),
+      });
     }
-    return fields;
+    return { fields: dedupeFields(fields), sharedType: typeName };
   } catch {
-    return [];
+    return { fields: [] };
   }
 }
 
@@ -86,13 +119,20 @@ export async function extractApiAssets(project: ResolvedProject): Promise<string
       continue;
     }
     const methods = parseControllerMethods(controllerSource);
-    const fields = await readTypeFields(backend, controllerFile);
-
+    const { fields, sharedType } = await readTypeFields(backend, controllerFile);
+    const fieldNames = fields.map((f) => f.name);
+    // POST/PUT → request; GET → response preference (same type file often shared)
     for (const method of methods) {
+      const fullPath = joinPaths(mount.base, method.path);
+      const isWrite = /POST|PUT|PATCH/i.test(method.method);
       endpoints.push({
         method: method.method,
-        path: joinPaths(mount.base, method.path),
-        fields,
+        path: fullPath,
+        fields: fieldNames,
+        requestFields: isWrite ? fieldNames : [],
+        responseFields: !isWrite ? fieldNames : fieldNames,
+        resource: resourceFromPath(fullPath),
+        sharedType,
         controller: controllerFile,
       });
     }

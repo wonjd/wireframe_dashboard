@@ -3,7 +3,7 @@ import path from "node:path";
 import type { WireframeConfig } from "./config.js";
 import { getRepoRoot, resolveFromRepo } from "./config.js";
 
-export type RunStatus = "draft" | "confirmed";
+export type RunStatus = "draft" | "clarifying" | "ready" | "confirmed";
 
 export type RunEntry = {
   runId: string;
@@ -91,7 +91,9 @@ export async function loadIndex(config: WireframeConfig): Promise<WireframeIndex
   const indexPath = getIndexPath(config);
   try {
     await access(indexPath);
-    const raw = JSON.parse(await readFile(indexPath, "utf8")) as Record<string, unknown>;
+    const raw = JSON.parse(
+      (await readFile(indexPath, "utf8")).replace(/^\uFEFF/, ""),
+    ) as Record<string, unknown>;
     return normalizeIndex(raw, config.defaultProject);
   } catch {
     return {

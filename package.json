@@ -10,14 +10,17 @@
     "wireframe": "node packages/cli/bin/wireframe.js"
   },
   "dependencies": {
+    "mysql2": "^3.24.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-router-dom": "^7.9.1"
+    "react-router-dom": "^7.9.1",
+    "ssh2": "^1.17.0"
   },
   "devDependencies": {
     "@types/node": "^22.18.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
+    "@types/ssh2": "^1.15.6",
     "@vitejs/plugin-react": "^5.0.2",
     "typescript": "^5.9.3",
     "vite": "^7.1.3"

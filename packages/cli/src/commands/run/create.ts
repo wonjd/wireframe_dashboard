@@ -88,7 +88,7 @@ export async function createRun(config: WireframeConfig, args: string[]): Promis
     kind: "wireframe",
     no: allocatePrdNo(project.runs),
     title: parsed.title,
-    status: "draft",
+    status: "clarifying",
     prdVersion,
     prdPath: prdRelativePath,
     createdAt: now,
@@ -103,4 +103,5 @@ export async function createRun(config: WireframeConfig, args: string[]): Promis
   console.log(`project: ${projectSlug}`);
   console.log(`prd: ${prdRelativePath}`);
   console.log(`index: ${indexPath}`);
+  console.log(`status: clarifying — 채팅에서 PRD 확정·보완 (review → answer → ready)`);
 }

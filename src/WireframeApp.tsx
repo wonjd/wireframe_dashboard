@@ -1,18 +1,35 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AppShell } from "./components/AppShell";
 import { WireframeLayout } from "./components/WireframeLayout";
 import { WireframeHome } from "./routes/WireframeHome";
 import { WireframeProject } from "./routes/WireframeProject";
 import { WireframeFeature } from "./routes/WireframeFeature";
+import { PrdAgentChat } from "./routes/PrdAgentChat";
+import { PrdList } from "./routes/PrdList";
+import { PrdDetail } from "./routes/PrdDetail";
+import { AssetsJsonTab } from "./routes/AssetsJsonTab";
+import { DbQueryTab } from "./routes/DbQueryTab";
 
 export function WireframeApp() {
   return (
-    <BrowserRouter basename="/wireFrame">
+    <BrowserRouter>
       <Routes>
-        <Route path="/" element={<WireframeLayout />}>
-          <Route index element={<WireframeHome />} />
-          <Route path=":projectNo" element={<WireframeProject />} />
-          <Route path=":projectNo/:feature" element={<WireframeFeature />} />
-          <Route path=":projectNo/:feature/screens/:screenId" element={<WireframeFeature />} />
+        <Route element={<AppShell />}>
+          <Route index element={<Navigate to="/prd" replace />} />
+          <Route path="prd" element={<PrdList />} />
+          <Route path="prd/new" element={<PrdAgentChat />} />
+          <Route path="prd/:runId" element={<PrdDetail />} />
+          <Route path="db" element={<DbQueryTab />} />
+          <Route path="assets" element={<AssetsJsonTab />} />
+          <Route path="wireframes" element={<WireframeLayout />}>
+            <Route index element={<WireframeHome />} />
+            <Route path=":projectNo" element={<WireframeProject />} />
+            <Route path=":projectNo/:feature" element={<WireframeFeature />} />
+            <Route
+              path=":projectNo/:feature/screens/:screenId"
+              element={<WireframeFeature />}
+            />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

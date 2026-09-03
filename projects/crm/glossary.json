@@ -1,0 +1,72 @@
+{
+  "terms": [
+    {
+      "word": "광고주",
+      "meaning": "광고를 맡긴 회사·계정",
+      "aliases": ["어카운트", "거래처", "클라이언트"],
+      "table": "ACCOUNT_MT"
+    },
+    {
+      "word": "마케터",
+      "meaning": "담당 마케터(사람). 이름은 USER_MT.USER_NAME, ID는 USER_MT.USER_ID. 업무 테이블의 MARKETER_ID·CREATED_ID·REQUEST_ID에 USER_ID가 들어감. '마케터'라는 글자 자체를 계정명으로 찾지 말 것.",
+      "aliases": ["담당자", "마케터명", "마케터이름", "marketer"],
+      "table": "USER_MT",
+      "column": "USER_NAME"
+    },
+    {
+      "word": "소재요청",
+      "meaning": "이미지/영상 소재 제작 요청. CONTENT_MT. 날짜는 CONTENT_DATE(YYYYMMDD, 예: 20260903). 요청자/마케터는 CREATED_ID 또는 REQUEST_ID(=USER_ID).",
+      "aliases": ["제작요청", "콘텐츠요청", "소재 요청", "제작 요청"],
+      "table": "CONTENT_MT"
+    },
+    {
+      "word": "사용자",
+      "meaning": "로그인 계정. USER_ID=계정ID, USER_NAME=한글 이름",
+      "aliases": ["유저", "계정", "이름"],
+      "table": "USER_MT",
+      "column": "USER_NAME"
+    },
+    {
+      "word": "크리에이티브",
+      "meaning": "광고 소재·제작물",
+      "aliases": ["소재", "광고소재", "creative"],
+      "table": "CREATIVE_MT"
+    },
+    {
+      "word": "세금계산서",
+      "meaning": "세금계산서 요청·발행 관련 데이터",
+      "aliases": ["계산서", "세금계산", "tax"],
+      "table": "TAX_MT"
+    },
+    {
+      "word": "배너광고",
+      "meaning": "배너 광고 마스터. MARKETER_ID는 USER_ID",
+      "aliases": ["배너", "banner"],
+      "table": "BANNER_ADS_MT"
+    },
+    {
+      "word": "검색광고",
+      "meaning": "검색 광고 데이터. MARKETER_ID는 USER_ID",
+      "aliases": ["검색", "search ads"],
+      "table": "SEARCH_ADS_MT"
+    },
+    {
+      "word": "인센티브",
+      "meaning": "월별 인센티브 정산",
+      "aliases": ["인센", "incentive"],
+      "table": "INCENTIVE_MT"
+    },
+    {
+      "word": "KPI",
+      "meaning": "KPI 목표·할당",
+      "aliases": ["지표", "목표"],
+      "table": "KPI_MT"
+    },
+    {
+      "word": "광고콘텐츠",
+      "meaning": "광고 콘텐츠 마스터",
+      "aliases": ["콘텐츠", "ad content"],
+      "table": "AD_CONTENT_MT"
+    }
+  ]
+}

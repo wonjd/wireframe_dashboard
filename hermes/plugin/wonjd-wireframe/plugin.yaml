@@ -1,14 +1,21 @@
 name: wonjd-wireframe
-version: 1.0.0
+version: 1.1.0
 description: >-
-  Save PRD and wireframe runs to wireFrame/runs/ (PRD tab / wireframe tab SSOT).
-  Uses wireframe CLI — no file or shell tools required in chat.
+  Read/save PRD, wireframe HTML, and JSON assets under wireFrame/ and projects/.
+  Agent tools for chat — no file or shell tools required.
 author: wireframe-dashboard
 provides_tools:
   - wonjd_prd_save
+  - wonjd_prd_review
+  - wonjd_prd_answer
   - wonjd_prd_list
+  - wonjd_prd_get
+  - wonjd_wireframe_context
+  - wonjd_wireframe_get
   - wonjd_wireframe_build
   - wonjd_wireframe_render
+  - wonjd_assets_list
+  - wonjd_assets_get
 config_schema:
   wireframe_root:
     type: str

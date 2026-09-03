@@ -1,0 +1,29 @@
+{
+  "sources": {
+    "prd": {
+      "path": "runs/이미지영상-요청-세분화-모달/input/v1.md",
+      "chars": 1958
+    },
+    "jsonAssets": {
+      "projectSlug": "crm",
+      "files": [
+        "design.json",
+        "routes.json",
+        "api.json",
+        "db.json",
+        "shell.html"
+      ]
+    },
+    "liveDb": {
+      "ok": true,
+      "tables": [
+        "INCENTIVE_DAILY_MT",
+        "CONTENT_MT",
+        "INCENTIVE_MT",
+        "FILE_MT",
+        "ENT_MT"
+      ]
+    }
+  },
+  "generatedAt": "2026-09-03T04:57:06.082Z"
+}

@@ -4,11 +4,11 @@ import type { WireframeConfig } from "../../lib/config.js";
 import {
   buildDomain,
   buildManifest,
-  loadProjectAssets,
   renderArtifactHtml,
   type ManifestArtifact,
   type ManifestSpec,
 } from "../../pipeline/build-pipeline.js";
+import { loadBuildContext } from "../../pipeline/build-context.js";
 import {
   ensureRunDirs,
   getProject,
@@ -76,19 +76,35 @@ export async function buildRun(config: WireframeConfig, args: string[]): Promise
     throw new Error(`run not found: ${parsed.runId} (project ${parsed.projectSlug})`);
   }
 
+  if (run.status !== "ready" && run.status !== "confirmed") {
+    throw new Error(
+      `PRD not ready (status=${run.status}). 채팅에서 확정·보완을 끝내 ready가 된 뒤에 빌드하세요.`,
+    );
+  }
+
   await ensureRunDirs(config, parsed.runId);
 
   const prdAbsolute = getRunPrdPath(config, parsed.runId, run.prdVersion);
   const prdContent = await readFile(prdAbsolute, "utf8");
-  const assets = await loadProjectAssets(parsed.assetProjectSlug);
+  const prdPath = run.prdPath;
+
+  // Triple context in one pack: PRD + JSON assets + live DB (wonjd)
+  const ctx = await loadBuildContext({
+    config,
+    projectSlug: parsed.projectSlug,
+    assetProjectSlug: parsed.assetProjectSlug,
+    prdPath,
+    prdContent,
+  });
 
   const domain = buildDomain({
     runId: parsed.runId,
     projectSlug: parsed.projectSlug,
     assetProjectSlug: parsed.assetProjectSlug,
     prdTitle: run.title,
-    prdContent,
-    assets,
+    prdContent: ctx.prdContent,
+    assets: ctx.assets,
+    sources: ctx.sources,
   });
 
   const runRoot = getRunRoot(config, parsed.runId);
@@ -96,6 +112,7 @@ export async function buildRun(config: WireframeConfig, args: string[]): Promise
   const artifactsDir = path.join(runRoot, "artifacts");
   const manifestPath = path.join(specDir, "manifest.json");
   const domainPath = path.join(specDir, "domain.json");
+  const contextPath = path.join(specDir, "build-context.json");
   const existingManifest = await loadExistingManifest(manifestPath);
 
   let manifest = buildManifest({
@@ -108,6 +125,7 @@ export async function buildRun(config: WireframeConfig, args: string[]): Promise
     projectSlug: parsed.projectSlug,
     assetProjectSlug: parsed.assetProjectSlug,
     domain,
+    assets: ctx.assets,
   });
 
   if (existingManifest) {
@@ -124,15 +142,20 @@ export async function buildRun(config: WireframeConfig, args: string[]): Promise
 
   await writeFile(domainPath, `${JSON.stringify(domain, null, 2)}\n`, "utf8");
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  await writeFile(
+    contextPath,
+    `${JSON.stringify({ sources: ctx.sources, generatedAt: new Date().toISOString() }, null, 2)}\n`,
+    "utf8",
+  );
 
   for (const artifact of manifest.artifacts) {
     if (artifact.locked) continue;
     const html = renderArtifactHtml({
       artifact,
       runTitle: run.title,
-      prdContent,
+      prdContent: ctx.prdContent,
       domain,
-      assets,
+      assets: ctx.assets,
     });
     await writeFile(path.join(artifactsDir, artifact.file), html, "utf8");
   }
@@ -146,6 +169,9 @@ export async function buildRun(config: WireframeConfig, args: string[]): Promise
   console.log(`wireframe built: ${parsed.runId}`);
   console.log(`project: ${parsed.projectSlug}`);
   console.log(`assets: ${parsed.assetProjectSlug}`);
+  console.log(
+    `context: PRD + JSON + liveDB(${ctx.sources.liveDb.ok ? ctx.sources.liveDb.tables.join("|") || "ok" : "fail"})`,
+  );
   console.log(`artifacts: ${manifest.artifacts.length}`);
   console.log(`domain: ${domainPath}`);
   console.log(`manifest: ${manifestPath}`);

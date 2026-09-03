@@ -17,7 +17,7 @@
         }
       },
       "extract": {
-        "dbEntities": ["ent", "account"]
+        "dbEntities": ["ent", "account", "content", "growth"]
       }
     }
   },

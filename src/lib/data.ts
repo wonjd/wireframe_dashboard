@@ -90,18 +90,19 @@ function normalizeManifest(raw: RawManifest, project: ProjectEntry, feature: str
 
 const wireframeData = {
   async loadRegistry(): Promise<Registry> {
-    const res = await fetch("/wireFrame/index.json");
+    const res = await fetch("/index.json");
     if (!res.ok) throw new Error("wireFrame/index.json 없음");
     const raw = (await res.json()) as RawRegistry;
     return {
-      projects: raw.projects.map(normalizeProject),
+      projects: (raw.projects ?? []).map(normalizeProject),
     };
   },
 
   async loadManifest(project: ProjectEntry, feature: string): Promise<Manifest> {
-    const res = await fetch(`/wireFrame/runs/${feature}/spec/manifest.json`);
+    const enc = encodeURIComponent(feature);
+    const res = await fetch(`/runs/${enc}/spec/manifest.json`);
     if (!res.ok) {
-      const legacy = await fetch(`/wireFrame/spec/${feature}.manifest.json`);
+      const legacy = await fetch(`/spec/${enc}.manifest.json`);
       if (!legacy.ok) throw new Error(`manifest 없음: ${feature}`);
       const raw = (await legacy.json()) as RawManifest;
       return normalizeManifest(raw, project, feature);
@@ -114,12 +115,42 @@ const wireframeData = {
     const screen = manifest.screens.find((entry) => entry.id === screenId);
     if (!screen) return null;
 
-    const runPath = `/wireFrame/runs/${manifest.feature}/artifacts/${screen.file}`;
-    const runRes = await fetch(runPath);
-    if (runRes.ok) return runRes.text();
+    const feature = manifest.feature;
+    const candidates = [
+      `/runs/${encodeURIComponent(feature)}/artifacts/${encodeURIComponent(screen.file)}`,
+      // Some servers already receive a once-encoded feature segment
+      `/runs/${feature}/artifacts/${screen.file}`,
+    ];
 
-    const legacy = await fetch(`/wireFrame/issue/${screenId}.html`);
-    return legacy.ok ? legacy.text() : null;
+    for (const runPath of candidates) {
+      try {
+        const runRes = await fetch(runPath);
+        if (!runRes.ok) continue;
+        const text = await runRes.text();
+        if (!text.trim()) continue;
+        // Guard: never treat SPA shell as artifact HTML
+        if (text.includes('<div id="root"></div>') && /src\/main\.tsx|\/@vite\//.test(text)) {
+          continue;
+        }
+        if (text.startsWith("not found:")) continue;
+        return text;
+      } catch {
+        /* try next */
+      }
+    }
+
+    const legacy = await fetch(`/issue/${encodeURIComponent(screenId)}.html`);
+    if (!legacy.ok) return null;
+    const legacyText = await legacy.text();
+    if (legacyText.includes('<div id="root"></div>')) return null;
+    return legacyText;
+  },
+
+  /** Public URL for iframe src (prefer over srcDoc for large HTML). */
+  artifactUrl(manifest: Manifest, screenId: string): string | null {
+    const screen = manifest.screens.find((entry) => entry.id === screenId);
+    if (!screen) return null;
+    return `/runs/${encodeURIComponent(manifest.feature)}/artifacts/${encodeURIComponent(screen.file)}`;
   },
 };
 

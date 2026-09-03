@@ -156,177 +156,104 @@
 
 ```json
 { "projects": [
-  { "no": "01", "slug": "crm_frontend", "title": "CRM Frontend",
+  { "no": "01", "slug": "crm", "title": "CRM",
     "runs": [
-      { "runId": "growth-pause", "kind": "wireframe", "no": "PRD-001",
-        "title": "일시정지 연장 현황", "status": "draft", "artifactCount": 3 }
+      { "runId": "creative-request-form", "kind": "wireframe", "no": "PRD-001",
+        "title": "소재 요청", "status": "ready", "artifactCount": 5 }
     ] }
 ] }
 ```
 
-`status` — `draft` 작업중 / `confirmed` 확정. 확정본이 다음 사람에게 간다.
+`status` — PRD: `clarifying` / `ready`. 와이어프레임: `draft` / `confirmed`.
 
-### spec/{run}.domain.json — 구조 판정
+### runs/{runId}/
 
-**스키마가 아니라 판정이다.** 원시 스키마를 넘기면 재생성마다 구조가 흔들린다.
+```
+input/v1.md                 PRD 원문 + ## 확인된 결정
+spec/clarifications.json    open/resolved 질문 (비개발자용)
+spec/domain.json            구조 판정 + uiPattern + fieldBlueprints
+spec/manifest.json          artifacts[] · locked · instructions
+spec/build-context.json     triple context (PRD / JSON / live DB)
+artifacts/{id}.html         화면 1장 = 파일 1개
+```
+
+### domain.json — 구조 판정
+
+**스키마가 아니라 판정이다.**
 
 ```json
 {
-  "entities": ["member", "pause", "extension"],
-  "relations": [
-    { "from": "member", "to": "pause",     "kind": "1:N" },
-    { "from": "pause",  "to": "extension", "kind": "1:N" }
-  ],
-  "judgements": [
-    { "target": "detail", "rule": "회원정보 + 정지이력(표) + 정지 선택 시 연장이력(중첩 표)" },
-    { "target": "list",   "rule": "pause 120만건 → 검색 필수, 전체 나열 금지" },
-    { "target": "list",   "rule": "status 6종 → 상단 필터 탭. 기본값은 EXPIRED 제외" },
-    { "target": "form",   "rule": "extension.reason NOT NULL → 필수 필드" }
-  ]
+  "uiPattern": "wizard",
+  "entities": ["content", "file"],
+  "tables": ["CONTENT_MT"],
+  "stepSpecs": [{ "no": 1, "title": "콘텐츠 유형 선택", "controls": [] }],
+  "fieldBlueprints": [{ "stepNo": 1, "screenKind": "wizard-step", "fields": [] }],
+  "judgements": [{ "target": "wizard", "rule": "단계별 화면 분리" }],
+  "assumptions": [],
+  "sources": {
+    "prd": { "path": "…", "chars": 1200 },
+    "jsonAssets": { "projectSlug": "crm", "files": ["design.json", "db.json"] },
+    "liveDb": { "ok": true, "tables": ["CONTENT_MT"] }
+  }
 }
 ```
 
-DB를 못 읽었으면 `entities: []`로 두고 진행한다. 실패로 처리하지 않는다.
+`uiPattern` — `page` | `modal` | `list` | `wizard` | `detail`  
+(PRD 확정 시 화면 양식 답에서 파생. 없으면 가정 + `assumptions[]`)
 
-### spec/{run}.manifest.json
+### manifest.json
 
 ```json
 {
-  "runId": "growth-pause",
+  "runId": "…",
   "kind": "wireframe",
-  "projectNo": "01",
-  "projectSlug": "crm_frontend",
-  "no": "PRD-001",
-  "title": "일시정지 연장 현황",
-  "mode": "existing",
+  "projectSlug": "crm",
+  "title": "소재 요청",
   "status": "draft",
-  "createdAt": "2026-08-31",
-  "updatedAt": "2026-08-31T14:02:11+09:00",
-
-  "assumptions": [
-    { "text": "정지 상태에서만 연장할 수 있다고 가정",
-      "reason": "PRD에 조건이 없어 status 코드값에서 추론" }
-  ],
-
   "artifacts": [
     {
-      "id": "01-list", "no": 1, "label": "목록",
-      "file": "01-list.html",
-      "locked": true,
-      "updatedAt": "2026-08-31T13:40:02+09:00",
-      "covers": ["목록에서 이름·이메일·상태로 검색"],
-      "instructions": [],
-      "wireframe": { "route": "/growth/pause-status", "type": "new" }
-    },
-    {
-      "id": "02-detail", "no": 2, "label": "상세",
-      "file": "02-detail.html",
+      "id": "01-step-1", "no": 1, "label": "콘텐츠 유형 선택",
+      "file": "01-step-1.html",
       "locked": false,
-      "updatedAt": "2026-08-31T14:02:11+09:00",
-      "covers": ["상세에서 상태를 변경"],
-      "instructions": [
-        { "at": "2026-08-31T13:55:00+09:00", "text": "연장 이력을 표로 아래에 추가" },
-        { "at": "2026-08-31T14:02:11+09:00", "text": "취소 버튼은 빼라 — 취소는 목록에서만" }
-      ],
-      "wireframe": { "route": "/growth/pause-status/:id", "type": "modify", "related": "growthColumns" }
+      "covers": ["1단계"],
+      "instructions": [],
+      "wireframe": { "route": "/wireframe/…/step-1", "type": "new", "uiPattern": "wizard" }
     }
   ]
 }
 ```
 
-**공통 필드** — 모든 vertical이 그대로 쓴다.
-
 | 필드 | 뜻 |
 | --- | --- |
-| `locked` | `true`면 재생성이 건드리지 않는다. 전체 재생성에도 유지 |
-| `instructions[]` | 요청자 지시 로그. **인계받는 사람에게 가는 실제 명세** |
-| `covers[]` | 요구사항 ↔ 산출물 매핑. "이 요구사항 어디에 반영됐나"의 답 |
-| `updatedAt` | 마지막 재생성 시각. 공유 중일 때 "언제 바뀌었나"를 보여준다 |
-| `assumptions[]` | 에이전트가 채운 것. 요청자가 "내가 말한 것"과 구분할 수 있어야 한다 |
+| `locked` | `true`면 재생성이 건드리지 않음 |
+| `instructions[]` | 요청자 지시 = 개발자 명세 |
+| `covers[]` | 요구사항 ↔ 산출물 |
+| `wireframe.uiPattern` | 화면 양식 |
 
-**kind별 필드** — `artifacts[].{kind}` 아래에만 둔다. 공통 필드와 섞지 않는다.
+### artifacts/{id}.html
 
-| wireframe | 뜻 |
-| --- | --- |
-| `route` | 실제 서비스에서의 경로 |
-| `type` | `new` 신규 / `modify` 기존 화면 수정 / `extend` 기존 확장 |
-| `related` | 수정 대상 기존 화면 |
-
-### artifacts/{run}/{id}.html
-
-산출물 하나 = 파일 하나. wireframe은 셸을 참조한다. 언제든 버려도 되는 소모품이다.
-kind가 늘면 확장자가 갈린다 (`.sql` · `.md` 등).
+- 한 파일 = 한 플로우 단계. CRM 탑바·사이드 메뉴 금지.
+- 셸 CSS만. 설명/노트 금지 — UI·컨트롤·버튼만.
+- `uiPattern=modal` → `wfs-modal-backdrop` + `wfs-modal`.
+- 뷰포트 맞춤, 스크롤 없이 자름.
 
 ---
 
 ## 확장
 
-최종 목표는 도메인별 에이전트를 탭으로 관리하는 사내 도구다. 와이어프레임은
-그중 하나이고, **루프는 vertical이 바뀌어도 같다.**
+최종 목표는 도메인별 에이전트 탭. 와이어프레임은 첫 vertical.
+`run` · `artifacts[]` · `kind` · `locked` · `instructions[]` 계약은 유지.
 
-```
-비개발자 자연어 입력
-  → 회사 현실(코드 · DB · 문서)에 기반해서
-  → 산출물 N개 생성
-  → 사람이 단위별로 지시하며 반복
-  → 확정 → 다음 사람에게 인계
-```
-
-| kind | 산출물 단위 | 인계 대상 |
+| kind | 산출물 | 인계 |
 | --- | --- | --- |
 | `wireframe` | 화면 HTML | 개발자 |
-| `report` | 쿼리 + 표 | 요청 부서 |
-| `apispec` | 엔드포인트 | 개발자 |
-| `runbook` | 문서 섹션 | 팀 |
 
-### vertical이 바뀌어도 그대로인 것
+### 대시보드 OpenAI 에이전트와의 역할
 
-- 자산(추출) / 소모품(생성) 분리
-- 추출층 json / 규칙층 md 2층
-- 단위별 `locked` + 단위별 재생성
-- `instructions[]` = 인계받는 사람의 명세
-- `assumptions[]` = 에이전트가 채운 것 표시
-- 입력 이후 무인, 막히면 열화
-- run 상태와 잠금이 서버에 있어야 공유가 성립
-
-### wireframe 전용
-
-- `shell.html` · `design.json` · `design.md`
-- 산출물이 iframe으로 렌더된다는 것
-- `artifacts[].wireframe.*`
-
-### 지금은 플러그인 구조를 만들지 않는다
-
-**두 번째 vertical이 실제로 나오기 전에 추상화하면 반드시 틀린다.**
-vertical 하나만 보고 설계한 확장 지점은 두 번째가 붙을 때 안 맞는다.
-
-지금 하는 건 이름을 막지 않는 것뿐이다 — `run` · `artifacts[]` · `kind`.
-공통을 실제로 뽑아내는 건 두 번째 vertical을 만들 때 한다.
-
-### Hermes와의 역할
-
-| | Hermes Workspace | 이 도구 |
+| | `/prd` 에이전트 | CLI |
 | --- | --- | --- |
-| 모드 | 대화형 탐색 | 반복 가능한 산출물 생산 |
-| 결과 | 채팅 기록 | 파일 · 확정본 · 인계 |
-| 쓰는 사람 | 개발자 | 요청 부서 |
+| 모드 | PRD 확정·보완 (화면 양식 포함) | domain · manifest · HTML |
+| 키 | `OPENAI_API_KEY` | 동일 레포 툴 호출 |
+| 결과 | `확인된 결정` · `ready` | 파일 산출 |
 
-합치지 않는다. Hermes에는 CLI를 부르는 껍데기 툴만 등록해서, 탐색하다 "이거
-산출물로 뽑자" 싶을 때 run을 만들 수 있게 한다.
-
----
-
-## 마이그레이션
-
-현재 구현과 이 스펙의 차이. 구현할 때 함께 처리한다.
-
-| 지금 | 스펙 | 영향 |
-| --- | --- | --- |
-| `index.json`의 `prds[]` · `feature` | `runs[]` · `runId` · `kind` | 뷰어 `types.ts` · `data.ts` |
-| `manifest.screens[]` | `manifest.artifacts[]` | 뷰어 `Sidebar` · `WireframeFeature` |
-| 라우트 `:feature` | `:run` | `WireframeApp.tsx` |
-| `issue/*.html` (평평함) | `artifacts/{run}/{id}.html` | `data.ts`의 `loadHtml` |
-| `screens[]`에 `route` · `type` 직접 | `artifacts[].wireframe.*` | 생성부 |
-
-`locked` · `instructions[]` · `covers[]` · `updatedAt`은 지금 아예 없다.
-반복 루프의 전제이므로 생성부를 만들 때 함께 넣는다 — **나중에 붙일 수 없다.**
+에이전트는 CLI(`prd review` / `prd answer`)만 부르고, 생성 규칙은 CLI가 SSOT다.
