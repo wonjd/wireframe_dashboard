@@ -1,4 +1,5 @@
 import { access, readFile, writeFile } from "node:fs/promises";
+import crypto from "node:crypto";
 import path from "node:path";
 import type { WireframeConfig } from "../../lib/config.js";
 import {
@@ -167,7 +168,18 @@ export async function buildRun(config: WireframeConfig, args: string[]): Promise
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
   await writeFile(
     contextPath,
-    `${JSON.stringify({ sources: ctx.sources, generatedAt: new Date().toISOString() }, null, 2)}\n`,
+    `${JSON.stringify(
+      {
+        sources: ctx.sources,
+        // Fingerprint of the PRD this build came from. The feature spec, user flow and screens
+        // are stale the moment the PRD stops hashing to this, which is how the chat agent knows
+        // a PRD edit has to regenerate everything instead of leaving the documents behind.
+        prdHash: crypto.createHash("sha1").update(ctx.prdContent).digest("hex"),
+        generatedAt: new Date().toISOString(),
+      },
+      null,
+      2,
+    )}\n`,
     "utf8",
   );
 

@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -562,6 +563,36 @@ export function resolvePrdPhase(input: {
   }
   if (input.status === "ready") return "ready";
   return "clarify";
+}
+
+/**
+ * True when the generated documents no longer match the PRD they were built from.
+ * The build stamps the PRD hash into spec/build-context.json; anything else means the feature
+ * spec, user flow and screens are describing an older version of the request.
+ */
+export function prdDocsStale(input: { root: string; runId: string; project?: string }): boolean {
+  const index = readIndex(input.root);
+  if (!index) return false;
+  const hit = findRun(index, input.runId, input.project || "crm");
+  if (!hit) return false;
+  const runRoot = path.join(input.root, "wireFrame", "runs", hit.run.runId);
+  const prdPath = path.join(runRoot, "input", `v${hit.run.prdVersion}.md`);
+  if (!fs.existsSync(prdPath)) return false;
+
+  const ctxPath = path.join(runRoot, "spec", "build-context.json");
+  // Never built — building is what makes it fresh, so treat that as stale.
+  if (!fs.existsSync(ctxPath)) return true;
+  try {
+    const ctx = JSON.parse(fs.readFileSync(ctxPath, "utf8")) as { prdHash?: string };
+    if (typeof ctx.prdHash !== "string" || !ctx.prdHash) return true;
+    const current = crypto
+      .createHash("sha1")
+      .update(fs.readFileSync(prdPath, "utf8"))
+      .digest("hex");
+    return current !== ctx.prdHash;
+  } catch {
+    return true;
+  }
 }
 
 export function prdGet(input: { root: string; runId: string; project?: string }): CliJson {

@@ -248,6 +248,10 @@ function isChoiceCardField(field: BlueprintField, hints: RenderHints): boolean {
 
 function isDropzoneField(field: BlueprintField, hints: RenderHints): boolean {
   if (field.control === "file") return true;
+  // A field the PRD gives choices for is a choice, whatever its label says. "레퍼런스 전달 방식"
+  // (링크 첨부 / 파일 첨부 / 웍스방 / 없음) matched the upload wording below and rendered as a
+  // file picker, so the four options never appeared on the screen at all.
+  if ((field.options?.length ?? 0) >= 2) return false;
   if (hints.forceDropzone && /첨부|레퍼런스|파일|링크|참고/.test(field.label)) return true;
   return /첨부|레퍼런스|파일|업로드|참고\s*자료/.test(field.label);
 }

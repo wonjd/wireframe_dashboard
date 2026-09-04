@@ -6,6 +6,12 @@ import {
   serializeTerm,
   type GlossaryTerm,
 } from "./db-glossary.js";
+import {
+  addUsage,
+  emptyUsage,
+  recordOpenAiUsage,
+  type TokenUsage,
+} from "./openai-usage.js";
 
 export type ChatMessage = {
   role: "system" | "user" | "assistant" | "tool";
@@ -188,7 +194,9 @@ async function runTool(
   }
 }
 
-async function chatCompletion(messages: ChatMessage[]): Promise<ChatMessage> {
+async function chatCompletion(
+  messages: ChatMessage[],
+): Promise<{ message: ChatMessage; usage: TokenUsage | null }> {
   const key = requireOpenAiKey();
   const model = openAiModel();
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -211,10 +219,12 @@ async function chatCompletion(messages: ChatMessage[]): Promise<ChatMessage> {
   }
   const data = (await res.json()) as {
     choices?: Array<{ message?: ChatMessage }>;
+    usage?: unknown;
   };
   const message = data.choices?.[0]?.message;
   if (!message) throw new Error("OpenAI returned empty message");
-  return message;
+  const usage = recordOpenAiUsage("db-agent", model, data.usage);
+  return { message, usage };
 }
 
 export type DbAgentChatInput = {

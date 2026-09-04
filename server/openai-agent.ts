@@ -5,6 +5,7 @@ import {
   prdBuild,
   prdConflicts,
   prdDiscard,
+  prdDocsStale,
   prdGet,
   prdList,
   prdPendingGet,
@@ -12,6 +13,12 @@ import {
   prdReview,
   prdSave,
 } from "./prd-tools.js";
+import {
+  addUsage,
+  emptyUsage,
+  recordOpenAiUsage,
+  type TokenUsage,
+} from "./openai-usage.js";
 
 export type ChatMessage = {
   role: "system" | "user" | "assistant" | "tool";
@@ -659,7 +666,9 @@ function runTool(
   return { result: { ok: false, error: `unknown tool: ${name}` }, state };
 }
 
-async function chatCompletion(messages: ChatMessage[]): Promise<ChatMessage> {
+async function chatCompletion(
+  messages: ChatMessage[],
+): Promise<{ message: ChatMessage; usage: TokenUsage | null }> {
   const key = requireOpenAiKey();
   const model = openAiModel();
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -682,10 +691,12 @@ async function chatCompletion(messages: ChatMessage[]): Promise<ChatMessage> {
   }
   const data = (await res.json()) as {
     choices?: Array<{ message?: ChatMessage }>;
+    usage?: unknown;
   };
   const message = data.choices?.[0]?.message;
   if (!message) throw new Error("OpenAI returned empty message");
-  return message;
+  const usage = recordOpenAiUsage("prd-agent", model, data.usage);
+  return { message, usage };
 }
 
 /** Deterministic: persist layout answers + build when ready — don't rely on the model alone. */
@@ -740,8 +751,11 @@ function ensureProgress(
     (wantsBuild(userText) || curOpen.length === 0);
 
   if (shouldBuild && cur.runId) {
-    // Avoid rebuilding if artifacts already exist unless user explicitly asked
-    if ((cur.artifactCount ?? 0) > 0 && !wantsBuild(userText)) {
+    // Skip a rebuild only when the documents already match the PRD. Gating on the user saying
+    // "생성/만들어" instead meant an approved PRD edit ("레퍼런스에 웍스방 추가해줘") rewrote the
+    // request while the feature spec, user flow and screens silently kept describing the old one.
+    const stale = prdDocsStale({ root, runId: cur.runId, project: cur.project });
+    if ((cur.artifactCount ?? 0) > 0 && !stale && !wantsBuild(userText)) {
       return { state: cur, open: curOpen };
     }
     const out = prdBuild({ root, runId: cur.runId, project: cur.project });
@@ -780,6 +794,9 @@ export type AgentChatResult = {
   pendingPrd?: boolean;
   pendingSummary?: string[];
   trace?: string[];
+  /** Token usage for this chat turn (sum of all model rounds). */
+  usage?: TokenUsage;
+  usageCalls?: number;
 };
 
 export async function runPrdAgentChat(input: AgentChatInput): Promise<AgentChatResult> {
@@ -822,9 +839,15 @@ export async function runPrdAgentChat(input: AgentChatInput): Promise<AgentChatR
   // ensureProgress() is the only thing that can persist the layout answer — and it needs
   // the open list. Starting empty silently disarmed it.
   let lastOpen: OpenQ[] = bootOpen;
+  let turnUsage = emptyUsage();
+  let usageCalls = 0;
 
   for (let round = 0; round < 8; round += 1) {
-    const assistant = await chatCompletion(messages);
+    const { message: assistant, usage } = await chatCompletion(messages);
+    if (usage) {
+      turnUsage = addUsage(turnUsage, usage);
+      usageCalls += 1;
+    }
     messages.push(assistant);
 
     const calls = assistant.tool_calls;
@@ -847,6 +870,8 @@ export async function runPrdAgentChat(input: AgentChatInput): Promise<AgentChatR
         pendingPrd: state.pending,
         pendingSummary: state.pendingSummary,
         trace,
+        usage: turnUsage,
+        usageCalls,
       };
     }
 
@@ -895,5 +920,7 @@ export async function runPrdAgentChat(input: AgentChatInput): Promise<AgentChatR
     pendingPrd: state.pending,
     pendingSummary: state.pendingSummary,
     trace,
+    usage: turnUsage,
+    usageCalls,
   };
 }
