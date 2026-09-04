@@ -13,3 +13,6 @@ wireframe.config.local.json
 .vercel/
 board/
 packages/**/prisma/**/*.db
+
+# 승인 대기 중인 PRD 초안 (승인·취소 시 삭제되는 임시 상태)
+wireFrame/runs/*/spec/pending-prd.json

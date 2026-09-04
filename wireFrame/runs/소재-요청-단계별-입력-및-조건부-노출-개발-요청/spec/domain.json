@@ -1,0 +1,476 @@
+{
+  "runId": "소재-요청-단계별-입력-및-조건부-노출-개발-요청",
+  "projectSlug": "crm",
+  "assetProjectSlug": "crm",
+  "prdTitle": "소재 요청 단계별 입력 및 조건부 노출 개발 요청",
+  "uiPattern": "modal",
+  "entities": [
+    "ent",
+    "account",
+    "content",
+    "growth",
+    "incentive",
+    "file"
+  ],
+  "tables": [
+    "CONTENT_MT"
+  ],
+  "steps": [
+    {
+      "no": 1,
+      "label": "콘텐츠 유형 선택 필수 / 선택형"
+    },
+    {
+      "no": 2,
+      "label": "공통 정보 입력"
+    },
+    {
+      "no": 3,
+      "label": "제작방식 선택 필수 / 선택형"
+    },
+    {
+      "no": 4,
+      "label": "선택값에 따라 추가 입력 항목 노출"
+    }
+  ],
+  "stepSpecs": [
+    {
+      "no": 1,
+      "title": "콘텐츠 유형 선택 필수 / 선택형",
+      "controls": [
+        {
+          "kind": "radio",
+          "label": "콘텐츠 유형",
+          "options": [
+            "이미지",
+            "영상"
+          ],
+          "required": true
+        }
+      ]
+    },
+    {
+      "no": 2,
+      "title": "공통 정보 입력",
+      "controls": [
+        {
+          "kind": "note",
+          "text": "<strong>필수</strong>"
+        },
+        {
+          "kind": "select",
+          "label": "랜딩페이지",
+          "options": [
+            "(동일 광고주 최다 사용값)",
+            "직접 입력"
+          ],
+          "required": true,
+          "hint": "동일 광고주 최다 사용값 자동 호출"
+        },
+        {
+          "kind": "text",
+          "label": "지면",
+          "required": true
+        },
+        {
+          "kind": "text",
+          "label": "타겟",
+          "required": true
+        },
+        {
+          "kind": "text",
+          "label": "핵심 소구 1순위",
+          "required": true
+        },
+        {
+          "kind": "radio",
+          "label": "레퍼런스 전달 방식",
+          "options": [
+            "링크 첨부",
+            "파일 첨부",
+            "없음"
+          ],
+          "required": true
+        },
+        {
+          "kind": "note",
+          "text": "※ 현재 CRM에서 파일 자체 업로드가 가능한지 확인이 필요하며, 구현 불가 시 아래 개발 확인사항 기준으로 대체하고자 합니다."
+        },
+        {
+          "kind": "note",
+          "text": "<strong>선택</strong>"
+        },
+        {
+          "kind": "radio",
+          "label": "기획의도 / 테스트 목적",
+          "options": [
+            "기존 고성과 소구 확장",
+            "탐색 목적 테스트",
+            "기타"
+          ],
+          "required": false
+        },
+        {
+          "kind": "text",
+          "label": "추가 소구",
+          "required": false
+        },
+        {
+          "kind": "text",
+          "label": "필수 반영사항",
+          "required": false
+        }
+      ]
+    },
+    {
+      "no": 3,
+      "title": "제작방식 선택 필수 / 선택형",
+      "controls": [
+        {
+          "kind": "radio",
+          "label": "제작방식",
+          "options": [
+            "가이드(대본·카피) 그대로 제작",
+            "자유 제작(참고용)"
+          ],
+          "required": true
+        }
+      ]
+    },
+    {
+      "no": 4,
+      "title": "선택값에 따라 추가 입력 항목 노출",
+      "controls": [
+        {
+          "kind": "note",
+          "text": "콘텐츠 유형 × 제작방식 선택값에 따라 아래 추가 항목이 조건부로 노출됩니다."
+        },
+        {
+          "kind": "note",
+          "text": "이미지 · 자유 제작(참고용) → 추가 입력 없음"
+        },
+        {
+          "kind": "textarea",
+          "label": "메인 카피",
+          "required": true,
+          "hint": "이미지 · 가이드(대본·카피) 그대로 제작 선택 시 노출 · 미기입 시 요청 불가"
+        },
+        {
+          "kind": "textarea",
+          "label": "서브 카피",
+          "required": false,
+          "hint": "이미지 · 가이드(대본·카피) 그대로 제작 선택 시 노출"
+        },
+        {
+          "kind": "note",
+          "text": "영상 · 자유 제작(참고용) → 추가 입력 없음"
+        },
+        {
+          "kind": "textarea",
+          "label": "최종 대본",
+          "required": true,
+          "maxLength": 200,
+          "hint": "영상 · 가이드(대본·카피) 그대로 제작 선택 시 노출 · 200자 제한 · 미기입 시 요청 불가"
+        },
+        {
+          "kind": "textarea",
+          "label": "필수 유지 문장 / 요소",
+          "required": true,
+          "hint": "영상 · 가이드(대본·카피) 그대로 제작 선택 시 노출 · 미기입 시 요청 불가"
+        }
+      ]
+    }
+  ],
+  "fieldBlueprints": [
+    {
+      "screenKind": "overview",
+      "title": "개요",
+      "fields": []
+    },
+    {
+      "stepNo": 1,
+      "screenKind": "wizard-step",
+      "title": "콘텐츠 유형 선택 필수 / 선택형",
+      "fields": [
+        {
+          "name": "prd_0_콘텐츠_유형",
+          "label": "콘텐츠 유형",
+          "control": "radio",
+          "required": true,
+          "options": [
+            "이미지",
+            "영상"
+          ],
+          "source": "prd"
+        }
+      ],
+      "enums": [
+        {
+          "name": "prd_0_콘텐츠_유형",
+          "label": "콘텐츠 유형",
+          "options": [
+            "이미지",
+            "영상"
+          ]
+        }
+      ]
+    },
+    {
+      "stepNo": 2,
+      "screenKind": "wizard-step",
+      "title": "공통 정보 입력",
+      "fields": [
+        {
+          "name": "prd_1_랜딩페이지",
+          "label": "랜딩페이지",
+          "control": "select",
+          "required": true,
+          "options": [
+            "(동일 광고주 최다 사용값)",
+            "직접 입력"
+          ],
+          "source": "prd",
+          "hint": "동일 광고주 최다 사용값 자동 호출"
+        },
+        {
+          "name": "prd_2_지면",
+          "label": "지면",
+          "control": "text",
+          "required": true,
+          "source": "prd"
+        },
+        {
+          "name": "prd_3_타겟",
+          "label": "타겟",
+          "control": "text",
+          "required": true,
+          "source": "prd"
+        },
+        {
+          "name": "prd_4_핵심_소구_1순위",
+          "label": "핵심 소구 1순위",
+          "control": "text",
+          "required": true,
+          "source": "prd"
+        },
+        {
+          "name": "prd_5_레퍼런스_전달_방식",
+          "label": "레퍼런스 전달 방식",
+          "control": "radio",
+          "required": true,
+          "options": [
+            "링크 첨부",
+            "파일 첨부",
+            "없음"
+          ],
+          "source": "prd"
+        },
+        {
+          "name": "prd_8_기획의도_/_테스트_목적",
+          "label": "기획의도 / 테스트 목적",
+          "control": "radio",
+          "required": false,
+          "options": [
+            "기존 고성과 소구 확장",
+            "탐색 목적 테스트",
+            "기타"
+          ],
+          "source": "prd"
+        },
+        {
+          "name": "prd_9_추가_소구",
+          "label": "추가 소구",
+          "control": "text",
+          "required": false,
+          "source": "prd"
+        },
+        {
+          "name": "prd_10_필수_반영사항",
+          "label": "필수 반영사항",
+          "control": "text",
+          "required": false,
+          "source": "prd"
+        }
+      ],
+      "enums": [
+        {
+          "name": "prd_1_랜딩페이지",
+          "label": "랜딩페이지",
+          "options": [
+            "(동일 광고주 최다 사용값)",
+            "직접 입력"
+          ]
+        },
+        {
+          "name": "prd_5_레퍼런스_전달_방식",
+          "label": "레퍼런스 전달 방식",
+          "options": [
+            "링크 첨부",
+            "파일 첨부",
+            "없음"
+          ]
+        },
+        {
+          "name": "prd_8_기획의도_/_테스트_목적",
+          "label": "기획의도 / 테스트 목적",
+          "options": [
+            "기존 고성과 소구 확장",
+            "탐색 목적 테스트",
+            "기타"
+          ]
+        }
+      ]
+    },
+    {
+      "stepNo": 3,
+      "screenKind": "wizard-step",
+      "title": "제작방식 선택 필수 / 선택형",
+      "fields": [
+        {
+          "name": "prd_0_제작방식",
+          "label": "제작방식",
+          "control": "radio",
+          "required": true,
+          "options": [
+            "가이드(대본·카피) 그대로 제작",
+            "자유 제작(참고용)"
+          ],
+          "source": "prd"
+        }
+      ],
+      "enums": [
+        {
+          "name": "prd_0_제작방식",
+          "label": "제작방식",
+          "options": [
+            "가이드(대본·카피) 그대로 제작",
+            "자유 제작(참고용)"
+          ]
+        }
+      ]
+    },
+    {
+      "stepNo": 4,
+      "screenKind": "wizard-step",
+      "title": "선택값에 따라 추가 입력 항목 노출",
+      "fields": [
+        {
+          "name": "prd_2_메인_카피",
+          "label": "메인 카피",
+          "control": "textarea",
+          "required": true,
+          "source": "prd",
+          "hint": "이미지 · 가이드(대본·카피) 그대로 제작 선택 시 노출 · 미기입 시 요청 불가"
+        },
+        {
+          "name": "prd_3_서브_카피",
+          "label": "서브 카피",
+          "control": "textarea",
+          "required": false,
+          "source": "prd",
+          "hint": "이미지 · 가이드(대본·카피) 그대로 제작 선택 시 노출"
+        },
+        {
+          "name": "prd_5_최종_대본",
+          "label": "최종 대본",
+          "control": "textarea",
+          "required": true,
+          "source": "prd",
+          "hint": "영상 · 가이드(대본·카피) 그대로 제작 선택 시 노출 · 200자 제한 · 미기입 시 요청 불가"
+        },
+        {
+          "name": "prd_6_필수_유지_문장_/_요소",
+          "label": "필수 유지 문장 / 요소",
+          "control": "textarea",
+          "required": true,
+          "source": "prd",
+          "hint": "영상 · 가이드(대본·카피) 그대로 제작 선택 시 노출 · 미기입 시 요청 불가"
+        }
+      ],
+      "enums": []
+    }
+  ],
+  "requirements": [],
+  "judgements": [
+    {
+      "target": "build-context",
+      "rule": "triple context: PRD + JSON(crm) + live DB [INCENTIVE_DAILY_MT, CONTENT_MT, INCENTIVE_MT, FILE_MT, ENT_MT]"
+    },
+    {
+      "target": "wizard",
+      "rule": "4단계 요청 흐름 — 단계별 화면 분리"
+    },
+    {
+      "target": "list",
+      "rule": "검색 필드 필수"
+    },
+    {
+      "target": "form",
+      "rule": "조건부 필드 노출/검증 분리"
+    },
+    {
+      "target": "list",
+      "rule": "CONTENT_MT 41681건 — 페이징/검색 필수"
+    },
+    {
+      "target": "CONTENT_DIV_CD",
+      "rule": "CONTENT_MT.CONTENT_DIV_CD 코드 2개 — 탭 또는 radio"
+    },
+    {
+      "target": "PROD_METHOD",
+      "rule": "CONTENT_MT.PROD_METHOD 코드 2개 — 탭 또는 radio"
+    },
+    {
+      "target": "REF_TYPE",
+      "rule": "CONTENT_MT.REF_TYPE 코드 3개 — 탭 또는 radio"
+    },
+    {
+      "target": "CONTENT_STATE_CD",
+      "rule": "CONTENT_MT.CONTENT_STATE_CD 코드 5개 — 탭 또는 radio"
+    },
+    {
+      "target": "step-1",
+      "rule": "콘텐츠 유형 선택 필수 / 선택형: 1 fields · ui=modal/wizard-step"
+    },
+    {
+      "target": "step-2",
+      "rule": "공통 정보 입력: 8 fields · ui=modal/wizard-step"
+    },
+    {
+      "target": "step-3",
+      "rule": "제작방식 선택 필수 / 선택형: 1 fields · ui=modal/wizard-step"
+    },
+    {
+      "target": "step-4",
+      "rule": "선택값에 따라 추가 입력 항목 노출: 4 fields · ui=modal/wizard-step"
+    }
+  ],
+  "assumptions": [],
+  "sources": {
+    "prd": {
+      "path": "runs/소재-요청-단계별-입력-및-조건부-노출-개발-요청/input/v1.md",
+      "chars": 1940
+    },
+    "jsonAssets": {
+      "projectSlug": "crm",
+      "files": [
+        "design.json",
+        "routes.json",
+        "api.json",
+        "db.json",
+        "shell.html"
+      ]
+    },
+    "liveDb": {
+      "ok": true,
+      "tables": [
+        "INCENTIVE_DAILY_MT",
+        "CONTENT_MT",
+        "INCENTIVE_MT",
+        "FILE_MT",
+        "ENT_MT"
+      ]
+    }
+  },
+  "generatedAt": "2026-09-04T02:06:55.453Z"
+}

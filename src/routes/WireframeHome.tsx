@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import { NotFoundPage } from "../components/NotFoundPage";
-import { deleteWireframes, statusLabel, type PrdRunRow } from "./PrdList";
+import { statusLabel, type PrdRunRow } from "./PrdList";
 
 type ScreenRow = {
   runId: string;
@@ -30,7 +30,6 @@ export function WireframeHome() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openRunId, setOpenRunId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   function reload() {
     setLoading(true);
@@ -135,38 +134,6 @@ export function WireframeHome() {
     return `/wireframes/${projectNo}/${s.runId}/screens/${s.screenId}`;
   }
 
-  async function onDeleteWireframes(g: PrdGroup, e: MouseEvent) {
-    e.stopPropagation();
-    if (g.screens.length === 0) {
-      window.alert("삭제할 화면 HTML이 없습니다.");
-      return;
-    }
-    const ok = window.confirm(
-      `「${g.title}」와이어프레임 화면을 삭제할까요?\nPRD 본문은 남고, 화면 HTML만 지워집니다.`,
-    );
-    if (!ok) return;
-    setDeletingId(g.runId);
-    setError(null);
-    try {
-      const result = await deleteWireframes(g.routeId || g.runId, "crm");
-      if (result.ok === false) throw new Error(result.error || "삭제 실패");
-      setScreens((prev) => prev.filter((s) => s.runId !== g.runId));
-      setRuns((prev) =>
-        prev.map((r) =>
-          r.runId === g.runId
-            ? { ...r, artifactCount: 0, status: r.status === "confirmed" ? "ready" : r.status }
-            : r,
-        ),
-      );
-      if (openRunId === g.runId) setOpenRunId(null);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err));
-      void reload();
-    } finally {
-      setDeletingId(null);
-    }
-  }
-
   return (
     <div className="wfs-list-page">
       <header className="wfs-header">
@@ -193,7 +160,6 @@ export function WireframeHome() {
           <div className="wfs-wf-prd-list">
             {groups.map((g) => {
               const open = openRunId === g.runId;
-              const busy = deletingId === g.runId;
               return (
                 <div key={g.runId} className={`wfs-wf-prd-block${open ? " is-open" : ""}`}>
                   <div className="wfs-wf-prd-row">
@@ -216,15 +182,6 @@ export function WireframeHome() {
                           ›
                         </span>
                       </div>
-                    </button>
-                    <button
-                      type="button"
-                      className="wfs-btn-danger wfs-wf-prd-delete"
-                      disabled={busy || g.screens.length === 0}
-                      onClick={(e) => void onDeleteWireframes(g, e)}
-                      title="화면 HTML만 삭제"
-                    >
-                      {busy ? "삭제 중…" : "삭제"}
                     </button>
                   </div>
 

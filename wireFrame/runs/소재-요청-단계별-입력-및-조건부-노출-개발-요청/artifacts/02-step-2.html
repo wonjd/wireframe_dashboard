@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>이미지/영상 요청 세분화 모달 — 공통 정보 입력</title>
+  <title>소재 요청 단계별 입력 및 조건부 노출 개발 요청 — 공통 정보 입력</title>
   <style>:root {
       --brand: #246beb;
       --ink: #001E3C;
@@ -672,7 +672,7 @@
       background: transparent;
       box-shadow: none;
     }
-    .wfs-stage-frame--modal .wfs-modal-backdrop {
+    .wfs-stage-frame--modal .wfs-dlg-backdrop {
       flex: 1;
       min-height: 0;
       height: 100%;
@@ -709,7 +709,9 @@
     .wfs-actions { flex-shrink: 0; }
     .wfs-page-desc, .wfs-note, .wfs-field-hint { display: none !important; }
   
-    .wfs-modal-backdrop {
+    .wfs-dlg-backdrop {
+      position: relative;
+      inset: auto;
       height: 100%;
       display: flex;
       align-items: center;
@@ -719,7 +721,11 @@
       background: rgba(45, 53, 57, 0.45);
       overflow: hidden;
     }
-    .wfs-modal {
+    .wfs-dlg {
+      position: relative;
+      inset: auto;
+      z-index: auto;
+      margin: 0;
       width: min(640px, 100%);
       max-height: 100%;
       overflow: hidden;
@@ -731,8 +737,8 @@
       padding: 16px 20px 14px;
       box-sizing: border-box;
     }
-    .wfs-modal .wfs-page-head { margin-bottom: 12px; }
-    .wfs-modal .wfs-card {
+    .wfs-dlg .wfs-page-head { margin-bottom: 12px; }
+    .wfs-dlg .wfs-card {
       border: 0;
       box-shadow: none;
       padding: 0;
@@ -746,7 +752,7 @@
 </head>
 <body>
   <div class="wfs-stage">
-    <div class="wfs-stage-frame"><main class="wfs-main">
+    <div class="wfs-stage-frame wfs-stage-frame--modal"><div class="wfs-dlg-backdrop"><div class="wfs-dlg" role="dialog" aria-modal="true">
       <div class="wfs-page-head">
         <div>
           <h1 class="wfs-page-title">공통 정보 입력</h1>
@@ -754,14 +760,14 @@
       </div>
       <div class="wfs-card">
         <form onsubmit="return false">
-          <div class="wfs-section"><div class="wfs-form-grid"><div class="wfs-field wfs-field--full"><span class="wfs-field-label">기획의도 / 테스트 목적</span><div class="wfs-chip-group"><label class="wfs-chip is-selected"><input type="radio" name="field-0" checked><span>기존 고성과 소구 확장</span></label><label class="wfs-chip"><input type="radio" name="field-0" ><span>탐색 목적 테스트</span></label><label class="wfs-chip"><input type="radio" name="field-0" ><span>기타</span></label></div></div><div class="wfs-field"><label class="wfs-field-label">ㄴ 기존 고성과 소구 확장</label><input type="text" class="wfs-input" placeholder="ㄴ 기존 고성과 소구 확장"></div><div class="wfs-field wfs-field--full"><label class="wfs-field-label">ㄴ 탐색 목적 테스트</label><input type="text" class="wfs-input" placeholder="ㄴ 탐색 목적 테스트"></div><div class="wfs-field"><label class="wfs-field-label">ㄴ 기타 → 선택 시 수기 작성</label><input type="text" class="wfs-input" placeholder="ㄴ 기타 → 선택 시 수기 작성"></div><div class="wfs-field wfs-field--full"><label class="wfs-field-label">추가 소구</label><input type="text" class="wfs-input" placeholder="추가 소구"></div><div class="wfs-field wfs-field--full"><label class="wfs-field-label">필수 반영사항</label><input type="text" class="wfs-input" placeholder="필수 반영사항"></div></div></div>
+          <div class="wfs-section"><div class="wfs-form-grid"><div class="wfs-field"><label class="wfs-field-label">랜딩페이지<span class="req">*</span></label><select class="wfs-select"><option>(동일 광고주 최다 사용값)</option><option>직접 입력</option></select></div><div class="wfs-field"><label class="wfs-field-label">지면<span class="req">*</span></label><input type="text" class="wfs-input" placeholder="지면"></div><div class="wfs-field"><label class="wfs-field-label">타겟<span class="req">*</span></label><input type="text" class="wfs-input" placeholder="타겟"></div><div class="wfs-field"><label class="wfs-field-label">핵심 소구 1순위<span class="req">*</span></label><input type="text" class="wfs-input" placeholder="핵심 소구 1순위"></div><div class="wfs-field wfs-field--full"><span class="wfs-field-label">레퍼런스 전달 방식<span class="req">*</span></span><div class="wfs-choice-grid"><label class="wfs-choice-card is-selected"><input type="radio" name="field-4" checked hidden><strong>링크 첨부</strong></label><label class="wfs-choice-card"><input type="radio" name="field-4"  hidden><strong>파일 첨부</strong></label><label class="wfs-choice-card"><input type="radio" name="field-4"  hidden><strong>없음</strong></label></div></div><div class="wfs-field wfs-field--full"><span class="wfs-field-label">기획의도 / 테스트 목적</span><div class="wfs-chip-group"><label class="wfs-chip is-selected"><input type="radio" name="field-5" checked><span>기존 고성과 소구 확장</span></label><label class="wfs-chip"><input type="radio" name="field-5" ><span>탐색 목적 테스트</span></label><label class="wfs-chip"><input type="radio" name="field-5" ><span>기타</span></label></div></div><div class="wfs-field wfs-field--full"><label class="wfs-field-label">추가 소구</label><input type="text" class="wfs-input" placeholder="추가 소구"></div><div class="wfs-field wfs-field--full"><label class="wfs-field-label">필수 반영사항</label><input type="text" class="wfs-input" placeholder="필수 반영사항"></div></div></div>
           <div class="wfs-actions wfs-actions--end">
             <button class="wfs-btn wfs-btn--muted" type="button">임시저장</button>
             <button class="wfs-btn wfs-btn--ghost" type="button">이전</button>
             <button class="wfs-btn" type="button">다음</button>
           </div>
         </form>
-      </div></main></div>
+      </div></div></div></div>
   </div>
 </body>
 </html>

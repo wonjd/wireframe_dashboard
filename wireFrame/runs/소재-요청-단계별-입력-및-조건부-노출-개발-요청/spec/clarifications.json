@@ -1,17 +1,20 @@
 {
   "status": "ready",
-  "open": [
+  "phase": "ready",
+  "open": [],
+  "resolved": [
     {
-      "id": "q-dde2a8c5",
+      "id": "q-screen-layout",
       "kind": "scope",
       "topic": "screen_layout",
       "question": "PRD가 확정됐습니다. 화면은 어떤 형태로 보여 주면 될까요? (예: 전체 페이지 입력폼 / 팝업·모달 / 목록 표 / 단계별로 넘어가는 화면). 섞여 있으면 단계마다 적어 주세요.",
-      "reason": "애매한 업무 결정 확정·승인 후에만 화면 양식을 묻는다"
+      "reason": "애매한 업무 결정 확정·승인 후에만 화면 양식을 묻는다",
+      "answer": "모달",
+      "resolvedAt": "2026-09-03T06:00:36.219Z"
     }
   ],
-  "resolved": [],
-  "rounds": 1,
-  "updatedAt": "2026-09-03T05:04:07.191Z",
+  "rounds": 3,
+  "updatedAt": "2026-09-04T00:12:53.113Z",
   "channel": "chat",
   "audience": "non_developer"
 }

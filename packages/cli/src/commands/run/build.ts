@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { access, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { WireframeConfig } from "../../lib/config.js";
 import {
@@ -9,6 +9,12 @@ import {
   type ManifestSpec,
 } from "../../pipeline/build-pipeline.js";
 import { loadBuildContext } from "../../pipeline/build-context.js";
+import {
+  buildFeaturesDoc,
+  buildFlowDoc,
+  type ClarificationsFile,
+} from "../../pipeline/build-docs.js";
+import { applyOverrides, loadOverrides } from "../../pipeline/spec-overrides.js";
 import {
   ensureRunDirs,
   getProject,
@@ -45,9 +51,26 @@ function parseBuildArgs(args: string[], config: WireframeConfig): BuildArgs {
   };
 }
 
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function loadExistingManifest(manifestPath: string): Promise<ManifestSpec | null> {
   try {
     return JSON.parse(await readFile(manifestPath, "utf8")) as ManifestSpec;
+  } catch {
+    return null;
+  }
+}
+
+async function loadClarifications(clarificationsPath: string): Promise<ClarificationsFile> {
+  try {
+    return JSON.parse(await readFile(clarificationsPath, "utf8")) as ClarificationsFile;
   } catch {
     return null;
   }
@@ -148,14 +171,45 @@ export async function buildRun(config: WireframeConfig, args: string[]): Promise
     "utf8",
   );
 
+  // Dashboard documents: 기능명세서 mind-map + 유저플로우 sitemap
+  const clarifications = await loadClarifications(path.join(specDir, "clarifications.json"));
+  const features = buildFeaturesDoc({
+    runId: parsed.runId,
+    prdContent: ctx.prdContent,
+    domain,
+    clarifications,
+    manifest,
+  });
+  const flow = buildFlowDoc({
+    runId: parsed.runId,
+    prdContent: ctx.prdContent,
+    domain,
+    manifest,
+  });
+  const featuresPath = path.join(specDir, "features.json");
+  const flowPath = path.join(specDir, "flow.json");
+  await writeFile(featuresPath, `${JSON.stringify(features, null, 2)}\n`, "utf8");
+  await writeFile(flowPath, `${JSON.stringify(flow, null, 2)}\n`, "utf8");
+
+  // User edits (rename/importance/hide) live in spec/overrides.json and are merged at
+  // read time only: the generated documents above stay untouched on disk, and the build
+  // never writes the overrides file back. See pipeline/spec-overrides.ts.
+  const overrides = await loadOverrides(specDir);
+  const merged = applyOverrides(features, flow, overrides);
+
   for (const artifact of manifest.artifacts) {
-    if (artifact.locked) continue;
+    // locked means "keep what is already on disk", not "never write it". 00-overview is born
+    // locked, so an unconditional skip left its file permanently missing while artifactCount
+    // still counted it.
+    if (artifact.locked && (await fileExists(path.join(artifactsDir, artifact.file)))) continue;
     const html = renderArtifactHtml({
       artifact,
       runTitle: run.title,
       prdContent: ctx.prdContent,
       domain,
       assets: ctx.assets,
+      features: merged.features,
+      flow: merged.flow,
     });
     await writeFile(path.join(artifactsDir, artifact.file), html, "utf8");
   }
@@ -175,5 +229,14 @@ export async function buildRun(config: WireframeConfig, args: string[]): Promise
   console.log(`artifacts: ${manifest.artifacts.length}`);
   console.log(`domain: ${domainPath}`);
   console.log(`manifest: ${manifestPath}`);
+  console.log(`features: ${featuresPath}`);
+  console.log(`flow: ${flowPath}`);
+  console.log(
+    `overrides: ${
+      overrides
+        ? `${Object.keys(overrides.features ?? {}).length} features, ${Object.keys(overrides.flow ?? {}).length} flow`
+        : "none"
+    }`,
+  );
   console.log(`index: ${indexPath}`);
 }

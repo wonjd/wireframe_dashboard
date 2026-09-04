@@ -7,6 +7,7 @@ import { WireframeFeature } from "./routes/WireframeFeature";
 import { PrdAgentChat } from "./routes/PrdAgentChat";
 import { PrdList } from "./routes/PrdList";
 import { PrdDetail } from "./routes/PrdDetail";
+import { PrdStudio } from "./routes/PrdStudio";
 import { AssetsJsonTab } from "./routes/AssetsJsonTab";
 import { DbQueryTab } from "./routes/DbQueryTab";
 
@@ -19,6 +20,7 @@ export function WireframeApp() {
           <Route path="prd" element={<PrdList />} />
           <Route path="prd/new" element={<PrdAgentChat />} />
           <Route path="prd/:runId" element={<PrdDetail />} />
+          <Route path="prd/:runId/studio" element={<PrdStudio />} />
           <Route path="db" element={<DbQueryTab />} />
           <Route path="assets" element={<AssetsJsonTab />} />
           <Route path="wireframes" element={<WireframeLayout />}>

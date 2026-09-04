@@ -12,13 +12,29 @@ import {
   prdList,
   prdSave,
   listWireframeScreens,
+  overridesGet,
+  overridesSave,
+  wireframeConfirm,
   wireframeDelete,
+  wireframeManifest,
+  wireframeRefine,
 } from "./prd-tools.js";
 
-async function readBody(req: IncomingMessage): Promise<string> {
+/** Body cap for spec/overrides.json — a patch document, never a payload. */
+const OVERRIDES_MAX_BYTES = 256 * 1024;
+
+class BodyTooLarge extends Error {}
+
+async function readBody(req: IncomingMessage, maxBytes?: number): Promise<string> {
   const chunks: Buffer[] = [];
+  let size = 0;
   for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    size += buf.length;
+    if (maxBytes !== undefined && size > maxBytes) {
+      throw new BodyTooLarge(`body too large (max ${maxBytes} bytes)`);
+    }
+    chunks.push(buf);
   }
   return Buffer.concat(chunks).toString("utf8");
 }
@@ -42,6 +58,7 @@ export function createAgentApiMiddleware(root: string) {
       !url.startsWith("/api/agent") &&
       !url.startsWith("/api/db") &&
       !url.startsWith("/api/prd") &&
+      !url.startsWith("/api/runs") &&
       !url.startsWith("/api/wireframes")
     ) {
       return next();
@@ -51,7 +68,7 @@ export function createAgentApiMiddleware(root: string) {
     if (req.method === "OPTIONS") {
       res.statusCode = 204;
       res.setHeader("Access-Control-Allow-Origin", "*");
-      res.setHeader("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS");
+      res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
       res.setHeader("Access-Control-Allow-Headers", "Content-Type");
       res.end();
       return;
@@ -121,6 +138,65 @@ export function createAgentApiMiddleware(root: string) {
       }
 
       {
+        const refineMatch = url.match(/^\/api\/wireframes\/([^/]+)\/refine$/);
+        if (refineMatch && req.method === "POST") {
+          const runId = decodeURIComponent(refineMatch[1] || "");
+          const raw = await readBody(req);
+          const body = JSON.parse(raw || "{}") as {
+            project?: string;
+            artifactId?: string;
+            instruction?: string;
+          };
+          if (!body.artifactId || !body.instruction?.trim()) {
+            sendJson(res, 400, { ok: false, error: "artifactId and instruction required" });
+            return;
+          }
+          const result = wireframeRefine({
+            root,
+            runId,
+            project: body.project || "crm",
+            artifactId: String(body.artifactId),
+            instruction: String(body.instruction),
+          });
+          sendJson(res, result.ok === false ? 400 : 200, result);
+          return;
+        }
+      }
+
+      {
+        const confirmMatch = url.match(/^\/api\/wireframes\/([^/]+)\/confirm$/);
+        if (confirmMatch && req.method === "POST") {
+          const runId = decodeURIComponent(confirmMatch[1] || "");
+          const raw = await readBody(req);
+          const body = JSON.parse(raw || "{}") as { project?: string };
+          const result = wireframeConfirm({
+            root,
+            runId,
+            project: body.project || "crm",
+          });
+          sendJson(res, result.ok === false ? 400 : 200, result);
+          return;
+        }
+      }
+
+      {
+        const wfGetMatch = url.match(/^\/api\/wireframes\/([^/]+)$/);
+        if (wfGetMatch && req.method === "GET") {
+          const runId = decodeURIComponent(wfGetMatch[1] || "");
+          if (runId && runId !== "list") {
+            const full = req.url || "";
+            const qs = full.includes("?")
+              ? new URL(full, "http://local").searchParams
+              : new URLSearchParams();
+            const project = (qs.get("project") || "crm").trim() || "crm";
+            const result = wireframeManifest({ root, runId, project });
+            sendJson(res, result.ok === false ? 404 : 200, result);
+            return;
+          }
+        }
+      }
+
+      {
         const wfDelMatch = url.match(/^\/api\/wireframes\/([^/]+)$/);
         if (wfDelMatch && req.method === "DELETE") {
           const runId = decodeURIComponent(wfDelMatch[1] || "");
@@ -135,6 +211,40 @@ export function createAgentApiMiddleware(root: string) {
               ? prdDelete({ root, runId, project })
               : wireframeDelete({ root, runId, project });
           sendJson(res, result.ok === false ? 404 : 200, result);
+          return;
+        }
+      }
+
+      {
+        // User-owned edits over the generated features.json/flow.json. The file is never
+        // written by a build; only these two endpoints touch it.
+        const overridesMatch = url.match(/^\/api\/runs\/([^/]+)\/overrides$/);
+        if (overridesMatch && (req.method === "GET" || req.method === "PUT")) {
+          const runId = decodeURIComponent(overridesMatch[1] || "");
+          const full = req.url || "";
+          const qs = full.includes("?")
+            ? new URL(full, "http://local").searchParams
+            : new URLSearchParams();
+          const project = (qs.get("project") || "crm").trim() || "crm";
+          if (!runId) {
+            sendJson(res, 400, { ok: false, error: "runId required" });
+            return;
+          }
+          if (req.method === "GET") {
+            const result = overridesGet({ root, runId, project });
+            sendJson(res, result.ok === false ? 404 : 200, result);
+            return;
+          }
+          const raw = await readBody(req, OVERRIDES_MAX_BYTES);
+          let body: unknown;
+          try {
+            body = JSON.parse(raw || "{}");
+          } catch {
+            sendJson(res, 400, { ok: false, error: "invalid JSON body" });
+            return;
+          }
+          const result = overridesSave({ root, runId, project, body });
+          sendJson(res, result.ok === false ? 400 : 200, result);
           return;
         }
       }
@@ -209,6 +319,7 @@ export function createAgentApiMiddleware(root: string) {
             sendJson(res, result.ok === false ? 500 : 200, {
               ...result,
               status: fresh.status,
+              phase: fresh.phase,
               title: fresh.title,
               content: fresh.content,
               runId: fresh.runId,
@@ -290,7 +401,7 @@ export function createAgentApiMiddleware(root: string) {
 
       sendJson(res, 404, { ok: false, error: "not found" });
     } catch (err) {
-      sendJson(res, 500, {
+      sendJson(res, err instanceof BodyTooLarge ? 413 : 500, {
         ok: false,
         error: err instanceof Error ? err.message : String(err),
       });

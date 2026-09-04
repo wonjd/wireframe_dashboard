@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>이미지/영상 요청 세분화 모달 — 제작방식 선택 필수 / 선택형</title>
+  <title>소재 요청 단계별 입력 및 조건부 노출 개발 요청 — 콘텐츠 유형 선택 필수 / 선택형</title>
   <style>:root {
       --brand: #246beb;
       --ink: #001E3C;
@@ -672,7 +672,7 @@
       background: transparent;
       box-shadow: none;
     }
-    .wfs-stage-frame--modal .wfs-modal-backdrop {
+    .wfs-stage-frame--modal .wfs-dlg-backdrop {
       flex: 1;
       min-height: 0;
       height: 100%;
@@ -709,7 +709,9 @@
     .wfs-actions { flex-shrink: 0; }
     .wfs-page-desc, .wfs-note, .wfs-field-hint { display: none !important; }
   
-    .wfs-modal-backdrop {
+    .wfs-dlg-backdrop {
+      position: relative;
+      inset: auto;
       height: 100%;
       display: flex;
       align-items: center;
@@ -719,7 +721,11 @@
       background: rgba(45, 53, 57, 0.45);
       overflow: hidden;
     }
-    .wfs-modal {
+    .wfs-dlg {
+      position: relative;
+      inset: auto;
+      z-index: auto;
+      margin: 0;
       width: min(640px, 100%);
       max-height: 100%;
       overflow: hidden;
@@ -731,8 +737,8 @@
       padding: 16px 20px 14px;
       box-sizing: border-box;
     }
-    .wfs-modal .wfs-page-head { margin-bottom: 12px; }
-    .wfs-modal .wfs-card {
+    .wfs-dlg .wfs-page-head { margin-bottom: 12px; }
+    .wfs-dlg .wfs-card {
       border: 0;
       box-shadow: none;
       padding: 0;
@@ -746,22 +752,22 @@
 </head>
 <body>
   <div class="wfs-stage">
-    <div class="wfs-stage-frame"><main class="wfs-main">
+    <div class="wfs-stage-frame wfs-stage-frame--modal"><div class="wfs-dlg-backdrop"><div class="wfs-dlg" role="dialog" aria-modal="true">
       <div class="wfs-page-head">
         <div>
-          <h1 class="wfs-page-title">제작방식 선택 필수 / 선택형</h1>
+          <h1 class="wfs-page-title">콘텐츠 유형 선택 필수 / 선택형</h1>
         </div>
       </div>
       <div class="wfs-card">
         <form onsubmit="return false">
-          <div class="wfs-section"><div class="wfs-form-grid"><div class="wfs-field wfs-field--full"><span class="wfs-field-label">제작방식<span class="req">*</span></span><div class="wfs-choice-grid"><label class="wfs-choice-card is-selected"><input type="radio" name="field-0" checked hidden><strong>가이드(대본·카피) 그대로 제작</strong></label><label class="wfs-choice-card"><input type="radio" name="field-0"  hidden><strong>자유 제작(참고용)</strong></label></div></div></div></div>
+          <div class="wfs-section"><div class="wfs-form-grid"><div class="wfs-field wfs-field--full"><span class="wfs-field-label">콘텐츠 유형<span class="req">*</span></span><div class="wfs-choice-grid"><label class="wfs-choice-card is-selected"><input type="radio" name="field-0" checked hidden><strong>이미지</strong></label><label class="wfs-choice-card"><input type="radio" name="field-0"  hidden><strong>영상</strong></label></div></div></div></div>
           <div class="wfs-actions wfs-actions--end">
             <button class="wfs-btn wfs-btn--muted" type="button">임시저장</button>
             <button class="wfs-btn wfs-btn--ghost" type="button">이전</button>
             <button class="wfs-btn" type="button">다음</button>
           </div>
         </form>
-      </div></main></div>
+      </div></div></div></div>
   </div>
 </body>
 </html>

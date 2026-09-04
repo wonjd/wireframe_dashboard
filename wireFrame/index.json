@@ -6,16 +6,16 @@
       "title": "CRM",
       "runs": [
         {
-          "runId": "이미지영상-요청-세분화-모달",
+          "runId": "소재-요청-단계별-입력-및-조건부-노출-개발-요청",
           "kind": "wireframe",
           "no": "PRD-001",
-          "title": "이미지/영상 요청 세분화 모달",
+          "title": "소재 요청 단계별 입력 및 조건부 노출 개발 요청",
           "status": "ready",
           "prdVersion": 1,
-          "prdPath": "runs/이미지영상-요청-세분화-모달/input/v1.md",
-          "createdAt": "2026-09-03T05:04:04.196Z",
-          "updatedAt": "2026-09-03T05:04:14.915Z",
-          "artifactCount": 5,
+          "prdPath": "runs/소재-요청-단계별-입력-및-조건부-노출-개발-요청/input/v1.md",
+          "createdAt": "2026-09-03T06:00:20.193Z",
+          "updatedAt": "2026-09-04T02:06:55.485Z",
+          "artifactCount": 7,
           "assetProjectSlug": "crm"
         }
       ]

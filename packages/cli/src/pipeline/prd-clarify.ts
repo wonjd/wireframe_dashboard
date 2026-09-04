@@ -5,6 +5,13 @@ import type { WireframeConfig } from "../lib/config.js";
 import { resolveProject } from "../lib/config.js";
 import { getRunRoot, loadIndex, saveIndex, getProject } from "../lib/runs.js";
 import { quoteSql, runWonjdQuery } from "../extractors/wonjd.js";
+import {
+  currentLedgerAnswers,
+  detectScreenCollisions,
+  loadDecisionLedger,
+  prefillNotice,
+  recordDecisions,
+} from "./decision-ledger.js";
 
 export type ClarificationKind = "ambiguity" | "policy" | "scope" | "data";
 
@@ -33,10 +40,15 @@ export type ClarificationItem = {
   reason: string;
 };
 
+export type ClarificationsPhase = "clarify" | "layout" | "ready";
+
 export type ClarificationsDoc = {
   status: "clarifying" | "ready";
+  /** clarify = 업무 미결, layout = PRD 승인 후 화면 형태만, ready = 빌드 가능 */
+  phase?: ClarificationsPhase;
   open: ClarificationItem[];
-  resolved: Array<ClarificationItem & { answer: string; resolvedAt: string }>;
+  /** prefilledFrom = adopted from an earlier run's ledger decision (PRD-00x) — not asked here. */
+  resolved: Array<ClarificationItem & { answer: string; resolvedAt: string; prefilledFrom?: string }>;
   rounds: number;
   updatedAt: string;
   channel: "chat";
@@ -46,6 +58,7 @@ export type ClarificationsDoc = {
 function emptyDoc(): ClarificationsDoc {
   return {
     status: "clarifying",
+    phase: "clarify",
     open: [],
     resolved: [],
     rounds: 0,
@@ -477,9 +490,12 @@ function hasScreenLayoutAnswered(prd: string, covered: Set<string>): boolean {
   );
 }
 
+/** Stable id — the chat agent must be able to answer this across turns without re-reviewing first. */
+const SCREEN_LAYOUT_QID = "q-screen-layout";
+
 function screenLayoutQuestion(): ClarificationItem {
   return {
-    id: `q-${crypto.randomUUID().slice(0, 8)}`,
+    id: SCREEN_LAYOUT_QID,
     kind: "scope",
     topic: "screen_layout",
     question:
@@ -517,25 +533,82 @@ export async function reviewPrdClarificationsCli(
     return true;
   });
 
-  let open: ClarificationItem[] = businessOpen;
-  let status: ClarificationsDoc["status"] = businessOpen.length === 0 ? "ready" : "clarifying";
+  // Sync this run's own answers into the project ledger (memory across requests).
+  // Prefilled entries keep their original run's provenance and are not re-recorded.
+  await recordDecisions(
+    projectSlug,
+    prev.resolved
+      .filter((item) => !item.prefilledFrom)
+      .map((item) => ({
+        topic: item.topic || "other",
+        question: item.question,
+        answer: item.answer,
+        byRun: runId,
+        byRunNo: run.no,
+      })),
+  );
+
+  // 감지는 자동, 판단은 사람: a topic already decided in an earlier request is not asked again —
+  // it is adopted as a pre-filled decision AND announced to the user, never silently.
+  const ledger = await loadDecisionLedger(projectSlug);
+  const current = currentLedgerAnswers(ledger);
+  const prefilled: ClarificationsDoc["resolved"] = [];
+  const ledgerNotices: string[] = [];
+  const prefillFromLedger = (item: ClarificationItem): boolean => {
+    if (item.topic === "other") return false;
+    const hit = current.get(item.topic);
+    if (!hit || !hit.answer.trim() || hit.byRun === runId) return false;
+    const source = hit.byRunNo || hit.byRun;
+    prefilled.push({
+      ...item,
+      answer: hit.answer,
+      resolvedAt: new Date().toISOString(),
+      prefilledFrom: source,
+    });
+    ledgerNotices.push(prefillNotice(item.topic, hit.answer, source));
+    return true;
+  };
+
+  let open: ClarificationItem[] = businessOpen.filter((item) => !prefillFromLedger(item));
+  let status: ClarificationsDoc["status"] = open.length === 0 ? "ready" : "clarifying";
   let phase: "clarify" | "layout" | "ready" = "clarify";
 
-  if (businessOpen.length === 0) {
+  if (open.length === 0) {
     // PRD approved (ready) — only then ask screen form if missing
     if (!hasScreenLayoutAnswered(prdContent, covered)) {
-      open = [screenLayoutQuestion()];
-      phase = "layout";
+      const layout = screenLayoutQuestion();
+      if (prefillFromLedger(layout)) {
+        phase = "ready";
+      } else {
+        open = [layout];
+        phase = "layout";
+      }
     } else {
       open = [];
       phase = "ready";
     }
   }
 
+  // Persist adopted decisions into the PRD's 확인된 결정 section (marked with their source) so the
+  // build pipeline sees them exactly as if they had been answered here.
+  if (prefilled.length > 0) {
+    const merged = appendAnswersToPrd(
+      prdContent,
+      prefilled.map((item) => ({
+        question: item.question,
+        answer: `${item.answer} — 이전 요청(${item.prefilledFrom}) 결정 반영`,
+      })),
+    );
+    await writeFile(prdPath, `${merged.trimEnd()}\n`, "utf8");
+  }
+
+  const collisions = await detectScreenCollisions(config, runId);
+
   const doc: ClarificationsDoc = {
     status,
+    phase,
     open,
-    resolved: prev.resolved,
+    resolved: [...prev.resolved, ...prefilled],
     rounds: prev.rounds + 1,
     updatedAt: new Date().toISOString(),
     channel: "chat",
@@ -562,6 +635,8 @@ export async function reviewPrdClarificationsCli(
         channel: "chat",
         open,
         resolvedCount: doc.resolved.length,
+        ledgerNotices,
+        collisions,
         liveDbBrief: live.slice(0, 2000),
         chat_instructions: [
           "이 루프의 목적은 개발 명세가 아니라 PRD 확정·보완입니다.",
@@ -572,6 +647,8 @@ export async function reviewPrdClarificationsCli(
           "화면 형태(모달/표/페이지 등)는 애매한 부분이 다 확정되고 PRD가 ready인 뒤에만 묻습니다.",
           "phase=layout이면 PRD는 이미 승인된 상태입니다. 화면 형태만 묻고 빌드는 양식 답 뒤에 하세요.",
           "phase=ready일 때만 와이어프레임 빌드를 시작하세요.",
+          "ledgerNotices가 있으면 그 문구를 한 번만 사용자에게 그대로 전하세요. 자동 반영을 숨기지 말고, 사용자가 다르다고 하면 prd_answer로 새 답을 받으세요.",
+          "collisions가 있으면 다른 요청의 제목만 들어 알리고 「합칠지 따로 갈지」를 질문하세요. route·경로·id·테이블은 절대 언급 금지. 임의로 결정하지 마세요.",
         ],
         message,
       },
@@ -599,41 +676,125 @@ export async function answerPrdClarificationsCli(
   const run = project.runs.find((entry) => entry.runId === runId);
   if (!run) throw new Error(`run not found: ${runId}`);
 
-  const answers = JSON.parse(answersRaw) as Array<{ id: string; answer: string }>;
-  const answerMap = new Map(
-    answers.map((entry) => [entry.id, String(entry.answer ?? "").trim()] as const).filter(([, a]) => a),
-  );
+  const answers = (JSON.parse(answersRaw) as Array<{ id?: string; topic?: string; answer: string }>)
+    .map((entry) => ({
+      id: String(entry.id ?? "").trim(),
+      topic: String(entry.topic ?? "").trim(),
+      answer: String(entry.answer ?? "").trim(),
+    }))
+    .filter((entry) => entry.answer);
 
   const prev = await loadClarificationsDoc(config, runId);
+  // Pre-filled decisions (adopted from an earlier run) are not open questions, but the user may
+  // contradict one — that must overwrite the run's answer and append a new ledger entry.
+  const overridable = prev.resolved.filter((item) => item.prefilledFrom);
+  if (prev.open.length === 0 && overridable.length === 0) {
+    throw new Error("no open questions to answer");
+  }
+
+  // Match by id, then by topic, then positionally. Question ids live only inside a previous
+  // request's tool output, so an id-exact-match-only rule strands every answer the chat agent
+  // sends on a later turn.
+  const pending = [...prev.open];
+  const resolvedFor = new Map<string, string>();
+  const takeBy = (predicate: (item: ClarificationItem) => boolean): ClarificationItem | undefined => {
+    const index = pending.findIndex((item) => !resolvedFor.has(item.id) && predicate(item));
+    return index === -1 ? undefined : pending[index];
+  };
+
+  const overrides = new Map<string, string>();
+  for (const entry of answers) {
+    const hit =
+      (entry.id ? takeBy((item) => item.id === entry.id) : undefined) ??
+      (entry.topic ? takeBy((item) => item.topic === entry.topic) : undefined) ??
+      (entry.id && /layout|화면|모달|팝업|페이지|단계|표/i.test(entry.id)
+        ? takeBy((item) => item.topic === "screen_layout")
+        : undefined) ??
+      (answers.length === 1 && pending.length === 1 ? takeBy(() => true) : undefined) ??
+      takeBy(() => true);
+    if (hit) {
+      resolvedFor.set(hit.id, entry.answer);
+      continue;
+    }
+    // No open question left — try a pre-filled decision (id → topic → layout wording).
+    const target =
+      (entry.id ? overridable.find((item) => item.id === entry.id) : undefined) ??
+      (entry.topic ? overridable.find((item) => item.topic === entry.topic) : undefined) ??
+      (/모달|팝업|목록|표|페이지|단계|위자드|폼/.test(entry.answer)
+        ? overridable.find((item) => item.topic === "screen_layout")
+        : undefined);
+    if (target && !overrides.has(target.id)) overrides.set(target.id, entry.answer);
+  }
+
   const newlyResolved: ClarificationsDoc["resolved"] = [];
   const unanswered: ClarificationItem[] = [];
   for (const item of prev.open) {
-    const answer = answerMap.get(item.id);
+    const answer = resolvedFor.get(item.id);
     if (answer) {
       newlyResolved.push({ ...item, answer, resolvedAt: new Date().toISOString() });
     } else {
       unanswered.push(item);
     }
   }
-  if (newlyResolved.length === 0) throw new Error("no matching answers for open questions");
+  // Apply overrides of pre-filled decisions: the user's word wins over the adopted answer.
+  const overridden: ClarificationsDoc["resolved"] = [];
+  const keptResolved = prev.resolved.map((item) => {
+    const next = overrides.get(item.id);
+    if (!next) return item;
+    const updated = { ...item, answer: next, resolvedAt: new Date().toISOString() };
+    delete updated.prefilledFrom;
+    overridden.push(updated);
+    return updated;
+  });
+
+  if (newlyResolved.length === 0 && overridden.length === 0) {
+    throw new Error("no matching answers for open questions");
+  }
 
   const prdPath = path.join(getRunRoot(config, runId), "input", `v${run.prdVersion}.md`);
   const prdContent = await readFile(prdPath, "utf8");
-  const merged = appendAnswersToPrd(
-    prdContent,
-    newlyResolved.map((item) => ({ question: item.question, answer: item.answer })),
-  );
+  const escapeRe = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  let merged = prdContent;
+  // Replace the marked prefill answer line in place — the stale adopted answer must not linger
+  // next to the user's correction (the build parser reads the whole 확인된 결정 section).
+  for (const item of overridden) {
+    const block = new RegExp(
+      `(###\\s*Q\\.\\s*${escapeRe(item.question)}\\s*\\n\\s*\\n?A\\.\\s*)[^\\n]*`,
+    );
+    merged = block.test(merged)
+      ? merged.replace(block, `$1${item.answer}`)
+      : appendAnswersToPrd(merged, [{ question: item.question, answer: item.answer }]);
+  }
+  if (newlyResolved.length > 0) {
+    merged = appendAnswersToPrd(
+      merged,
+      newlyResolved.map((item) => ({ question: item.question, answer: item.answer })),
+    );
+  }
   await writeFile(prdPath, `${merged.trimEnd()}\n`, "utf8");
 
   await saveClarificationsDoc(config, runId, {
     status: "clarifying",
+    phase: "clarify",
     open: unanswered,
-    resolved: [...prev.resolved, ...newlyResolved],
+    resolved: [...keptResolved, ...newlyResolved],
     rounds: prev.rounds,
     updatedAt: new Date().toISOString(),
     channel: "chat",
     audience: "non_developer",
   });
+
+  // Grow the project memory: every resolved answer (including overrides) becomes a ledger entry.
+  await recordDecisions(
+    projectSlug,
+    [...newlyResolved, ...overridden].map((item) => ({
+      topic: item.topic || "other",
+      question: item.question,
+      answer: item.answer,
+      byRun: runId,
+      byRunNo: run.no,
+    })),
+  );
   await setRunStatus(config, projectSlug, runId, "clarifying");
 
   // Re-review

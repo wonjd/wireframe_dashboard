@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { access, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { WireframeConfig } from "../lib/config.js";
 import {
@@ -9,6 +9,12 @@ import {
   type ManifestSpec,
 } from "../pipeline/build-pipeline.js";
 import { loadBuildContext } from "../pipeline/build-context.js";
+import {
+  buildFeaturesDoc,
+  buildFlowDoc,
+  type ClarificationsFile,
+} from "../pipeline/build-docs.js";
+import { applyOverrides, loadOverrides } from "../pipeline/spec-overrides.js";
 import {
   ensureRunDirs,
   getProject,
@@ -50,6 +56,23 @@ function parseRenderArgs(args: string[], config: WireframeConfig): RenderArgs {
 async function loadExistingManifest(manifestPath: string): Promise<ManifestSpec | null> {
   try {
     return JSON.parse(await readFile(manifestPath, "utf8")) as ManifestSpec;
+  } catch {
+    return null;
+  }
+}
+
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function loadClarifications(clarificationsPath: string): Promise<ClarificationsFile> {
+  try {
+    return JSON.parse(await readFile(clarificationsPath, "utf8")) as ClarificationsFile;
   } catch {
     return null;
   }
@@ -157,11 +180,36 @@ export async function renderRun(config: WireframeConfig, args: string[]): Promis
   await writeFile(domainPath, `${JSON.stringify(domain, null, 2)}\n`, "utf8");
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 
-  const targets = manifest.artifacts.filter((artifact) => {
-    if (parsed.artifactId && artifact.id !== parsed.artifactId) return false;
-    if (artifact.locked) return false;
-    return true;
+  // Same dashboard documents as build — the 00-spec/00-flow artifacts render from these,
+  // so re-render must regenerate them from the same inputs, not read stale files.
+  const clarifications = await loadClarifications(path.join(specDir, "clarifications.json"));
+  const features = buildFeaturesDoc({
+    runId: parsed.runId,
+    prdContent: ctx.prdContent,
+    domain,
+    clarifications,
+    manifest,
   });
+  const flow = buildFlowDoc({
+    runId: parsed.runId,
+    prdContent: ctx.prdContent,
+    domain,
+    manifest,
+  });
+  await writeFile(path.join(specDir, "features.json"), `${JSON.stringify(features, null, 2)}\n`, "utf8");
+  await writeFile(path.join(specDir, "flow.json"), `${JSON.stringify(flow, null, 2)}\n`, "utf8");
+
+  // User edits are layered on top at read time — never written back into the two
+  // generated documents above, and never written by this command. See spec-overrides.ts.
+  const merged = applyOverrides(features, flow, await loadOverrides(specDir));
+
+  const targets: ManifestArtifact[] = [];
+  for (const artifact of manifest.artifacts) {
+    if (parsed.artifactId && artifact.id !== parsed.artifactId) continue;
+    // locked keeps an existing file untouched; it must not stop the first write.
+    if (artifact.locked && (await fileExists(path.join(artifactsDir, artifact.file)))) continue;
+    targets.push(artifact);
+  }
 
   for (const artifact of targets) {
     const html = renderArtifactHtml({
@@ -170,6 +218,8 @@ export async function renderRun(config: WireframeConfig, args: string[]): Promis
       prdContent: ctx.prdContent,
       domain,
       assets: ctx.assets,
+      features: merged.features,
+      flow: merged.flow,
     });
     await writeFile(path.join(artifactsDir, artifact.file), html, "utf8");
   }

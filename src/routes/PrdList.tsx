@@ -44,17 +44,6 @@ export async function deletePrd(id: string, project = "crm"): Promise<{ ok: bool
   return (await res.json()) as { ok: boolean; error?: string };
 }
 
-export async function deleteWireframes(
-  id: string,
-  project = "crm",
-): Promise<{ ok: boolean; error?: string }> {
-  const res = await fetch(
-    `/api/wireframes/${encodeURIComponent(id)}?project=${encodeURIComponent(project)}`,
-    { method: "DELETE" },
-  );
-  return (await res.json()) as { ok: boolean; error?: string };
-}
-
 export function PrdList() {
   const [runs, setRuns] = useState<PrdRunRow[]>([]);
   const [loading, setLoading] = useState(true);

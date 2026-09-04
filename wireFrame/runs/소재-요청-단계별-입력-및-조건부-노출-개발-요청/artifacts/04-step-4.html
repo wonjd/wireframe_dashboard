@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>이미지/영상 요청 세분화 모달 — 선택값에 따라 추가 입력 항목 노출</title>
+  <title>소재 요청 단계별 입력 및 조건부 노출 개발 요청 — 선택값에 따라 추가 입력 항목 노출</title>
   <style>:root {
       --brand: #246beb;
       --ink: #001E3C;
@@ -672,7 +672,7 @@
       background: transparent;
       box-shadow: none;
     }
-    .wfs-stage-frame--modal .wfs-modal-backdrop {
+    .wfs-stage-frame--modal .wfs-dlg-backdrop {
       flex: 1;
       min-height: 0;
       height: 100%;
@@ -709,7 +709,9 @@
     .wfs-actions { flex-shrink: 0; }
     .wfs-page-desc, .wfs-note, .wfs-field-hint { display: none !important; }
   
-    .wfs-modal-backdrop {
+    .wfs-dlg-backdrop {
+      position: relative;
+      inset: auto;
       height: 100%;
       display: flex;
       align-items: center;
@@ -719,7 +721,11 @@
       background: rgba(45, 53, 57, 0.45);
       overflow: hidden;
     }
-    .wfs-modal {
+    .wfs-dlg {
+      position: relative;
+      inset: auto;
+      z-index: auto;
+      margin: 0;
       width: min(640px, 100%);
       max-height: 100%;
       overflow: hidden;
@@ -731,8 +737,8 @@
       padding: 16px 20px 14px;
       box-sizing: border-box;
     }
-    .wfs-modal .wfs-page-head { margin-bottom: 12px; }
-    .wfs-modal .wfs-card {
+    .wfs-dlg .wfs-page-head { margin-bottom: 12px; }
+    .wfs-dlg .wfs-card {
       border: 0;
       box-shadow: none;
       padding: 0;
@@ -746,7 +752,7 @@
 </head>
 <body>
   <div class="wfs-stage">
-    <div class="wfs-stage-frame"><main class="wfs-main">
+    <div class="wfs-stage-frame wfs-stage-frame--modal"><div class="wfs-dlg-backdrop"><div class="wfs-dlg" role="dialog" aria-modal="true">
       <div class="wfs-page-head">
         <div>
           <h1 class="wfs-page-title">선택값에 따라 추가 입력 항목 노출</h1>
@@ -754,14 +760,14 @@
       </div>
       <div class="wfs-card">
         <form onsubmit="return false">
-          <div class="wfs-dl-grid"><div class="wfs-dl-item"><div class="wfs-dl-label">콘텐츠 유형</div><div class="wfs-dl-value">이미지</div></div><div class="wfs-dl-item"><div class="wfs-dl-label">기획의도 / 테스트 목적</div><div class="wfs-dl-value">기존 고성과 소구 확장</div></div><div class="wfs-dl-item"><div class="wfs-dl-label">ㄴ 기존 고성과 소구 확장</div><div class="wfs-dl-value">샘플 값</div></div><div class="wfs-dl-item"><div class="wfs-dl-label">ㄴ 탐색 목적 테스트</div><div class="wfs-dl-value">샘플 값</div></div><div class="wfs-dl-item"><div class="wfs-dl-label">ㄴ 기타 → 선택 시 수기 작성</div><div class="wfs-dl-value">샘플 값</div></div><div class="wfs-dl-item"><div class="wfs-dl-label">추가 소구</div><div class="wfs-dl-value">샘플 값</div></div><div class="wfs-dl-item"><div class="wfs-dl-label">필수 반영사항</div><div class="wfs-dl-value">샘플 값</div></div><div class="wfs-dl-item"><div class="wfs-dl-label">제작방식</div><div class="wfs-dl-value">가이드(대본·카피) 그대로 제작</div></div></div>
+          <div class="wfs-section"><div class="wfs-form-grid"><div class="wfs-field wfs-field--full"><label class="wfs-field-label">메인 카피<span class="req">*</span></label><textarea class="wfs-textarea" placeholder="메인 카피"></textarea><span class="wfs-char-count">0자</span></div><div class="wfs-field wfs-field--full"><label class="wfs-field-label">서브 카피</label><textarea class="wfs-textarea" placeholder="서브 카피"></textarea><span class="wfs-char-count">0자</span></div><div class="wfs-field wfs-field--full"><label class="wfs-field-label">최종 대본<span class="req">*</span></label><textarea class="wfs-textarea" placeholder="최종 대본"></textarea><span class="wfs-char-count">0 / 200</span></div><div class="wfs-field wfs-field--full"><label class="wfs-field-label">필수 유지 문장 / 요소<span class="req">*</span></label><textarea class="wfs-textarea" placeholder="필수 유지 문장 / 요소"></textarea><span class="wfs-char-count">0자</span></div></div></div>
           <div class="wfs-actions wfs-actions--end">
             <button class="wfs-btn wfs-btn--muted" type="button">임시저장</button>
             <button class="wfs-btn wfs-btn--ghost" type="button">이전</button>
             <button class="wfs-btn" type="button">제출</button>
           </div>
         </form>
-      </div></main></div>
+      </div></div></div></div>
   </div>
 </body>
 </html>

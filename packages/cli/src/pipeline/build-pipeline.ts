@@ -241,19 +241,54 @@ function isEnumColumn(col: DbColumn): string[] | null {
 }
 
 function pickRelatedTables(prdContent: string, tables: NonNullable<DbJson["tables"]>) {
-  const lower = prdContent.toLowerCase();
+  const flat = prdContent.toLowerCase().replace(/\s+/g, "");
   const scored = tables.map((table) => {
     const name = table.name.toLowerCase();
     let score = 0;
-    if (/content|growth|request|creative|image|video|제작|요청|이미지|영상|소재/.test(lower)) {
-      if (/content|growth|request|creative|file/.test(name)) score += 5;
+
+    // 1. Column ↔ PRD overlap: a table is related when the PRD names its business fields.
+    for (const col of table.columns ?? []) {
+      if (AUDIT_FIELD.test(col.name)) continue;
+      const key = col.name.toUpperCase();
+      const candidates = [
+        COLUMN_LABELS[key] ?? COLUMN_LABELS[key.replace(/_CD$/, "")],
+        col.label && !/^[A-Z0-9_ ]+$/.test(col.label) ? col.label : null,
+      ];
+      if (
+        candidates.some(
+          (label) =>
+            label &&
+            label.length >= 2 &&
+            !/^(유형|방식|상태|제목|이름|일자|번호)$/.test(label) &&
+            flat.includes(label.toLowerCase().replace(/\s+/g, "")),
+        )
+      ) {
+        score += 2;
+      }
     }
-    if (/account|ent|업체|계정/.test(lower) && /account|ent/.test(name)) score += 3;
+
+    // 2. Table-name concept must itself appear in the PRD — a generic domain word
+    //    (요청/이미지 등) must not pull in every content/growth/file table.
+    const nameHints: Array<[RegExp, RegExp]> = [
+      [/^content/, /소재|콘텐츠|content/],
+      [/request/, /요청목록|request/],
+      [/growth/, /그로스|growth|성장계약|라운드|판정|종료보고/],
+      [/account/, /계정|account/],
+      [/(?:^|_)ent(?:_|$)/, /업체(?:정보|목록|관리)|광고주(?:정보|목록|관리)/],
+      [/incentive/, /인센티브|정산/],
+      [/banner|^ad_/, /배너|banner/],
+      [/(?:^|_)file(?:_|$)/, /파일(?:관리|목록|메타)/],
+    ];
+    for (const [nameRe, prdRe] of nameHints) {
+      if (nameRe.test(name) && prdRe.test(flat)) score += 3;
+    }
+
     if ((table.columns ?? []).some((col) => isEnumColumn(col))) score += 1;
     return { table, score };
   });
   scored.sort((a, b) => b.score - a.score);
-  const picked = scored.filter((entry) => entry.score > 0).slice(0, 6).map((entry) => entry.table);
+  // Evidence gate: enum-richness alone (score 1) is not PRD relevance.
+  const picked = scored.filter((entry) => entry.score >= 3).slice(0, 6).map((entry) => entry.table);
   return picked.length > 0 ? picked : tables.slice(0, 6);
 }
 
@@ -704,6 +739,36 @@ export function buildManifest(input: {
     locked: true,
     updatedAt: now,
     covers: ["PRD 요약 및 범위"],
+    instructions: [],
+    wireframe: { route: `/wireframe/${input.run.runId}`, type: "new" },
+  });
+
+  // 기능 명세: non-developer handoff document. Never locked — it must regenerate on
+  // every build so it always reflects the latest domain spec (00-overview's locked:true
+  // is a known bug, do not copy it).
+  artifacts.push({
+    id: "00-spec",
+    no: 0,
+    label: "기능 명세",
+    file: "00-spec.html",
+    locked: false,
+    updatedAt: now,
+    covers: ["단계별 입력 항목 · 판단 근거 · 확인 필요 사항"],
+    instructions: [],
+    wireframe: { route: `/wireframe/${input.run.runId}`, type: "new" },
+  });
+
+  // 유저 플로우: same handoff bundle as 00-spec. Never locked — it must regenerate on
+  // every build so it always reflects the latest flow.json (00-overview's locked:true
+  // is a known bug, do not copy it).
+  artifacts.push({
+    id: "00-flow",
+    no: 0,
+    label: "유저 플로우",
+    file: "00-flow.html",
+    locked: false,
+    updatedAt: now,
+    covers: ["화면 이동 흐름 · 조건 분기"],
     instructions: [],
     wireframe: { route: `/wireframe/${input.run.runId}`, type: "new" },
   });

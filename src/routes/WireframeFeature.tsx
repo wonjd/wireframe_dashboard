@@ -3,6 +3,7 @@ import { Link, Navigate, useOutletContext, useParams } from "react-router-dom";
 import type { Manifest, Registry } from "../types";
 import { findProject, useWireframeData } from "../lib/data";
 import { NotFoundPage } from "../components/NotFoundPage";
+import { statusLabel } from "./PrdList";
 
 function safeDecode(value: string): string {
   try {
@@ -19,6 +20,20 @@ function safeDecode(value: string): string {
   }
 }
 
+type ArtifactMeta = {
+  id: string;
+  label: string;
+  locked: boolean;
+  instructions: Array<{ at: string; text: string }>;
+  url?: string;
+};
+
+type RunMeta = {
+  status?: string;
+  title?: string;
+  artifacts: ArtifactMeta[];
+};
+
 export function WireframeFeature() {
   const { projectNo = "", feature: rawFeature = "", screenId: rawScreenId } = useParams();
   const feature = safeDecode(rawFeature);
@@ -27,10 +42,31 @@ export function WireframeFeature() {
   const data = useWireframeData();
   const project = findProject(registry, projectNo);
   const [manifest, setManifest] = useState<Manifest | null>(null);
+  const [runMeta, setRunMeta] = useState<RunMeta | null>(null);
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
+
+  function loadRunMeta() {
+    return fetch(`/api/wireframes/${encodeURIComponent(feature)}?project=crm`)
+      .then((r) => r.json())
+      .then((j: { ok?: boolean; status?: string; title?: string; artifacts?: ArtifactMeta[] }) => {
+        if (j.ok === false) {
+          setRunMeta(null);
+          return;
+        }
+        setRunMeta({
+          status: j.status,
+          title: j.title,
+          artifacts: Array.isArray(j.artifacts) ? j.artifacts : [],
+        });
+      })
+      .catch(() => setRunMeta(null));
+  }
 
   useEffect(() => {
     if (!project) {
@@ -43,9 +79,13 @@ export function WireframeFeature() {
     setLoadError(null);
     setNotFound(false);
     setLoading(true);
-    data
-      .loadManifest(project, feature)
-      .then((m) => {
+    setNotice(null);
+    setActionError(null);
+    Promise.all([
+      data.loadManifest(project, feature),
+      loadRunMeta(),
+    ])
+      .then(([m]) => {
         setManifest(m);
         setNotFound(false);
       })
@@ -61,6 +101,10 @@ export function WireframeFeature() {
     [manifest],
   );
   const activeId = screenId ?? screens[0]?.id;
+  const activeMeta = runMeta?.artifacts.find((a) => a.id === activeId);
+  const runStatus = runMeta?.status;
+  const isConfirmed = runStatus === "confirmed";
+  const isLocked = Boolean(activeMeta?.locked) || isConfirmed;
 
   useEffect(() => {
     if (!project || !manifest || !activeId) return;
@@ -73,8 +117,9 @@ export function WireframeFeature() {
       .loadHtml(project, manifest, activeId)
       .then((html) => {
         if (cancelled) return;
-        if (html && html.trim()) {
-          setIframeSrc(direct);
+        if (html && html.trim() && direct) {
+          const bust = `${direct}${direct.includes("?") ? "&" : "?"}t=${reloadToken}`;
+          setIframeSrc(bust);
           setLoadError(null);
         } else {
           setIframeSrc(null);
@@ -92,7 +137,7 @@ export function WireframeFeature() {
     return () => {
       cancelled = true;
     };
-  }, [project, manifest, activeId, data]);
+  }, [project, manifest, activeId, data, reloadToken]);
 
   if (!project || notFound) {
     return (
@@ -126,7 +171,9 @@ export function WireframeFeature() {
     );
   }
 
+  const studioHref = `/prd/${encodeURIComponent(feature)}/studio`;
   const base = `/wireframes/${projectNo}/${feature}/screens`;
+  const recentInstructions = (activeMeta?.instructions ?? []).slice(-5).reverse();
 
   return (
     <div className="wfs-viewer wfs-viewer-solo">
@@ -134,6 +181,7 @@ export function WireframeFeature() {
         <Link className="wfs-screen-bar-link" to="/wireframes">
           ← 목록
         </Link>
+        {runStatus ? <span className="wfs-badge">{statusLabel(runStatus)}</span> : null}
         <nav className="wfs-flow-nav" aria-label="플로우">
           {screens.map((s) => {
             const active = s.id === activeId;
@@ -152,7 +200,8 @@ export function WireframeFeature() {
         </nav>
       </header>
 
-      {loadError ? <div className="wfs-chat-banner is-error">{loadError}</div> : null}
+      {notice ? <div className="wfs-chat-banner">{notice}</div> : null}
+      {actionError ? <div className="wfs-chat-banner is-error">{actionError}</div> : null}
 
       <div className="wfs-iframe-wrap wfs-iframe-wrap-solo">
         {iframeSrc ? (
@@ -165,12 +214,28 @@ export function WireframeFeature() {
         ) : !loadError ? (
           <div className="wfs-empty">화면 불러오는 중…</div>
         ) : (
-          <NotFoundPage
-            title="생성된 와이어프레임이 없습니다"
-            detail={loadError}
-          />
+          <NotFoundPage title="생성된 와이어프레임이 없습니다" detail={loadError} />
         )}
       </div>
+
+      {/*
+        Viewer only. Every change — PRD, feature spec, user flow, screens — goes through the
+        studio chat so the request is recorded and all three documents regenerate together.
+        A second editing surface here let the artifacts drift away from the PRD.
+      */}
+      <div className="wfs-chat-banner">
+        화면 수정·승인은 스튜디오 채팅에서 요청하세요.{" "}
+        <Link to={studioHref}>스튜디오 열기 →</Link>
+      </div>
+      {recentInstructions.length > 0 ? (
+        <div className="wfs-refine-log" aria-label="지금까지의 수정 지시">
+          {recentInstructions.map((item, i) => (
+            <div key={item.at + "-" + i} className="wfs-refine-log-item">
+              {item.text}
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

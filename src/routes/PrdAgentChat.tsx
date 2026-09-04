@@ -10,7 +10,12 @@ type ChatResponse = {
   runId?: string;
   project?: string;
   status?: string;
+  phase?: string;
+  built?: boolean;
+  artifactCount?: number;
   openQuestions?: Array<{ id: string; question: string }>;
+  pendingPrd?: boolean;
+  pendingSummary?: string[];
   error?: string;
   trace?: string[];
 };
@@ -19,11 +24,21 @@ function storageKey(runId?: string): string {
   return runId ? `wf-prd-agent:${runId}` : "wf-prd-agent:new";
 }
 
-function loadSession(runId?: string): { messages: Msg[]; runId?: string; status?: string } {
+function loadSession(runId?: string): {
+  messages: Msg[];
+  runId?: string;
+  status?: string;
+  phase?: string;
+} {
   try {
     const raw = localStorage.getItem(storageKey(runId));
     if (!raw) return { messages: [], runId };
-    return JSON.parse(raw) as { messages: Msg[]; runId?: string; status?: string };
+    return JSON.parse(raw) as {
+      messages: Msg[];
+      runId?: string;
+      status?: string;
+      phase?: string;
+    };
   } catch {
     return { messages: [], runId };
   }
@@ -32,17 +47,26 @@ function loadSession(runId?: string): { messages: Msg[]; runId?: string; status?
 const DEFAULT_ASSISTANT: Msg = {
   role: "assistant",
   content:
-    "① PRD를 붙여 넣어 주세요. 모호한 결정을 쉬운 말로 묻고, 승인되면 와이어프레임을 바로 생성합니다.",
+    "① PRD를 붙여 넣어 주세요. 모호한 부분을 먼저 확정하고, ② 화면 형태(모달/표/페이지 등)를 물은 뒤, ③ 1차 와이어프레임을 만들고 화면마다 수정·승인합니다.",
 };
 
 const CONTINUE_ASSISTANT: Msg = {
   role: "assistant",
-  content: "이 PRD 보완을 이어갑니다. 바꾸고 싶은 점이나 보완 답을 적어 주세요. 확정(ready)되면 와이어프레임을 생성합니다.",
+  content:
+    "이 PRD 보완을 이어갑니다. 애매한 부분 → 화면 형태 → 와이어프레임 수정·승인 순으로 진행합니다.",
 };
 
-export function PrdAgentChat() {
+/**
+ * chatOnly: the studio embeds this chat as the single mutation path for a run. A direct
+ * "generate wireframe" button there would rewrite artifacts without the intent ever reaching
+ * the model, so every change must be asked for in the conversation instead.
+ */
+export function PrdAgentChat({
+  runId: runIdProp,
+  chatOnly = false,
+}: { runId?: string; chatOnly?: boolean } = {}) {
   const [searchParams] = useSearchParams();
-  const queryRunId = searchParams.get("runId") || undefined;
+  const queryRunId = runIdProp || searchParams.get("runId") || undefined;
 
   const initial = useMemo(() => loadSession(queryRunId), [queryRunId]);
   const [messages, setMessages] = useState<Msg[]>(
@@ -52,26 +76,42 @@ export function PrdAgentChat() {
   );
   const [runId, setRunId] = useState<string | undefined>(queryRunId || initial.runId);
   const [status, setStatus] = useState<string | undefined>(initial.status);
+  const [phase, setPhase] = useState<string | undefined>(initial.phase);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [building, setBuilding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [buildNotice, setBuildNotice] = useState<string | null>(null);
+  // Read-only reminder that an edit is staged. The approval itself happens in the chat —
+  // a button here would be a second way to mutate the PRD, which the studio must not have.
+  const [pendingSummary, setPendingSummary] = useState<string[] | null>(null);
   const [health, setHealth] = useState<{ openai: boolean; model: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const builtForReady = useRef<string | null>(null);
+  const runIdRef = useRef<string | undefined>(queryRunId || initial.runId);
+
+  useEffect(() => {
+    runIdRef.current = runId;
+  }, [runId]);
 
   useEffect(() => {
     if (!queryRunId) return;
     const session = loadSession(queryRunId);
     setRunId(queryRunId);
+    runIdRef.current = queryRunId;
     setStatus(session.status);
+    setPhase(session.phase);
     setMessages(session.messages.length ? session.messages : [CONTINUE_ASSISTANT]);
   }, [queryRunId]);
 
   useEffect(() => {
-    localStorage.setItem(storageKey(runId || queryRunId), JSON.stringify({ messages, runId, status }));
-  }, [messages, runId, status, queryRunId]);
+    const payload = JSON.stringify({ messages, runId, status, phase });
+    localStorage.setItem(storageKey(runId || queryRunId), payload);
+    // Keep the "new" slot pointing at the run this session created. Without this it stays
+    // frozen at the pre-runId snapshot, so remounting /prd/new restores the chat history with
+    // runId undefined — and the agent then asks the user to paste the PRD again.
+    if (runId && !queryRunId) localStorage.setItem(storageKey(), payload);
+  }, [messages, runId, status, phase, queryRunId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -89,7 +129,7 @@ export function PrdAgentChat() {
   async function generateWireframe(targetRunId: string) {
     if (building) return;
     setBuilding(true);
-    setBuildNotice("PRD 확정됨 → 와이어프레임 생성 중…");
+    setBuildNotice("화면 형태 확정됨 → 와이어프레임 생성 중…");
     setError(null);
     try {
       const res = await fetch(`/api/prd/${encodeURIComponent(targetRunId)}/build`, {
@@ -100,17 +140,22 @@ export function PrdAgentChat() {
       const j = (await res.json()) as {
         ok?: boolean;
         error?: string;
+        phase?: string;
         screens?: unknown[];
         artifactCount?: number;
       };
-      if (!res.ok || j.ok === false) throw new Error(j.error || "빌드 실패");
+      if (!res.ok || j.ok === false) {
+        if (typeof j.phase === "string") setPhase(j.phase);
+        throw new Error(j.error || "빌드 실패");
+      }
+      setPhase("ready");
       const n = Array.isArray(j.screens) ? j.screens.length : j.artifactCount || 0;
       setBuildNotice(`와이어프레임 ${n}개 화면 생성 완료.`);
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: `PRD가 확정되어 와이어프레임을 생성했습니다 (${n}개 화면). 「와이어프레임」 탭에서 화면 이름 링크를 누르면 새 창으로 열립니다.`,
+          content: `화면 형태까지 확정되어 1차 와이어프레임을 만들었습니다 (${n}개 화면). 「와이어프레임」 탭에서 화면을 보고, 고칠 점을 보내 다듬은 뒤 「승인 완료」를 눌러 주세요.`,
         },
       ]);
     } catch (err) {
@@ -135,7 +180,7 @@ export function PrdAgentChat() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: nextMessages.filter((m) => m.role === "user" || m.role === "assistant"),
-          runId,
+          runId: runIdRef.current,
           project: "crm",
         }),
       });
@@ -143,20 +188,43 @@ export function PrdAgentChat() {
       if (!res.ok || !data.ok) {
         throw new Error(data.error || `HTTP ${res.status}`);
       }
-      const nextRunId = data.runId || runId;
-      if (data.runId) setRunId(data.runId);
+      const nextRunId = data.runId || runIdRef.current;
+      if (nextRunId) {
+        runIdRef.current = nextRunId;
+        setRunId(nextRunId);
+      }
       if (data.status) setStatus(data.status);
+      if (data.phase) setPhase(data.phase);
+      setPendingSummary(data.pendingPrd ? (data.pendingSummary ?? []) : null);
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: data.assistantMessage || "(빈 응답)" },
       ]);
 
+      // Agent already built in this turn
+      if (data.built && nextRunId) {
+        builtForReady.current = `${nextRunId}:phase-ready`;
+        const n = data.artifactCount || 0;
+        setBuildNotice(n ? `와이어프레임 ${n}개 화면 생성 완료.` : "와이어프레임 생성 완료.");
+        setPhase("ready");
+        return;
+      }
+
+      // Backup: UI auto-build when phase becomes ready
+      const nextPhase = data.phase || phase;
+      const layoutStillOpen = (data.openQuestions ?? []).some(
+        (q) =>
+          /화면\s*(형태|양식)/.test(q.question) ||
+          /모달|팝업|목록\s*표|전체\s*페이지|단계별/.test(q.question),
+      );
       if (
+        nextPhase === "ready" &&
         data.status === "ready" &&
+        !layoutStillOpen &&
         nextRunId &&
-        builtForReady.current !== `${nextRunId}:ready`
+        builtForReady.current !== `${nextRunId}:phase-ready`
       ) {
-        builtForReady.current = `${nextRunId}:ready`;
+        builtForReady.current = `${nextRunId}:phase-ready`;
         setBusy(false);
         await generateWireframe(nextRunId);
         return;
@@ -173,17 +241,20 @@ export function PrdAgentChat() {
     setMessages([DEFAULT_ASSISTANT]);
     setRunId(undefined);
     setStatus(undefined);
+    setPhase(undefined);
     setError(null);
     setBuildNotice(null);
+    setPendingSummary(null);
     builtForReady.current = null;
   }
+
+  const canBuild = phase === "ready" && (status === "ready" || status === "confirmed");
 
   return (
     <div className="wfs-prd-chat">
       <header className="wfs-header">
         <h1>{queryRunId ? "PRD 보완 채팅" : "새 PRD"}</h1>
         <span className="wfs-badge">{statusLabel(status)}</span>
-        {runId ? <span className="wfs-badge">{runId}</span> : null}
         <span className="wfs-spacer" />
         <Link className="wfs-chat-reset" to="/prd" style={{ display: "inline-flex", alignItems: "center" }}>
           목록
@@ -197,7 +268,7 @@ export function PrdAgentChat() {
             상세
           </Link>
         ) : null}
-        {(status === "ready" || status === "confirmed") && runId ? (
+        {canBuild && runId && !chatOnly ? (
           <button
             type="button"
             className="wfs-btn-primary"
@@ -226,6 +297,17 @@ export function PrdAgentChat() {
       {health?.openai ? (
         <div className="wfs-chat-banner">OpenAI 연결됨 · model {health.model}</div>
       ) : null}
+      {phase === "layout" ? (
+        <div className="wfs-chat-banner is-warn">
+          PRD는 확정됐습니다. 화면 형태(모달/표/페이지 등)를 답한 뒤에만 와이어프레임을 생성합니다.
+        </div>
+      ) : null}
+      {pendingSummary ? (
+        <div className="wfs-chat-banner is-warn">
+          저장 대기 중 — 아직 요청서에 반영하지 않았습니다. 승인하시면 반영합니다.
+          {pendingSummary.length ? ` (${pendingSummary.join(" · ")})` : ""}
+        </div>
+      ) : null}
       {buildNotice ? <div className="wfs-chat-banner">{buildNotice}</div> : null}
       {error ? <div className="wfs-chat-banner is-error">{error}</div> : null}
 
@@ -252,7 +334,7 @@ export function PrdAgentChat() {
               void send();
             }
           }}
-          placeholder="PRD를 붙여 넣거나, 보완 질문에 답하세요. (Shift+Enter 줄바꿈)"
+          placeholder="PRD를 붙여 넣거나, 보완·화면 형태 질문에 답하세요. (Shift+Enter 줄바꿈)"
           rows={4}
           disabled={busy || building}
         />

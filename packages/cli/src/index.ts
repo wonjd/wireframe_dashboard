@@ -18,6 +18,7 @@ import {
   answerPrdClarificationsCli,
   reviewPrdClarificationsCli,
 } from "./pipeline/prd-clarify.js";
+import { listDecisionsCli } from "./pipeline/decision-ledger.js";
 
 const USAGE = `wireframe config validate [--project crm | --all] [--entities ent,account]
 wireframe project list
@@ -31,6 +32,7 @@ wireframe run confirm --run-id slug [--project crm]
 wireframe run list [--project crm]
 wireframe prd review --run-id slug [--project crm] [--asset-project crm]
 wireframe prd answer --run-id slug --answers '[{"id":"q1","answer":"..."}]' [--project crm]
+wireframe decisions list [--project crm]
 wireframe render --run-id slug [--project crm] [--artifact id] [--instruction text]
 
 Paths: wireframe.config.json + wireframe.config.local.json (gitignored)
@@ -117,6 +119,10 @@ export async function runCli(argv: string[]): Promise<void> {
   }
   if (command === "prd" && subcommand === "answer") {
     await answerPrdClarificationsCli(config, rest);
+    return;
+  }
+  if (command === "decisions" && subcommand === "list") {
+    await listDecisionsCli(config, rest);
     return;
   }
 

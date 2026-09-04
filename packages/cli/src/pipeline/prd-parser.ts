@@ -127,6 +127,8 @@ function extractFlowSection(prd: string): string {
 
 function parseFieldLines(block: string, required: boolean): FieldControl[] {
   const controls: FieldControl[] = [];
+  // "ㄴ" sub-bullets are options of the nearest preceding field, never fields of their own.
+  const optionsByOwner = new Map<FieldControl, string[]>();
   for (const raw of block.split("\n")) {
     const line = raw.trim();
     if (!line || /^(필수|선택|포함|제외|참고)[:：]?$/.test(line)) continue;
@@ -135,6 +137,28 @@ function parseFieldLines(block: string, required: boolean): FieldControl[] {
     if (/^FR-|^NFR-/.test(line)) continue;
     if (/^\|/.test(line)) continue;
     if (line.length < 2) continue;
+
+    const subOption = line.match(/^[ㄴ└]\s*(.+)$/);
+    if (subOption) {
+      const owner = [...controls].reverse().find((control) => control.kind !== "note");
+      const option = subOption[1]
+        .replace(/\s*(?:→|⇒)[^\n]*$/, "")
+        .replace(/\s*\([^)]*\)\s*$/, "")
+        .trim();
+      if (owner && option) {
+        const bucket = optionsByOwner.get(owner) ?? [];
+        if (!bucket.includes(option)) bucket.push(option);
+        optionsByOwner.set(owner, bucket);
+      }
+      continue;
+    }
+
+    // "※ ..." remarks are notes, not input fields.
+    if (line.startsWith("※")) {
+      const text = line.replace(/^※\s*/, "").trim();
+      if (text) controls.push({ kind: "note", text: `※ ${text}` });
+      continue;
+    }
 
     const short = line
       .replace(/^[-*·]\s*/, "")
@@ -222,6 +246,20 @@ function parseFieldLines(block: string, required: boolean): FieldControl[] {
 
     controls.push({ kind: "text", label, required });
   }
+
+  // Apply collected "ㄴ" options: 2+ options turn the owner into a radio/select, and
+  // PRD-derived options win over any hardcoded fallback list.
+  for (const [owner, options] of optionsByOwner) {
+    if (options.length < 2) continue;
+    const index = controls.indexOf(owner);
+    if (index < 0 || owner.kind === "note") continue;
+    controls[index] = {
+      kind: owner.kind === "select" || options.length > 5 ? "select" : "radio",
+      label: owner.label,
+      options,
+      required: owner.required,
+    };
+  }
   return controls;
 }
 
@@ -229,12 +267,15 @@ function parseRequiredOptionalBlocks(section: string): {
   required: FieldControl[];
   optional: FieldControl[];
 } {
+  // Block headers may carry trailing prose after a delimiter — e.g.
+  // "필수 / 미기입 시 , 다음 단계 넘어가지 못하도록" — but a field label that merely
+  // starts with 필수/선택 ("필수 반영사항") must not split.
   const requiredSplit = section.split(
-    /(?:^|\n)\s*\*{0,2}필수\*{0,2}\s*(?:\([^)]*\))?\s*(?:[:：])?\s*(?:\n|$)/m,
+    /(?:^|\n)\s*\*{0,2}필수\*{0,2}\s*(?:\([^)]*\))?\s*(?:[:：][^\n]*|[/,·—][^\n]*)?(?:\n|$)/m,
   );
   const afterRequired = requiredSplit[1] ?? section;
   const optionalSplit = afterRequired.split(
-    /(?:^|\n)\s*\*{0,2}선택\*{0,2}\s*(?:\([^)]*\))?\s*(?:[:：])?\s*(?:\n|$)/m,
+    /(?:^|\n)\s*\*{0,2}선택\*{0,2}\s*(?:\([^)]*\))?\s*(?:[:：][^\n]*|[/,·—][^\n]*)?(?:\n|$)/m,
   );
   const requiredBlock = optionalSplit[0] ?? "";
   const optionalBlock = optionalSplit[1] ?? "";
@@ -337,15 +378,87 @@ function parseMarkdownMatrix(section: string): FieldControl[] {
   ];
 }
 
+/**
+ * Prose form of the conditional matrix — "2-1. 이미지 요청 / ① 자유 제작 / ② 가이드 제작"
+ * subsections whose field lines carry inline markers: "메인 카피 필수 / 미기입 시 요청 불가".
+ */
+function parseConditionalProse(section: string): FieldControl[] | null {
+  const controls: FieldControl[] = [
+    {
+      kind: "note",
+      text: "콘텐츠 유형 × 제작방식 선택값에 따라 아래 추가 항목이 조건부로 노출됩니다.",
+    },
+  ];
+  let contentType = "";
+  let method = "";
+  const seen = new Set<string>();
+
+  for (const raw of section.split("\n")) {
+    const line = raw.trim().replace(/^[-*·]\s*/, "");
+    if (!line || line.startsWith("※") || line.startsWith("|")) continue;
+
+    const typeMatch = line.match(/^\d+-\d+\.?\s*(.+?)\s*(?:요청)?$/);
+    if (typeMatch && /이미지|영상|배너|텍스트/.test(typeMatch[1])) {
+      contentType = typeMatch[1].trim();
+      method = "";
+      continue;
+    }
+    const methodMatch = line.match(/^[①-⑮]?\s*(자유\s*제작|가이드)/);
+    if (methodMatch) {
+      method = line.replace(/^[①-⑮]\s*/, "").trim();
+      continue;
+    }
+    if (/추가\s*입력\s*항목\s*없음|입력\s*없음|공통\s*항목만/.test(line)) {
+      const combo = [contentType, method].filter(Boolean).join(" · ");
+      if (combo) controls.push({ kind: "note", text: `${combo} → 추가 입력 없음` });
+      continue;
+    }
+
+    // "메인 카피 필수 / 미기입 시 요청 불가" — label + inline 필수/선택 marker (+ rules)
+    const fieldMatch = line.match(/^(.+?)\s*(필수|선택)\s*((?:[/(][^\n]*)?)$/);
+    if (!fieldMatch) continue;
+    const label = fieldMatch[1].trim();
+    if (!label || label.length > 48) continue;
+    if (/공통\s*정보|입력\s*항목|선택값|제작방식|콘텐츠\s*유형/.test(label)) continue;
+    if (seen.has(label)) continue;
+    seen.add(label);
+
+    const rules = (fieldMatch[3] ?? "")
+      .replace(/^\//, "")
+      .split("/")
+      .map((part) => part.trim())
+      .filter(Boolean);
+    const combo = [contentType, method].filter(Boolean).join(" · ");
+    const hint = [combo ? `${combo} 선택 시 노출` : "", ...rules].filter(Boolean).join(" · ");
+    const required = fieldMatch[2] === "필수";
+    if (/대본|카피|문장|설명|메모|리스트/.test(label)) {
+      controls.push({
+        kind: "textarea",
+        label,
+        required,
+        maxLength: /200자/.test(line) ? 200 : undefined,
+        hint: hint || undefined,
+      });
+    } else {
+      controls.push({ kind: "text", label, required, hint: hint || undefined });
+    }
+  }
+
+  return controls.some((control) => control.kind !== "note") ? controls : null;
+}
+
 function parseConditionalMatrix(prd: string): FieldControl[] {
   const section =
     extractSection(
       prd,
       /(?:#+\s*)?(?:\d+단계\s*)?유형별\s*추가|(?:#+\s*)?조건부|(?:#+\s*)?[①-⑮]\s*[^\n]*추가\s*입력|(?:#+\s*)?2\.\s*유형별/,
-      /(?:^|\n)#+\s*[①-⑮]|(?:^|\n)#+\s*\d+단계|(?:^|\n)#+\s*개발\s*확인|(?:^|\n)#+\s*확인된|(?:^|\n)#+\s*추후|(?:^|\n)FR-\d+/,
+      /(?:^|\n)#+\s*[①-⑮]|(?:^|\n)#+\s*\d+단계|(?:^|\n)#+\s*개발\s*확인|(?:^|\n)#+\s*확인된|(?:^|\n)#+\s*추후|(?:^|\n)\d+\.\s*(?:개발\s*확인|추후|최종\s*요청|확인된)|(?:^|\n)FR-\d+/,
     ) || extractSection(prd, /유형별 추가 입력/, /\n\s*개발 확인|\n\s*확인된|\n\s*FR-/);
 
-  return parseMarkdownMatrix(section);
+  const fromTable = parseMarkdownMatrix(section);
+  // more than the generic fallback note = real markdown-table rows found
+  if (fromTable.length > 1) return fromTable;
+  return parseConditionalProse(section) ?? fromTable;
 }
 
 /** Apply ## 확인된 결정 Q/A onto controls (dropdown, list, URL, etc.) */
@@ -553,7 +666,7 @@ export function parsePrdSteps(prdContent: string): StepSpec[] {
     // Require actual 필수/선택 block headers — not "(필수 / 선택형)" in the step title
     const hasReqOptBlocks =
       Boolean(body) &&
-      /(?:^|\n)\s*\*{0,2}필수\*{0,2}\s*(?:\([^)]*\))?(?:\s*[:：])?\s*\n/m.test(body) &&
+      /(?:^|\n)\s*\*{0,2}필수\*{0,2}\s*(?:\([^)]*\))?\s*(?:[:：][^\n]*|[/,·—][^\n]*)?\n/m.test(body) &&
       !isType &&
       !isMethod &&
       !isConditional;
