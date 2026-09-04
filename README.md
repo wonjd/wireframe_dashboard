@@ -27,8 +27,9 @@ UX가 어긋난다. 요청자가 **먼저 화면을 보고 고쳐서** 넘기면
 
 | 단계 | 탭 | 상태 |
 | --- | --- | --- |
-| ① | `/prd` | OpenAI 확정·보완 (`prd review` / `prd answer`) |
-| ②③ | `/wireframes` | 목록 → **플로우 버튼으로 HTML 1장씩** 보기 · CLI `run build` / `render` |
+| ①②③ | `/prd/:runId/studio` | **요청을 바꾸는 유일한 경로.** 좌 채팅 · 우 기능명세서/유저플로우/와이어프레임 |
+| 목록 | `/prd` | 요청 목록 · 상세는 읽기 전용 |
+| 열람 | `/wireframes` | 생성된 화면 보기 전용 (수정·승인 UI 없음) |
 | 자산 | `/assets` | JSON 뷰어 |
 | DB | `/db` | SELECT 전용 조회 채팅 (`.env`만) |
 

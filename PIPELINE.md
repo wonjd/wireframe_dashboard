@@ -106,9 +106,11 @@ design.json + design.md(있으면) ──► shell.html
 PRD 텍스트
    │
    ▼
-① clarify  → /prd 채팅 · prd review/answer
-             clarifications.json · ## 확인된 결정
-             업무 미결만 → status=ready
+① clarify  → 스튜디오 채팅 · prd review / answer → answer-apply
+             질문에 답해도 바로 저장되지 않는다. 무엇으로 확정할지 제시하고
+             사용자가 승인해야 clarifications.json 과 ## 확인된 결정 에 기록.
+             PRD에 근거가 있는데 답이 이를 부정하면 근거를 인용해 1회 되묻는다.
+             업무 미결이 없으면 status=ready
              ready 후 화면 양식만 (phase=layout) → 빌드 가능
    │
    ▼
@@ -121,20 +123,34 @@ PRD 텍스트
              artifacts[] · covers[] · assumptions[] · uiPattern
    │
    ▼
-④ render   → shell CSS + domain + manifest → artifacts/{id}.html 병렬
-             한 파일 = 한 단계 · UI만 · 가운데 비율 맞춤 · 스크롤 없음
+④ docs     → domain + manifest → spec/features.json · spec/flow.json
+             기능명세서(기능 계층 + 필드) · 유저플로우(화면 이동 + 분기)
+             사용자 편집은 spec/overrides.json 으로 분리 — 빌드가 덮지 않는다
    │
    ▼
-⑤ iterate  → 지시 1건 → 해당 artifact만 재 render (domain 재사용)
+⑤ render   → shell CSS + domain + manifest + docs → artifacts/{id}.html 병렬
+             00-overview · 00-spec(기능 명세) · 00-flow(유저 플로우) · NN-step-N
+             한 파일 = 한 화면 · UI만 · 가운데 비율 맞춤 · 스크롤 없음
    │
    ▼
-⑥ confirm  → status=confirmed
+⑥ iterate  → PRD 수정 승인 시 build-context.json 의 PRD 해시가 어긋난다
+             → 기능명세서 · 유저플로우 · 화면을 함께 다시 만든다
+   │
+   ▼
+⑦ confirm  → status=confirmed
 ```
+
+**PRD 수정도 승인 후에만 저장된다.** `prd_propose` 가 변경안만 보관하고 무엇이
+달라졌는지 한국어로 제시한 뒤, 사용자가 승인해야 `prd_apply` 가 기록한다.
+
 
 ```bash
 wireframe run create --project crm --title "…" --prd ./tmp/prd.md
 wireframe prd review --run-id …
-wireframe prd answer --run-id … --answers …
+wireframe prd answer --run-id … --answers …        # 제시만 — 저장하지 않는다
+wireframe prd answer-apply --run-id …              # 승인된 답을 기록
+wireframe prd answer-discard --run-id …            # 제시한 답을 버린다
+wireframe decisions list --project crm             # 프로젝트 결정 원장
 wireframe run build --run-id … --project crm
 wireframe render --run-id … --artifact 02-step-2 --instruction "…"
 wireframe run confirm --run-id …
@@ -145,14 +161,20 @@ wireframe run confirm --run-id …
 ## 3. 대시보드 — 사람 흐름
 
 ```
-① /prd        입력 → 업무 보완 → ready → (이어서) 화면 양식 → 빌드
-② /wireframes 목록 → 플로우 버튼으로 HTML 1장씩 (앱 사이드바 없음 · 가운데 비율)
-③ /wireframes CLI render로 멀티턴 · confirm
-   /db         live SELECT 조회
-   /assets     projects/{slug} JSON
+① /prd/:runId/studio   좌: 채팅 · 우: 기능명세서 | 유저플로우 | 와이어프레임
+                       요청을 바꾸는 유일한 경로. 자연어로 말하면 제시 → 승인 → 반영
+② /prd                 요청 목록 · /prd/:runId 는 읽기 전용 상세
+③ /wireframes          생성된 화면 열람 전용 (수정·승인 UI 없음)
+   /db                 live SELECT 조회
+   /assets             projects/{slug} JSON
 ```
 
 게이트: ready 전 빌드 금지. ready여도 화면 양식(`phase=layout`) 미답이면 빌드 금지.
+승인 대기 중인 변경안이 있으면 빌드하지 않는다 — 확정되지 않은 초안으로 화면을 만들지 않는다.
+
+**단일 진입 원칙(SSOT):** PRD·화면을 바꾸는 길은 스튜디오 채팅뿐이다. 상세 페이지의
+저장, 목록의 화면만 삭제, 화면 뷰어의 수정·승인은 모두 제거했다. 다른 입구가 있으면
+요청이 대화에 남지 않아 기능명세서·유저플로우가 화면과 어긋난다.
 DB는 `.env`의 `SSH_*`/`DB_*` 만.
 
 ```
@@ -163,13 +185,17 @@ npm run dev  →  /prd  채팅
       │
       ▼
 OpenAI tool-calling 에이전트 (server/openai-agent.ts)
-      │  tools: prd_save · prd_review · prd_answer · prd_get
+      │  tools: prd_save(최초 1회) · prd_propose/prd_apply/prd_discard
+      │         prd_review · prd_answer · prd_get · prd_conflicts · prd_build
       ▼
 packages/cli  (SSOT)
       │
       ▼
 wireFrame/runs/{runId}/input/v1.md
 wireFrame/runs/{runId}/spec/clarifications.json
+wireFrame/runs/{runId}/spec/pending-prd.json      승인 대기 PRD 변경안
+wireFrame/runs/{runId}/spec/pending-answers.json  승인 대기 답변
+projects/{slug}/decisions.json                    요청을 가로지르는 결정 원장
 status: clarifying → ready
 ```
 
@@ -179,8 +205,9 @@ status: clarifying → ready
 | 2. 보완 질문 | 에이전트 | `prd review` → 쉬운 말 질문 (업무 미결만) |
 | 3. 확정 | 실무자 | 채팅으로 답 → ready |
 | 4. 화면 양식 | 에이전트 | ready 후 `phase=layout`만 질문 |
-| 5. 반영 | 에이전트 | `prd answer` → `## 확인된 결정` |
-| 6. 빌드 | — | ready + 양식 확정 후 `run build` |
+| 5. 제시 | 에이전트 | `prd answer` → 무엇으로 확정할지 제시 (저장 안 함) |
+| 6. 승인 | 실무자 | 「이대로 확정할까요?」에 승인 → `answer-apply` → `## 확인된 결정` |
+| 7. 빌드 | — | ready + 양식 확정 후 `run build` (PRD가 바뀌면 자동 재빌드) |
 
 API (Vite dev 미들웨어):
 

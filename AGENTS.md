@@ -76,7 +76,8 @@ crm_backend   →  projects/{slug}/api.json      엔드포인트 · 필드
 애매한 업무 결정이 모두 끝나고 **PRD가 ready(승인)된 뒤**에만 한다 (`phase=layout`).
 양식 미답이면 `run build` 금지.
 
-대시보드 `/prd` OpenAI 에이전트 → CLI `prd review` / `prd answer`.
+스튜디오(`/prd/:runId/studio`) OpenAI 에이전트 → CLI `prd review` / `prd answer` → `answer-apply`.
+답변과 PRD 수정 모두 **사용자가 승인해야** 기록된다. PRD·화면을 바꾸는 길은 스튜디오 채팅뿐이다.
 `status: ready` + 화면 양식 확정 전에는 ② 와이어프레임 생성을 돌리지 않는다.
 
 ### 2. 구조 판정 — PRD당 1회 (승인 후)
