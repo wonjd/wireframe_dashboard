@@ -19,6 +19,31 @@ import {
   wireframeManifest,
   wireframeRefine,
 } from "./prd-tools.js";
+import { dbConfigured } from "./db.js";
+import { removeRunFromDb, syncRunToDb } from "./store.js";
+
+/**
+ * Keep Postgres (the read source of truth) in step with the files the CLI just wrote.
+ * Called at the end of every mutating request; failures only warn — a build already
+ * succeeded on disk, and reads fall back to files if the DB is behind.
+ */
+async function mirror(root: string, runId: string | undefined | null): Promise<void> {
+  if (!dbConfigured() || !runId) return;
+  try {
+    await syncRunToDb(root, runId);
+  } catch (err) {
+    console.warn(`[store] syncRunToDb(${runId}) failed:`, err);
+  }
+}
+
+async function mirrorDelete(root: string, runId: string | undefined | null): Promise<void> {
+  if (!dbConfigured() || !runId) return;
+  try {
+    await removeRunFromDb(root, runId);
+  } catch (err) {
+    console.warn(`[store] removeRunFromDb(${runId}) failed:`, err);
+  }
+}
 
 /** Body cap for spec/overrides.json — a patch document, never a payload. */
 const OVERRIDES_MAX_BYTES = 256 * 1024;
@@ -114,6 +139,7 @@ export function createAgentApiMiddleware(root: string) {
           runId: body.runId,
           project: body.project || "crm",
         });
+        await mirror(root, (result as { runId?: string }).runId ?? body.runId);
         sendJson(res, 200, result);
         return;
       }
@@ -158,6 +184,7 @@ export function createAgentApiMiddleware(root: string) {
             artifactId: String(body.artifactId),
             instruction: String(body.instruction),
           });
+          await mirror(root, runId);
           sendJson(res, result.ok === false ? 400 : 200, result);
           return;
         }
@@ -174,6 +201,7 @@ export function createAgentApiMiddleware(root: string) {
             runId,
             project: body.project || "crm",
           });
+          await mirror(root, runId);
           sendJson(res, result.ok === false ? 400 : 200, result);
           return;
         }
@@ -210,6 +238,10 @@ export function createAgentApiMiddleware(root: string) {
             mode === "prd"
               ? prdDelete({ root, runId, project })
               : wireframeDelete({ root, runId, project });
+          if (result.ok !== false) {
+            if (mode === "prd") await mirrorDelete(root, runId);
+            else await mirror(root, runId);
+          }
           sendJson(res, result.ok === false ? 404 : 200, result);
           return;
         }
@@ -244,6 +276,7 @@ export function createAgentApiMiddleware(root: string) {
             return;
           }
           const result = overridesSave({ root, runId, project, body });
+          await mirror(root, runId);
           sendJson(res, result.ok === false ? 400 : 200, result);
           return;
         }
@@ -261,6 +294,7 @@ export function createAgentApiMiddleware(root: string) {
             project: body.project || "crm",
             assetProject: body.assetProject,
           });
+          await mirror(root, runId);
           sendJson(res, result.ok === false ? 400 : 200, result);
           return;
         }
@@ -316,6 +350,7 @@ export function createAgentApiMiddleware(root: string) {
               project,
             });
             const fresh = prdGet({ root, runId: realRunId, project });
+            await mirror(root, realRunId);
             sendJson(res, result.ok === false ? 500 : 200, {
               ...result,
               status: fresh.status,
@@ -334,6 +369,7 @@ export function createAgentApiMiddleware(root: string) {
               : new URLSearchParams();
             const project = (qs.get("project") || "crm").trim() || "crm";
             const result = prdDelete({ root, runId, project });
+            if (result.ok !== false) await mirrorDelete(root, runId);
             sendJson(res, result.ok === false ? 404 : 200, result);
             return;
           }

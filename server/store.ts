@@ -42,6 +42,86 @@ export function scratchRoot(root: string): string {
   return override ? path.resolve(root, override) : path.join(root, ".wireframe-cache");
 }
 
+/** The CLI's on-disk working tree (unchanged): run files still land under wireFrame/. */
+export function wireFrameRoot(root: string): string {
+  return path.join(root, "wireFrame");
+}
+
+function readJsonFile(file: string): unknown | null {
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Mirror one run's on-disk files (wireFrame/) into Postgres. Called after every mutating
+ * request so the DB — the read source of truth — always reflects what the file-based CLI
+ * just produced. HTML is never mirrored (regenerated, served from files). No-op if the run
+ * is absent from index.json.
+ */
+export async function syncRunToDb(root: string, runId: string): Promise<void> {
+  await ensureMigrated(root);
+  const wf = wireFrameRoot(root);
+  const index = readJsonFile(path.join(wf, "index.json")) as
+    | { projects?: Array<Record<string, unknown>> }
+    | null;
+  if (!index?.projects) return;
+
+  let project: Record<string, unknown> | undefined;
+  let run: Record<string, unknown> | undefined;
+  for (const p of index.projects) {
+    const runs = (p.runs as Array<Record<string, unknown>>) ?? [];
+    const hit = runs.find((r) => r.runId === runId);
+    if (hit) {
+      project = p;
+      run = hit;
+      break;
+    }
+  }
+  if (!project || !run) return;
+
+  await upsertProject(
+    String(project.slug),
+    (project.no as string) ?? null,
+    (project.title as string) ?? null,
+  );
+  await upsertRun({
+    runId,
+    projectSlug: String(project.slug),
+    kind: (run.kind as string) ?? "wireframe",
+    no: (run.no as string) ?? null,
+    title: (run.title as string) ?? null,
+    status: (run.status as string) ?? null,
+    prdVersion: (run.prdVersion as number) ?? 1,
+    artifactCount: (run.artifactCount as number) ?? 0,
+    assetProjectSlug: (run.assetProjectSlug as string) ?? null,
+  });
+
+  const runDir = path.join(wf, "runs", runId);
+  const inputDir = path.join(runDir, "input");
+  if (fs.existsSync(inputDir)) {
+    for (const file of fs.readdirSync(inputDir)) {
+      const m = /^v(\d+)\.md$/.exec(file);
+      if (!m) continue;
+      await putInput(runId, Number(m[1]), fs.readFileSync(path.join(inputDir, file), "utf8"));
+    }
+  }
+  const specDir = path.join(runDir, "spec");
+  for (const name of SPEC_NAMES) {
+    const data = readJsonFile(path.join(specDir, `${name}.json`));
+    if (data == null) continue;
+    await putSpec(runId, name, data);
+  }
+}
+
+/** Remove a run from the DB (cascades to its specs/inputs). For deletes. */
+export async function removeRunFromDb(root: string, runId: string): Promise<void> {
+  await ensureMigrated(root);
+  await query("delete from runs where run_id = $1", [runId]);
+}
+
 export function ensureMigrated(root: string): Promise<void> {
   return migrate(root);
 }
