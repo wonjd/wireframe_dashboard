@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useCanvasPanZoom } from "./useCanvasPanZoom";
 import type { NodeOverride } from "../lib/spec-overrides";
+import { describeFeatureHide, type HideImpact } from "../lib/hide-impact";
 
 export type FeatureImportance = "high" | "medium" | "low";
 export type FeatureStatus = "confirmed" | "draft" | "assumed";
@@ -208,20 +209,26 @@ export function NodeEditor({
   label,
   importance,
   withImportance,
+  hideImpact,
   onPatch,
 }: {
   id: string;
   label: string;
   importance?: FeatureImportance;
   withImportance: boolean;
+  /** business-language impact shown in the confirm dialog before a hide is committed */
+  hideImpact?: HideImpact;
   onPatch: (patch: NodeOverride) => void;
 }) {
   // Local draft so clearing the box does not snap back to the generated label mid-typing
   // (an empty override is dropped, which restores the generated value).
   const [draft, setDraft] = useState(label);
+  // Hiding is gated behind a confirm dialog; rename/importance stay immediate.
+  const [confirming, setConfirming] = useState(false);
   // Re-seed on selection change only — depending on `label` would fight every keystroke.
   useEffect(() => {
     setDraft(label);
+    setConfirming(false);
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
@@ -257,22 +264,107 @@ export function NodeEditor({
         </label>
       ) : null}
       {/* Always unchecked: hiding removes the node from the canvas, so this panel can
-          only ever show a visible one. Restore is the chip list in the studio bar. */}
+          only ever show a visible one. Restore is the chip list in the studio bar.
+          Checking opens a confirm dialog; only 확인 runs the actual hide. */}
       <label className="wfs-fmap-edit-check">
-        <input type="checkbox" checked={false} onChange={() => onPatch({ hidden: true })} />
+        <input
+          type="checkbox"
+          checked={false}
+          onChange={() => {
+            if (hideImpact) setConfirming(true);
+            else onPatch({ hidden: true });
+          }}
+        />
         <span>이 항목 숨기기</span>
       </label>
+      {confirming && hideImpact ? (
+        <HideConfirm
+          impact={hideImpact}
+          onConfirm={() => {
+            setConfirming(false);
+            onPatch({ hidden: true });
+          }}
+          onCancel={() => setConfirming(false)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * In-pane confirm for a hide. Business Korean only — its strings are pre-scrubbed by the
+ * hide-impact bar (no ids, no step-N, no build vocabulary). Sits over the detail panel,
+ * not the whole app. Esc / 취소 / backdrop cancel; 확인 is the primary action.
+ */
+function HideConfirm({
+  impact,
+  onConfirm,
+  onCancel,
+}: {
+  impact: HideImpact;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  useEffect(() => {
+    // Capture phase + stopImmediatePropagation so Esc closes THIS dialog only, not the
+    // detail panel behind it (which also listens for Escape on window, in bubble phase).
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopImmediatePropagation();
+        onCancel();
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [onCancel]);
+
+  return (
+    <div
+      className="wfs-confirm-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="숨기기 확인"
+      onClick={onCancel}
+    >
+      <div className="wfs-confirm-card" onClick={(e) => e.stopPropagation()}>
+        <div className="wfs-confirm-head">이 항목을 숨기면 아래가 화면·문서에서 함께 빠집니다.</div>
+        <div className="wfs-confirm-title">{impact.title}</div>
+        {impact.lines.length > 0 ? (
+          <ul className="wfs-confirm-list">
+            {impact.lines.map((line, i) => (
+              <li key={i} className="wfs-confirm-item">
+                {line}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <div className="wfs-confirm-actions">
+          <button type="button" className="wfs-confirm-btn" onClick={onCancel}>
+            취소
+          </button>
+          <button
+            type="button"
+            className="wfs-confirm-btn is-primary"
+            onClick={onConfirm}
+            autoFocus
+          >
+            확인
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
 function FeatureDetailPanel({
   child,
+  hideImpact,
   onClose,
   onOpenArtifact,
   onPatch,
 }: {
   child: FeatureChild;
+  hideImpact?: HideImpact;
   onClose: () => void;
   onOpenArtifact?: (artifactId: string) => void;
   onPatch?: (no: string, patch: NodeOverride) => void;
@@ -325,6 +417,7 @@ function FeatureDetailPanel({
           label={child.label}
           importance={child.importance}
           withImportance
+          hideImpact={hideImpact}
           onPatch={(patch) => onPatch(child.no, patch)}
         />
       ) : null}
@@ -513,6 +606,7 @@ export function FeatureMap({
         {selected ? (
           <FeatureDetailPanel
             child={selected}
+            hideImpact={onPatch ? describeFeatureHide(doc, selected.no) : undefined}
             onClose={() => setSelectedNo(null)}
             onOpenArtifact={onOpenArtifact}
             onPatch={onPatch}

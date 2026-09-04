@@ -402,12 +402,31 @@ export function PrdStudio() {
 
   // Hidden nodes are gone from the canvas, so the only way back is this list.
   const hiddenKind = tab === "flow" ? "flow" : "features";
+  // Chips restore hidden nodes; label them by business name, never the internal id — the
+  // studio is non-developer-facing and a raw "step-4-image-guide" leaks the pipeline.
+  const hiddenLabelOf = useCallback(
+    (kind: "flow" | "features", id: string): string => {
+      if (kind === "flow" && flow.state === "ready") {
+        const node = flow.doc?.nodes?.find((n) => n.id === id);
+        if (node?.label) return node.label;
+      }
+      if (kind === "features" && features.state === "ready") {
+        for (const g of features.doc?.groups ?? []) {
+          if (g.no === id) return g.label;
+          const child = g.children?.find((c) => c.no === id);
+          if (child) return child.label;
+        }
+      }
+      return "숨긴 항목";
+    },
+    [flow, features],
+  );
   const hiddenIds = useMemo(
     () =>
       Object.entries(overrides[hiddenKind] ?? {})
         .filter(([, patch]) => patch.hidden)
-        .map(([id]) => id),
-    [overrides, hiddenKind],
+        .map(([id]) => ({ id, label: hiddenLabelOf(hiddenKind, id) })),
+    [overrides, hiddenKind, hiddenLabelOf],
   );
 
   // Right-pane phases: docs shown once either document is ready; a brief spinner only while an
@@ -472,15 +491,15 @@ export function PrdStudio() {
           {tab !== "wireframe" && hiddenIds.length > 0 ? (
             <span className="wfs-studio-hidden" aria-label="숨긴 항목">
               숨김
-              {hiddenIds.map((id) => (
+              {hiddenIds.map(({ id, label }) => (
                 <button
                   key={id}
                   type="button"
                   className="wfs-studio-hidden-chip"
-                  title={`${id} 다시 표시`}
+                  title={`${label} 다시 표시`}
                   onClick={() => patchNode(hiddenKind, id, { hidden: false })}
                 >
-                  {id} ↩
+                  {label} ↩
                 </button>
               ))}
             </span>

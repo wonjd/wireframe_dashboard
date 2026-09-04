@@ -1596,6 +1596,85 @@ a, .wfs-list-link, .wfs-wf-issue-item, .wfs-app-tab {
   cursor: pointer;
 }
 
+/* Hide-confirm dialog — sits over the detail panel only (not the app), business copy only */
+.wfs-confirm-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--wfs-ink) 32%, transparent);
+}
+.wfs-confirm-card {
+  width: 100%;
+  max-width: 320px;
+  max-height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background: var(--wfs-surface);
+  border: 1px solid var(--wfs-line-strong);
+  border-radius: var(--wfs-radius);
+  box-shadow: 0 12px 32px rgba(44, 42, 40, 0.22);
+}
+.wfs-confirm-head {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--wfs-ink-soft);
+}
+.wfs-confirm-title {
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--wfs-ink);
+  line-height: 1.4;
+}
+.wfs-confirm-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wfs-confirm-item {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--wfs-ink-soft);
+}
+.wfs-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 2px;
+}
+.wfs-confirm-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--wfs-line-strong);
+  border-radius: var(--wfs-radius-sm);
+  background: var(--wfs-bg);
+  color: var(--wfs-ink-soft);
+  font-size: 12.5px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.wfs-confirm-btn:hover {
+  color: var(--wfs-ink);
+  border-color: #c9c4bc;
+}
+.wfs-confirm-btn.is-primary {
+  background: var(--wfs-ink);
+  border-color: var(--wfs-ink);
+  color: #fff;
+  font-weight: 600;
+}
+.wfs-confirm-btn.is-primary:hover {
+  color: #fff;
+  opacity: 0.9;
+}
+
 /* ===== User flow (유저플로우 sitemap) ===== */
 .wfs-uflow-body {
   position: relative;

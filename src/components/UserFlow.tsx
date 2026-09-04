@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useCanvasPanZoom } from "./useCanvasPanZoom";
 import { NodeEditor } from "./FeatureMap";
 import type { NodeOverride } from "../lib/spec-overrides";
+import { describeFlowHide, type HideImpact } from "../lib/hide-impact";
 
 export type FlowNodeKind = "start" | "primary" | "page";
 
@@ -277,12 +278,14 @@ const KIND_LABEL: Record<FlowNodeKind, string> = {
 function FlowDetailPanel({
   node,
   laneLabel,
+  hideImpact,
   onClose,
   onOpenArtifact,
   onPatch,
 }: {
   node: FlowNode;
   laneLabel?: string;
+  hideImpact?: HideImpact;
   onClose: () => void;
   onOpenArtifact?: (artifactId: string) => void;
   onPatch?: (id: string, patch: NodeOverride) => void;
@@ -329,6 +332,7 @@ function FlowDetailPanel({
           id={node.id}
           label={node.label}
           withImportance={false}
+          hideImpact={hideImpact}
           onPatch={(patch) => onPatch(node.id, patch)}
         />
       ) : (
@@ -507,6 +511,7 @@ export function UserFlow({
           <FlowDetailPanel
             node={selected}
             laneLabel={(doc.lanes ?? []).find((l) => l.id === selected.lane)?.label}
+            hideImpact={onPatch ? describeFlowHide(doc, selected.id) : undefined}
             onClose={() => setSelectedId(null)}
             onOpenArtifact={onOpenArtifact}
             onPatch={onPatch}
