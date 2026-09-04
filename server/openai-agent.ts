@@ -15,8 +15,10 @@ import {
   prdList,
   prdPendingGet,
   prdPropose,
+  prdOutline,
   prdReview,
   prdSave,
+  prdSection,
 } from "./prd-tools.js";
 import {
   addUsage,
@@ -48,7 +50,11 @@ const TOOLS = [
         type: "object",
         properties: {
           title: { type: "string", description: "Short business title from the PRD" },
-          content: { type: "string", description: "Full PRD text in plain language" },
+          content: {
+            type: "string",
+            description:
+              "The user pasted text, copied VERBATIM. Never summarize, shorten, reword or restructure it, and never append your own sentences — the PRD is the source of truth for every generated document.",
+          },
         },
         required: ["title", "content"],
       },
@@ -129,8 +135,24 @@ const TOOLS = [
     type: "function",
     function: {
       name: "prd_get",
-      description: "Read current PRD text, phase, and open questions.",
+      description:
+        "Read the request's status, phase, open questions, and an OUTLINE of the PRD (section titles and sizes) — not the full text. To read a section's wording, call prd_section. Editing a request still sends the full new text to prd_propose.",
       parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "prd_section",
+      description:
+        "Read one section of the PRD by its outline number (no) or a keyword (query). Use this instead of pulling the whole PRD when the user points at one part such as 레퍼런스 or 종료 사유.",
+      parameters: {
+        type: "object",
+        properties: {
+          no: { type: "string", description: "Section number from prd_get's outline" },
+          query: { type: "string", description: "Keyword to locate the section if no is unknown" },
+        },
+      },
     },
   },
   {
@@ -200,6 +222,8 @@ const SYSTEM = `당신은 비개발자(실무자)용 요청서 확정 도우미�
 
 필수 행동:
 - 새 PRD를 붙여 넣으면 즉시 prd_save(title, content) → prd_review
+- **content 에는 사용자가 붙여 넣은 본문을 글자 그대로** 넣으세요. 요약·재작성·줄임 금지이고,
+  당신이 쓴 문장을 덧붙이지 마세요. 길어도 그대로 넣습니다 — 세부 규칙이 사라지면 화면도 틀립니다
 - 사용자가 답하면 **반드시 prd_answer** (말로만 확정하지 마세요)
 - 화면 형태 답(모달, 단계별 등)도 prd_answer로 넣으세요
 - phase=ready가 되면 **같은 턴에서 prd_build** 하세요. "나중에 보여 드릴게요"라고 말하지 마세요
@@ -459,6 +483,28 @@ function runTool(
   };
 
   if (name === "prd_save") {
+    // The PRD is the source of truth for every downstream document, so it has to be the user's
+    // own words. A 20,000-character email thread once came back as a 2,000-character summary
+    // that even ended with the agent's own "요청서를 이대로 저장할까요?" line — every detailed
+    // rule was gone and the parser found no steps at all. Refuse a first save that is much
+    // shorter than what the user actually pasted; the prompt alone did not hold.
+    const pastedLongest = userMessages
+      .filter((m) => m.role === "user")
+      .reduce((longest, m) => (m.content.length > longest.length ? m.content : longest), "");
+    const saving = String(args.content || "");
+    if (pastedLongest.length > 1500 && saving.length < pastedLongest.length * 0.7) {
+      return {
+        result: {
+          ok: false,
+          error:
+            "요청서 본문을 요약하거나 다시 쓰지 마세요. 사용자가 붙여 넣은 원문을 글자 그대로 content 에 넣어 다시 prd_save 하세요.",
+          pastedChars: pastedLongest.length,
+          savedChars: saving.length,
+        },
+        state,
+      };
+    }
+
     // A save aimed at a request that already has text is a rewrite, no matter what the model
     // called it — stage it instead of letting it overwrite input/vN.md unseen.
     if (state.runId) {
@@ -538,6 +584,7 @@ function runTool(
     (name === "prd_review" ||
       name === "prd_answer" ||
       name === "prd_get" ||
+      name === "prd_section" ||
       name === "prd_build" ||
       name === "prd_conflicts" ||
       name === "prd_apply" ||
@@ -784,17 +831,23 @@ function runTool(
     const pending = prdPendingGet({ root, runId, project });
     const answers = prdAnswersPendingGet({ root, runId, project });
     const answersPending = answers.pending === true;
+    // Strip the full PRD text from what the model sees. It gets an outline (section titles +
+    // sizes) and pulls a specific section with prd_section only when it needs the wording —
+    // the whole PRD reprinted on every tool round was the bulk of a turn's tokens.
+    const { content: _fullContent, clarifications: _clar, ...outLite } = out as Record<string, unknown>;
     return applySnap(
       {
         ok: true,
-        ...out,
-        // A staged draft is what the next edit must build on, so hand the model that text
-        // rather than the saved one — otherwise a follow-up edit silently drops the first.
+        ...outLite,
+        // A staged draft is the exception: an edit-in-progress must see the exact text it is
+        // building on, so hand that over verbatim. Otherwise send only the outline.
         pending: pending.pending === true || answersPending,
         pendingSummary: pending.summary,
         pendingAnswers: answersPending,
         pendingAnswerRestatement: answers.restatement,
-        content: pending.pending === true ? pending.content : out.content,
+        content: pending.pending === true ? pending.content : undefined,
+        outline:
+          pending.pending === true ? undefined : prdOutline({ root, runId, project }).outline,
         message:
           answersPending
             ? "확정 대기 중인 답이 있습니다. pendingAnswerRestatement를 그대로 전하고 「이대로 확정할까요?」를 물으세요. 승인하면 prd_apply, 취소하면 prd_discard."
@@ -804,6 +857,17 @@ function runTool(
       },
       runId,
     );
+  }
+
+  if (name === "prd_section") {
+    const out = prdSection({
+      root,
+      runId,
+      project,
+      no: args.no ? String(args.no) : undefined,
+      query: args.query ? String(args.query) : undefined,
+    });
+    return { result: out, state };
   }
 
   if (name === "prd_conflicts") {

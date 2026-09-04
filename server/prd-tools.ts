@@ -831,6 +831,77 @@ export function prdDocsStale(input: { root: string; runId: string; project?: str
   }
 }
 
+/**
+ * Split a PRD into an outline (heading list) and per-section slices. The chat agent gets the
+ * outline instead of the whole PRD, then pulls only the section it needs with prd_section — a
+ * 15,000-char PRD reprinted on every tool round was the bulk of a turn's tokens. Pure text, so
+ * no CLI round-trip: the numbering here mirrors parsePrdSections in build-docs.ts.
+ */
+export type PrdOutlineItem = { no: string; title: string; chars: number };
+
+function splitPrdSections(content: string): Array<{ no: string; title: string; body: string }> {
+  const confirmedAt = content.search(/(?:^|\n)#+\s*확인된\s*결정/);
+  const scope = confirmedAt >= 0 ? content.slice(0, confirmedAt) : content;
+  const headRe = /(?:^|\n)#{1,6}\s*([^\n]+)/g;
+  const heads: Array<{ title: string; start: number; bodyStart: number }> = [];
+  let m: RegExpExecArray | null;
+  while ((m = headRe.exec(scope)) !== null) {
+    heads.push({ title: m[1]!.trim(), start: m.index, bodyStart: m.index + m[0].length });
+  }
+  if (heads.length === 0) {
+    return [{ no: "1", title: "전체", body: scope.trim() }];
+  }
+  return heads.map((h, i) => {
+    const end = i + 1 < heads.length ? heads[i + 1]!.start : scope.length;
+    // Number by heading order; strip a leading "1." / "1-1." the author already wrote so the
+    // agent's "N번" maps to what the reader sees.
+    const cleaned = h.title.replace(/^#+\s*/, "");
+    return { no: String(i + 1), title: cleaned, body: scope.slice(h.start, end).trim() };
+  });
+}
+
+export function prdOutline(input: { root: string; runId: string; project?: string }): CliJson {
+  const snap = prdGet(input);
+  if (snap.ok === false) return snap;
+  const content = typeof snap.content === "string" ? snap.content : "";
+  const sections = splitPrdSections(content);
+  return {
+    ok: true,
+    runId: snap.runId,
+    title: snap.title,
+    status: snap.status,
+    phase: snap.phase,
+    totalChars: content.length,
+    outline: sections.map((s): PrdOutlineItem => ({ no: s.no, title: s.title, chars: s.body.length })),
+  };
+}
+
+export function prdSection(input: {
+  root: string;
+  runId: string;
+  project?: string;
+  no?: string;
+  query?: string;
+}): CliJson {
+  const snap = prdGet(input);
+  if (snap.ok === false) return snap;
+  const content = typeof snap.content === "string" ? snap.content : "";
+  const sections = splitPrdSections(content);
+  let hit = input.no ? sections.find((s) => s.no === String(input.no)) : undefined;
+  if (!hit && input.query) {
+    const q = input.query.trim();
+    hit = sections.find((s) => s.title.includes(q) || s.body.includes(q));
+  }
+  if (!hit) {
+    return {
+      ok: false,
+      error: "그 부분을 찾지 못했어요. prd_outline 으로 번호를 확인한 뒤 다시 요청하세요.",
+      outline: sections.map((s) => ({ no: s.no, title: s.title })),
+    };
+  }
+  return { ok: true, runId: snap.runId, no: hit.no, title: hit.title, section: hit.body };
+}
+
 export function prdGet(input: { root: string; runId: string; project?: string }): CliJson {
   const index = readIndex(input.root);
   if (!index) return { ok: false, error: "index.json missing" };
