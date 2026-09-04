@@ -276,11 +276,13 @@ const KIND_LABEL: Record<FlowNodeKind, string> = {
  */
 function FlowDetailPanel({
   node,
+  laneLabel,
   onClose,
   onOpenArtifact,
   onPatch,
 }: {
   node: FlowNode;
+  laneLabel?: string;
   onClose: () => void;
   onOpenArtifact?: (artifactId: string) => void;
   onPatch?: (id: string, patch: NodeOverride) => void;
@@ -310,7 +312,9 @@ function FlowDetailPanel({
       <div className="wfs-fmap-panel-meta">
         <span className="wfs-fmap-panel-tag">{KIND_LABEL[node.kind]}</span>
       </div>
-      <div className="wfs-fmap-panel-source">노드 ID: {node.id}</div>
+      {laneLabel ? (
+        <div className="wfs-fmap-panel-source">영역: {laneLabel}</div>
+      ) : null}
       {node.artifactId && onOpenArtifact ? (
         <button
           type="button"
@@ -502,6 +506,7 @@ export function UserFlow({
         {selected ? (
           <FlowDetailPanel
             node={selected}
+            laneLabel={(doc.lanes ?? []).find((l) => l.id === selected.lane)?.label}
             onClose={() => setSelectedId(null)}
             onOpenArtifact={onOpenArtifact}
             onPatch={onPatch}

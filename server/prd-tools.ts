@@ -1499,7 +1499,43 @@ export function overridesSave(input: {
   const specDir = path.dirname(file);
   if (!fs.existsSync(specDir)) fs.mkdirSync(specDir, { recursive: true });
   fs.writeFileSync(file, `${JSON.stringify(doc, null, 2)}\n`, "utf8");
-  return { ok: true, runId: realRunId, overrides: doc, saved: true };
+
+  // The canvas merges overrides on the fly, but the built artifacts (00-flow/00-spec,
+  // step screens) and the on-disk flow.json/features.json only change on a rebuild —
+  // and the build reads overrides.json fresh from disk (see run/build.ts). So: write
+  // first (above), then rebuild. A run still in clarify has no artifacts yet, so only
+  // rebuild once it is ready/confirmed; otherwise report the save with rebuilt:false.
+  //
+  // Resilience: the override is already persisted. A failing build must never lose that
+  // edit or 500 — it returns { ok:true, saved:true, rebuilt:false } and logs the cause server-side.
+  //
+  // No loop: overrides.json is written here (by the server), never by the build, so the
+  // rebuild cannot re-trigger another overrides save.
+  const project = input.project || "crm";
+  const canBuild = hit.run.status === "ready" || hit.run.status === "confirmed";
+  if (!canBuild) {
+    return { ok: true, runId: realRunId, overrides: doc, saved: true, rebuilt: false };
+  }
+  try {
+    const build = runWireframeCli(
+      input.root,
+      ["run", "build", "--run-id", realRunId, "--project", project],
+      { timeoutMs: 10 * 60 * 1000 },
+    );
+    if (!build.ok) {
+      // Log the real cause server-side; the response carries no path or stack — the client
+      // only needs rebuilt:false, and buildError would carry a filesystem path to the browser.
+      console.error(
+        "[overridesSave] rebuild failed:",
+        (build.stderr || build.stdout || `exit ${build.code}`).slice(0, 500),
+      );
+      return { ok: true, runId: realRunId, overrides: doc, saved: true, rebuilt: false };
+    }
+    return { ok: true, runId: realRunId, overrides: doc, saved: true, rebuilt: true };
+  } catch (err) {
+    console.error("[overridesSave] rebuild threw:", err);
+    return { ok: true, runId: realRunId, overrides: doc, saved: true, rebuilt: false };
+  }
 }
 
 /* ------------------------------------------------------------------ *

@@ -347,7 +347,13 @@ export function PrdStudio() {
     setSaveState("saving");
     const timer = window.setTimeout(() => {
       putOverrides(realRunId, PROJECT_SLUG, overrides)
-        .then(() => setSaveState("saved"))
+        .then(({ rebuilt }) => {
+          setSaveState("saved");
+          // The canvas already reflects this edit from the in-memory merge; a rebuild
+          // means the artifacts (와이어프레임 screens, 00-spec/00-flow) were regenerated
+          // from the saved overrides, so re-fetch them to catch the doc panes/iframes up.
+          if (rebuilt) setReloadToken((n) => n + 1);
+        })
         .catch(() => setSaveState("error"));
     }, SAVE_DELAY_MS);
     return () => window.clearTimeout(timer);

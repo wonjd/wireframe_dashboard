@@ -168,7 +168,7 @@ export async function putOverrides(
   runId: string,
   project: string,
   overrides: SpecOverrides,
-): Promise<void> {
+): Promise<{ rebuilt: boolean }> {
   const res = await fetch(overridesUrl(runId, project), {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -177,8 +177,15 @@ export async function putOverrides(
       flow: overrides.flow ?? {},
     }),
   });
-  const json = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+  const json = (await res.json().catch(() => ({}))) as {
+    ok?: boolean;
+    error?: string;
+    rebuilt?: boolean;
+  };
   if (!res.ok || json.ok === false) {
     throw new Error(json.error || `overrides save failed (${res.status})`);
   }
+  // rebuilt:true means the server rebuilt the artifacts from the fresh overrides, so the
+  // caller should re-fetch the built HTML/docs. Skipped (not-ready) or failed builds are false.
+  return { rebuilt: json.rebuilt === true };
 }
