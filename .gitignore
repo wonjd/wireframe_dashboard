@@ -16,3 +16,10 @@ packages/**/prisma/**/*.db
 
 # 승인 대기 중인 PRD 초안 (승인·취소 시 삭제되는 임시 상태)
 wireFrame/runs/*/spec/pending-prd.json
+
+# Run data is managed in Postgres now (DB = source of truth). wireFrame/runs and the
+# registry index.json are the CLI's regenerated working cache; the files stay on disk but
+# are no longer tracked, so create/edit stops dirtying the repo. Rendered HTML lives here too.
+wireFrame/runs/
+wireFrame/index.json
+.wireframe-cache/
