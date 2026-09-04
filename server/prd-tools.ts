@@ -1538,6 +1538,146 @@ export function overridesSave(input: {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* Wireframe edit trigger — chat drives it, resolveCascade decides it  */
+/* ------------------------------------------------------------------ */
+
+function runSpecPath(root: string, runId: string, name: string): string | null {
+  const runsRoot = path.resolve(path.join(root, "wireFrame", "runs"));
+  const specDir = path.resolve(path.join(runsRoot, runId, "spec"));
+  if (!specDir.startsWith(runsRoot + path.sep)) return null;
+  return path.join(specDir, `${name}.json`);
+}
+
+function readSpecJson(root: string, runId: string, name: string): any | null {
+  const file = runSpecPath(root, runId, name);
+  if (!file || !fs.existsSync(file)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The editable nodes of a built run, in business Korean, each with the id the agent echoes
+ * back into wireframe_impact / wireframe_apply — the same "ids come from tool output" rule
+ * the PRD questions already follow. Handoff pages (00-*) are not editable screens.
+ */
+export function wireframeNodes(input: { root: string; runId: string; project?: string }): CliJson {
+  const index = readIndex(input.root);
+  if (!index) return { ok: false, error: "index.json missing" };
+  const hit = findRun(index, input.runId, input.project || "crm");
+  if (!hit) return { ok: false, error: `run not found: ${input.runId}` };
+  const runId = hit.run.runId;
+
+  const manifest = readSpecJson(input.root, runId, "manifest");
+  const flow = readSpecJson(input.root, runId, "flow");
+  const features = readSpecJson(input.root, runId, "features");
+  if (!manifest || !flow || !features) {
+    return { ok: false, error: "아직 생성 전입니다. 먼저 prd_build 하세요.", built: false };
+  }
+
+  const screens = (manifest.artifacts ?? [])
+    .filter((a: any) => /step/.test(a.id))
+    .map((a: any) => ({ id: `flow:step-${a.no}`, label: `${a.label} (${a.no}단계)` }));
+  const flowNodes = (flow.nodes ?? [])
+    .filter((n: any) => n.id !== "start")
+    .map((n: any) => ({ id: `flow:${n.id}`, label: n.label }));
+  const featureRows: Array<{ id: string; label: string }> = [];
+  for (const group of features.groups ?? []) {
+    featureRows.push({ id: `features:${group.no}`, label: group.label });
+    for (const child of group.children ?? []) {
+      featureRows.push({ id: `features:${child.no}`, label: child.label });
+    }
+  }
+
+  return { ok: true, runId, screens, flow: flowNodes, features: featureRows };
+}
+
+/** target strings the agent passes: "flow:step-2" / "features:2.1". */
+function toCsvHide(hide: unknown): string {
+  if (!Array.isArray(hide)) return "";
+  return hide.map((t) => String(t)).filter(Boolean).join(",");
+}
+function toCsvRename(rename: unknown): string {
+  if (!Array.isArray(rename)) return "";
+  return rename
+    .map((r) => {
+      const target = String((r as any)?.target ?? "").trim();
+      const label = String((r as any)?.label ?? "").trim();
+      return target && label ? `${target}=${label}` : "";
+    })
+    .filter(Boolean)
+    .join(",");
+}
+
+/** Read-only impact of a proposed wireframe edit, via the deterministic `run impact` CLI. */
+export function wireframeEditImpact(input: {
+  root: string;
+  runId: string;
+  project?: string;
+  hide?: unknown;
+  rename?: unknown;
+}): CliJson {
+  const index = readIndex(input.root);
+  if (!index) return { ok: false, error: "index.json missing" };
+  const hit = findRun(index, input.runId, input.project || "crm");
+  if (!hit) return { ok: false, error: `run not found: ${input.runId}` };
+  const runId = hit.run.runId;
+
+  const args = ["run", "impact", "--run-id", runId, "--project", input.project || "crm"];
+  const hide = toCsvHide(input.hide);
+  const rename = toCsvRename(input.rename);
+  if (!hide && !rename) return { ok: false, error: "hide 또는 rename 중 하나는 필요합니다." };
+  if (hide) args.push("--hide", hide);
+  if (rename) args.push("--rename", rename);
+
+  const result = runWireframeCli(input.root, args, { timeoutMs: 60_000 });
+  if (!result.ok) return { ok: false, error: "영향 계산에 실패했습니다.", runId };
+  return { ...parseJsonStdout(result.stdout), runId };
+}
+
+/** Apply a wireframe edit: merge onto overrides.json, then rebuild (overridesSave). */
+export function wireframeApplyEdit(input: {
+  root: string;
+  runId: string;
+  project?: string;
+  hide?: unknown;
+  rename?: unknown;
+}): CliJson {
+  const current = overridesGet({ root: input.root, runId: input.runId, project: input.project });
+  if (current.ok === false) return current;
+  const doc = (current as { overrides: SpecOverridesDoc }).overrides;
+  const runId = String((current as { runId: string }).runId);
+
+  const features: Record<string, SpecOverridePatch> = { ...doc.features };
+  const flow: Record<string, SpecOverridePatch> = { ...doc.flow };
+  const bucket = (kind: string) => (kind === "features" ? features : kind === "flow" ? flow : null);
+
+  for (const token of toCsvHide(input.hide).split(",").filter(Boolean)) {
+    const [kind, id] = token.split(":");
+    const map = bucket(kind);
+    if (map && id) map[id] = { ...map[id], hidden: true };
+  }
+  if (Array.isArray(input.rename)) {
+    for (const entry of input.rename as Array<{ target?: string; label?: string }>) {
+      const [kind, id] = String(entry?.target ?? "").split(":");
+      const label = String(entry?.label ?? "").trim();
+      const map = bucket(kind);
+      if (map && id && label) map[id] = { ...map[id], label };
+    }
+  }
+
+  const saved = overridesSave({
+    root: input.root,
+    runId,
+    project: input.project,
+    body: { features, flow },
+  });
+  return saved;
+}
+
 /* ------------------------------------------------------------------ *
  * Pending PRD change (propose → approve → apply)
  *

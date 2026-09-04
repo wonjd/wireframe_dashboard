@@ -19,6 +19,9 @@ import {
   prdReview,
   prdSave,
   prdSection,
+  wireframeApplyEdit,
+  wireframeEditImpact,
+  wireframeNodes,
 } from "./prd-tools.js";
 import {
   addUsage,
@@ -173,6 +176,69 @@ const TOOLS = [
       parameters: { type: "object", properties: {} },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "wireframe_nodes",
+      description:
+        "List the editable parts of the ALREADY BUILT run — screens, user-flow steps, feature-spec rows — each with a business-Korean label and the id you pass to wireframe_impact/wireframe_apply. Call this first when the user asks to change/remove something in the wireframe, flow, or feature spec, so you can map their words (예: '3단계 화면', '공통 정보 입력') to an id. Ids come from here only; never invent one or ask the user for one.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "wireframe_impact",
+      description:
+        "PREVIEW what a wireframe/flow/feature edit would touch — read-only, writes nothing. Pass the ids to hide and/or rename (ids from wireframe_nodes). Returns { hasImpact, text, screens, features, flow }: `text` is the exact business-Korean impact, relay it VERBATIM (line breaks included) and then ask 이대로 진행할까요? Nothing changes until wireframe_apply.",
+      parameters: {
+        type: "object",
+        properties: {
+          hide: {
+            type: "array",
+            items: { type: "string" },
+            description: 'ids to hide, e.g. ["flow:step-2","features:2.1"]',
+          },
+          rename: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                target: { type: "string", description: 'id to rename, e.g. "flow:step-1"' },
+                label: { type: "string", description: "new business-Korean name" },
+              },
+              required: ["target", "label"],
+            },
+          },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "wireframe_apply",
+      description:
+        "Apply the wireframe edit the user just APPROVED (진행/좋아요/네). Same hide/rename ids you previewed with wireframe_impact. This saves the edit and rebuilds the screens, feature spec and flow together, so the linked parts change as one. Only call after the user agreed to the previewed impact.",
+      parameters: {
+        type: "object",
+        properties: {
+          hide: { type: "array", items: { type: "string" } },
+          rename: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                target: { type: "string" },
+                label: { type: "string" },
+              },
+              required: ["target", "label"],
+            },
+          },
+        },
+      },
+    },
+  },
 ] as const;
 
 const SYSTEM = `당신은 비개발자(실무자)용 요청서 확정 도우미입니다. 상대는 개발자가 아닙니다.
@@ -219,6 +285,16 @@ const SYSTEM = `당신은 비개발자(실무자)용 요청서 확정 도우미�
 - prd_propose·prd_answer가 impactPreview를 돌려주면 **줄바꿈까지 그대로** 옮긴 뒤에 승인을 물으세요
 - 요약하지도, 개수(「화면 2장」)로 바꾸지도 마세요. 비어 있으면 아무 말도 하지 마세요
 - 「이미 승인된 화면입니다」가 붙어 있으면 그 사실을 분명히 전하고 사용자가 판단하게 두세요
+
+생성된 뒤 와이어프레임·유저플로우·기능명세서 수정도 승인제입니다:
+- 이 세 문서는 하나로 엮여 있어, 한 곳을 지우면 연관된 곳이 함께 빠집니다. 임의로 바꾸지 마세요
+- 사용자가 「이 화면 빼줘」「3단계 지워」「이 흐름 없애」처럼 말하면:
+  1) 먼저 **wireframe_nodes**로 목록을 받아 사용자의 말을 label로 짚어 id를 고릅니다
+  2) 그 id로 **wireframe_impact**를 불러 무엇이 함께 바뀌는지 받습니다
+  3) 돌아온 text를 **줄바꿈까지 그대로** 전하고 「이대로 진행할까요?」라고 **묻고 멈추세요**
+  4) 사용자가 「네/진행/좋아요」라고 하면 같은 id로 **wireframe_apply**, 「아니요」면 그대로 둡니다
+- id(flow:step-2 등)는 내부용입니다. 사용자에게는 label만 쓰고 id·단계번호 코드·화면 파일명을 노출하지 마세요
+- 영향이 없다고 나오면(hasImpact=false) 그 사실을 알리고 한 번만 확인 뒤 진행하세요
 
 필수 행동:
 - 새 PRD를 붙여 넣으면 즉시 prd_save(title, content) → prd_review
@@ -914,6 +990,65 @@ function runTool(
     };
   }
 
+  if (name === "wireframe_nodes") {
+    const out = wireframeNodes({ root, runId, project });
+    if (out.ok === false) {
+      return {
+        result: {
+          ok: false,
+          error: String(out.error || "목록을 불러오지 못했어요."),
+          message: out.built === false ? "아직 생성 전입니다. 먼저 prd_build 하세요." : undefined,
+        },
+        state,
+      };
+    }
+    return {
+      result: {
+        ok: true,
+        ...out,
+        message:
+          "이 목록의 label로 사용자의 말을 짚고, 지울/바꿀 항목의 id로 wireframe_impact를 부르세요. id는 절대 사용자에게 보이지 마세요.",
+      },
+      state,
+    };
+  }
+
+  if (name === "wireframe_impact") {
+    const out = wireframeEditImpact({ root, runId, project, hide: args.hide, rename: args.rename });
+    if (out.ok === false) {
+      return { result: { ok: false, error: String(out.error || "영향을 계산하지 못했어요.") }, state };
+    }
+    return {
+      result: {
+        ok: true,
+        ...out,
+        message:
+          out.hasImpact === true
+            ? "아직 아무것도 바꾸지 않았습니다. text를 줄바꿈까지 그대로 전한 뒤 「이대로 진행할까요?」라고 묻고 이번 턴을 끝내세요. 승인하면 같은 id로 wireframe_apply, 아니면 그대로 두세요."
+            : "이 편집은 다른 곳에 영향이 없습니다. 그대로 진행해도 되는지 한 번만 확인하고 승인 시 wireframe_apply 하세요.",
+      },
+      state,
+    };
+  }
+
+  if (name === "wireframe_apply") {
+    const out = wireframeApplyEdit({ root, runId, project, hide: args.hide, rename: args.rename });
+    if (out.ok === false) {
+      return { result: { ok: false, error: String(out.error || "적용에 실패했어요.") }, state };
+    }
+    return {
+      result: {
+        ok: true,
+        ...out,
+        message:
+          out.rebuilt === true
+            ? "적용하고 화면·기능명세서·유저플로우를 함께 다시 만들었습니다. 오른쪽에 바로 반영된다고 짧게 알리세요."
+            : "편집을 저장했습니다. 반영됐다고 짧게 알리세요.",
+      },
+      state,
+    };
+  }
+
   return { result: { ok: false, error: `unknown tool: ${name}` }, state };
 }
 
@@ -956,6 +1091,7 @@ function ensureProgress(
   state: AgentState,
   open: OpenQ[],
   userMessages: Array<{ role: string; content: string }>,
+  opts?: { skipAutoBuild?: boolean },
 ): { state: AgentState; open: OpenQ[]; note?: string } {
   let cur = state;
   let curOpen = open;
@@ -1056,6 +1192,7 @@ function ensureProgress(
   // A staged rewrite is still awaiting the user's yes — building now would hand them
   // wireframes made from text they are in the middle of deciding about.
   const shouldBuild =
+    !opts?.skipAutoBuild &&
     cur.runId &&
     cur.phase === "ready" &&
     !cur.built &&
@@ -1167,10 +1304,19 @@ export async function runPrdAgentChat(input: AgentChatInput): Promise<AgentChatR
     const calls = assistant.tool_calls;
     if (!calls || calls.length === 0) {
       const text = String(assistant.content || "").trim();
-      const ensured = ensureProgress(input.root, state, lastOpen, input.messages);
+      // When the model drove the turn with tools (an edit/impact/build flow), its closing
+      // prose IS the message — ensureProgress must not auto-build here, and its note must not
+      // clobber the impact question the model just wrote. The note only leads a pure-prose
+      // turn, where it is the one thing that can still persist a layout answer or build.
+      const usedTools = trace.length > 0;
+      const ensured = ensureProgress(input.root, state, lastOpen, input.messages, {
+        skipAutoBuild: usedTools,
+      });
       state = ensured.state;
       lastOpen = ensured.open;
-      const msg = ensured.note || text || "(응답 없음)";
+      const msg = usedTools
+        ? text || ensured.note || "(응답 없음)"
+        : ensured.note || text || "(응답 없음)";
       return {
         ok: true,
         assistantMessage: sanitizeUserFacing(msg),
@@ -1212,7 +1358,9 @@ export async function runPrdAgentChat(input: AgentChatInput): Promise<AgentChatR
     }
   }
 
-  const ensured = ensureProgress(input.root, state, lastOpen, input.messages);
+  const ensured = ensureProgress(input.root, state, lastOpen, input.messages, {
+    skipAutoBuild: trace.length > 0,
+  });
   state = ensured.state;
   lastOpen = ensured.open;
 
