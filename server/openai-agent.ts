@@ -1,7 +1,9 @@
 import { openAiModel, requireOpenAiKey } from "./env.js";
 import {
+  looksLikeBulkAccept,
   prdAnswer,
   prdAnswerApply,
+  prdAnswerBulk,
   prdAnswerDiscard,
   prdAnswersPendingGet,
   prdApply,
@@ -99,7 +101,7 @@ const TOOLS = [
     function: {
       name: "prd_answer",
       description:
-        "Stage user answers to open questions — NOTHING is written yet. Call this whenever the user answers, including screen form (모달/표/페이지/단계별). If you do not know the question id, send topic instead (screen_layout for 화면 형태) or just the answer; the server matches it to the open question. Returns restatement[] (plain Korean 확정안) and challenges[] (the answer denies something the request text spells out). Relay them, ask 이대로 확정할까요?, and stop; the answer is recorded only by prd_apply.",
+        "Stage user answers to open questions — NOTHING is written yet. Call this whenever the user answers, including screen form (모달/표/페이지/단계별) and the 요청서 확정(네/아니요) approval. If you do not know the question id, send topic instead (screen_layout for 화면 형태, prd_ready for 확정) or just the answer; the server matches it to the open question. When the user answers with 제안대로 (제안대로 / 3번 빼고 제안대로 / 5번은 ②, 나머지 제안대로), pass their sentence through as the answer — the server expands it into each proposal's own wording and returns bulkAccepted[] plus needsUser[] (questions with 제안 없음 that the user must still answer). Returns restatement[] (plain Korean 확정안) and challenges[] (the answer denies something the request text spells out). Relay them, ask 이대로 확정할까요?, and stop; the answer is recorded only by prd_apply.",
       parameters: {
         type: "object",
         properties: {
@@ -170,6 +172,19 @@ const SYSTEM = `당신은 비개발자(실무자)용 요청서 확정 도우미�
 - 더 고쳐 달라고 하면 **prd_discard 없이 prd_propose를 다시** 부르세요 (앞서 만든 변경안 위에 얹힙니다)
 - 처음 붙여 넣는 새 요청서만 예외 — 비교할 것이 없으니 prd_save로 바로 저장합니다
 
+질문은 그대로 읽어 주세요 (상황·선택지·제안·근거):
+- prd_review의 open에는 prompt가 들어 있습니다. **번호와 함께 그 문구를 그대로** 전하세요. 요약·각색 금지
+- 제안은 요청서나 이전 결정에서 나온 것입니다. 근거에 없는 내용을 **지어내지 마세요**
+- 「제안 없음 — 확인이 필요합니다」인 질문은 사용자가 직접 답해야 합니다. 제안을 만들어 주지 마세요
+- 질문을 전한 뒤 「전부 제안대로 하시려면 “제안대로”라고만 답해 주셔도 됩니다. 「3번 빼고 제안대로」, 「5번은 ②, 나머지 제안대로」처럼도 됩니다」라고 안내하세요
+- 사용자가 「제안대로」류로 답하면 그 말을 **그대로** prd_answer에 넘기세요. 서버가 제안 문구로 바꿔 보관합니다
+- 「제안대로」로 처리되지 않은(근거 없는) 질문은 「아래 N건은 근거가 없어 직접 답해 주셔야 합니다」라고 알리고 이어서 물으세요
+
+요청서 확정도 승인이 필요합니다:
+- 업무 질문이 다 끝나면 「요청서를 이대로 확정할까요?」 질문이 열립니다. 정해진 내용을 그대로 전하고 **물은 뒤 멈추세요**
+- 사용자의 확정 답(네/아니요)도 prd_answer → prd_apply로 넣으세요. 승인 전에는 확정되지 않습니다
+- 확정된 뒤에만 화면 형태를 묻고, 그 뒤에 와이어프레임을 만듭니다
+
 애매한 점에 대한 답도 승인 뒤에만 기록합니다:
 - 사용자가 답하면 **prd_answer**를 부르세요. 이때는 **보관만** 되고 요청서에는 아직 반영되지 않습니다
 - 돌아온 restatement를 평문으로 그대로 전한 뒤 「이대로 확정할까요?」라고 **묻고 멈추세요**
@@ -206,7 +221,19 @@ type AgentState = {
   pendingAnswers?: boolean;
 };
 
-type OpenQ = { id: string; question: string; topic?: string; kind?: string };
+type OpenQ = {
+  id: string;
+  question: string;
+  topic?: string;
+  kind?: string;
+  /** 1-based number the user refers to ("3번 빼고 제안대로"). */
+  no?: number;
+  /** 상황·선택지·제안·근거 — read this out as-is. */
+  prompt?: string;
+  /** 제안 없음 — never covered by 「제안대로」. */
+  needsUser?: boolean;
+  proposal?: { answer: string };
+};
 
 function sanitizeUserFacing(text: string): string {
   let out = text;
@@ -514,6 +541,36 @@ function runTool(
     const raw = Array.isArray(args.answers)
       ? (args.answers as Array<{ id?: string; topic?: string; answer: string }>)
       : [];
+
+    // 「제안대로」/「3번 빼고 제안대로」 — answered in one line. Parsed from the user's own text,
+    // never from the model's paraphrase, and the phrase itself is never stored as an answer.
+    const userText = lastUserText(userMessages);
+    const bulkText = looksLikeBulkAccept(userText)
+      ? userText
+      : raw.map((entry) => String(entry.answer ?? "")).find(looksLikeBulkAccept);
+    if (bulkText) {
+      const out = prdAnswerBulk({ root, runId, project, text: bulkText });
+      if (out.ok !== false) {
+        const needsUser = Array.isArray(out.needsUser) ? (out.needsUser as unknown[]) : [];
+        return applySnap(
+          {
+            ok: true,
+            ...out,
+            saved: false,
+            pending: out.staged === true,
+            message:
+              out.staged === true
+                ? `「제안대로」 처리했습니다. restatement를 그대로 전하고 「이대로 확정할까요?」를 물으세요. 승인하면 prd_apply.${
+                    needsUser.length > 0
+                      ? ` needsUser ${needsUser.length}건은 근거가 없어 「제안대로」에 포함되지 않았습니다. 「아래 ${needsUser.length}건은 근거가 없어 직접 답해 주셔야 합니다」라고 알리고 그 prompt를 그대로 물으세요.`
+                      : ""
+                  }`
+                : "제안이 붙은 질문이 없습니다. needsUser의 prompt를 그대로 물어 답을 받으세요.",
+          },
+          runId,
+        );
+      }
+    }
     // The model cannot know real question ids: they only ever appear in a previous request's
     // tool output. Remap onto whatever is actually open on disk right now.
     const live = refreshState(root, state).open;
@@ -839,6 +896,41 @@ function ensureProgress(
       note = "확정 대기 중이던 답을 취소했습니다. 요청서는 그대로예요. 어떻게 정할지 알려 주세요.";
     }
   }
+
+  // 「제안대로」 in prose, with no tool call: stage the proposals here so the phrase always
+  // works. Deterministic (regex over the user's text) and still staged — never written.
+  if (
+    cur.runId &&
+    !cur.pendingAnswers &&
+    looksLikeBulkAccept(userText) &&
+    curOpen.some((q) => q.proposal)
+  ) {
+    const out = prdAnswerBulk({ root, runId: cur.runId, project: cur.project, text: userText });
+    if (out.ok !== false && out.staged === true) {
+      const refreshed = refreshState(root, cur);
+      cur = refreshed.state;
+      curOpen = refreshed.open;
+      const lines = Array.isArray(out.restatement) ? (out.restatement as string[]) : [];
+      const left = Array.isArray(out.needsUser)
+        ? (out.needsUser as Array<{ prompt?: string; reason?: string }>)
+        : [];
+      // 근거가 없어 빠진 질문과, 사용자가 직접 빼 달라고 한 질문은 다르게 말한다.
+      const block = (items: typeof left, headline: string): string =>
+        items.length === 0
+          ? ""
+          : `\n\n${headline}\n${items
+              .map((item) => item.prompt ?? "")
+              .filter(Boolean)
+              .join("\n\n")}`;
+      const noProposal = left.filter((item) => item.reason !== "사용자가 제외함");
+      const skipped = left.filter((item) => item.reason === "사용자가 제외함");
+      note =
+        `${lines.join(" / ")} — 이대로 확정할까요?` +
+        block(noProposal, `아래 ${noProposal.length}건은 근거가 없어 직접 답해 주셔야 합니다.`) +
+        block(skipped, `빼 달라고 하신 질문은 그대로 남겨 뒀습니다.`);
+    }
+  }
+  if (note) return { state: cur, open: curOpen, note };
 
   // Auto-answer screen_layout from recent short user replies — staged, never written silently.
   const layoutQ = curOpen.find((q) => q.topic === "screen_layout" || /화면\s*(형태|양식)/.test(q.question));

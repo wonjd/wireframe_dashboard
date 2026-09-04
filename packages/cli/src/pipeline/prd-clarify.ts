@@ -2,7 +2,7 @@ import { readFile, writeFile, mkdir, access, unlink } from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
 import type { WireframeConfig } from "../lib/config.js";
-import { resolveProject } from "../lib/config.js";
+import { resolveFromRepo, resolveProject } from "../lib/config.js";
 import { getRunRoot, loadIndex, saveIndex, getProject } from "../lib/runs.js";
 import { quoteSql, runWonjdQuery } from "../extractors/wonjd.js";
 import {
@@ -31,7 +31,24 @@ export type ClarificationTopic =
   | "edit_rules"
   | "privacy"
   | "done_when"
+  /** 업무 질문이 다 끝난 뒤 "요청서를 이대로 확정할까요?" — 승인해야 ready. */
+  | "prd_ready"
   | "other";
+
+/**
+ * The answer the system computed for a question, from evidence that already exists:
+ * the PRD's own words (prdEvidenceFor), an earlier request's decision (decision ledger),
+ * or live code values translated by the project glossary. Never invented.
+ */
+export type ClarificationProposal = {
+  /** 1-based index into ClarificationItem.options — the ① the user can accept as-is. */
+  optionNo: number;
+  /** Stored verbatim as the answer on 「제안대로」 — never the phrase itself. */
+  answer: string;
+  /** 근거 — where it came from, in business Korean. */
+  basis: string;
+  source: "prd" | "ledger" | "live";
+};
 
 export type ClarificationItem = {
   id: string;
@@ -42,6 +59,20 @@ export type ClarificationItem = {
   reason: string;
   /** PRD's own words behind a re-ask (see prdEvidenceFor) — safe to show, business language. */
   evidence?: string[];
+  /** 1-based number shown to the user ("3번 빼고 제안대로"). Stable within a round. */
+  no?: number;
+  /** 상황 — the concrete case, quoting the PRD's own words when they exist. */
+  situation?: string;
+  /** 선택지 — concrete options, not free text. Rendered ①②③… */
+  options?: string[];
+  /** 제안 — absent when nothing in the system says what the answer should be. */
+  proposal?: ClarificationProposal;
+  /** 근거 for a question that has no proposal but does have PRD words behind it (re-asks). */
+  basis?: string;
+  /** No evidence → no proposal → 「제안대로」 일괄 승인에서 제외. */
+  needsUser?: boolean;
+  /** 상황·선택지·제안·근거를 합친 표시용 문구. 채팅은 이 문구를 그대로 읽어 준다. */
+  prompt?: string;
 };
 
 export type ClarificationsPhase = "clarify" | "layout" | "ready";
@@ -58,6 +89,11 @@ export type ResolvedClarification = ClarificationItem & {
   overridesPrd?: boolean;
   /** The PRD lines this answer overrides. */
   prdEvidence?: string[];
+  /**
+   * The user accepted the system's proposal verbatim. The proposal was read out of the PRD,
+   * so this answer can never contradict it — even when it quotes an option called "없음".
+   */
+  fromProposal?: boolean;
 };
 
 export type ClarificationsDoc = {
@@ -69,6 +105,11 @@ export type ClarificationsDoc = {
   rounds: number;
   updatedAt: string;
   channel: "chat";
+  /**
+   * 사용자가 「요청서를 이대로 확정할까요?」에 승인한 시점의 본문(확인된 결정 제외) 지문.
+   * 이것이 현재 본문과 같을 때에만 ready로 갈 수 있다 — 본문이 바뀌면 다시 승인받는다.
+   */
+  prdConfirm?: { bodyHash: string; confirmedAt: string };
   audience: "non_developer";
 };
 
@@ -232,6 +273,317 @@ const TOPIC_PHRASE_KO: Record<string, string> = {
   limits: "글자·항목 제한",
 };
 
+/* ------------------------------------------------------------------ *
+ * 상황 · 선택지 · 제안 · 근거
+ *
+ * A question that asks a non-developer to invent policy gets "없다" and ships an empty
+ * screen. Every question therefore carries the answer the system already knows, built
+ * ONLY from evidence that exists: the PRD's own words (prdEvidenceFor — the same reader
+ * the contradiction check uses), an earlier request's decision (decision ledger), or a
+ * live code list translated by the project glossary. No new parser, no extra LLM call.
+ * Where nothing says what the answer should be we say so — 제안 없음 — instead of guessing.
+ * ------------------------------------------------------------------ */
+
+const OPTION_KEYS = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"];
+
+export type QuestionKit = {
+  situation: string;
+  options: string[];
+  proposal?: ClarificationProposal;
+};
+
+function optionKey(no: number): string {
+  return OPTION_KEYS[no - 1] ?? `${no}`;
+}
+
+/** 「A」, 「B」 외 2건 — quoted so the user sees the PRD's own words. */
+function quoteJoin(items: string[], max = 3): string {
+  const shown = items.slice(0, max);
+  const rest = items.length - shown.length;
+  return shown.map((text) => `「${text}」`).join(", ") + (rest > 0 ? ` 외 ${rest}건` : "");
+}
+
+const NO_PRD_BASIS = "PRD에 이 부분이 적혀 있지 않습니다.";
+
+function prdBasis(evidence: string[]): string {
+  return `요청서에 적혀 있습니다 — ${quoteJoin(evidence)}`;
+}
+
+/** 제안 없음 — the options still stand, but the user must pick. */
+function askOnly(situation: string, options: string[]): QuestionKit {
+  return { situation, options };
+}
+
+function proposeFirst(
+  situation: string,
+  options: string[],
+  answer: string,
+  basis: string,
+  source: ClarificationProposal["source"],
+): QuestionKit {
+  return { situation, options, proposal: { optionNo: 1, answer, basis, source } };
+}
+
+/**
+ * The four parts as one block of text. `question` stays the plain one-line ask so the
+ * PRD's 확인된 결정 section (and every id→topic match) is unchanged by this.
+ */
+function renderPrompt(item: ClarificationItem): string {
+  const lines: string[] = [`${item.no ?? 1}번. ${item.question}`];
+  if (item.situation) lines.push(`상황: ${item.situation}`);
+  if (item.options?.length) {
+    lines.push(
+      `선택지: ${item.options.map((text, i) => `${optionKey(i + 1)} ${text}`).join("  ")}`,
+    );
+  }
+  // The approval question is not a proposal question — it must not read as one.
+  if (item.topic === "prd_ready") {
+    lines.push("확정하면 화면 형태만 정한 뒤 와이어프레임을 만듭니다. 고칠 곳이 있으면 지금 알려 주세요.");
+    return lines.join("\n");
+  }
+  lines.push(
+    item.proposal
+      ? `제안: ${optionKey(item.proposal.optionNo)} ${item.proposal.answer}`
+      : "제안 없음 — 확인이 필요합니다",
+  );
+  lines.push(`근거: ${item.proposal?.basis ?? item.basis ?? NO_PRD_BASIS}`);
+  return lines.join("\n");
+}
+
+/** Numbers the round and renders every prompt. Numbers are what 「3번 빼고」 refers to. */
+function numberQuestions(items: ClarificationItem[]): ClarificationItem[] {
+  return items.map((item, index) => {
+    const numbered: ClarificationItem = {
+      ...item,
+      no: index + 1,
+      needsUser: item.needsUser ?? !item.proposal,
+    };
+    return { ...numbered, prompt: renderPrompt(numbered) };
+  });
+}
+
+/* --- per-topic kits: evidence in, 상황/선택지/제안/근거 out --------- */
+
+function limitsKit(evidence: string[]): QuestionKit {
+  if (evidence.length === 0) {
+    return askOnly("글자 수나 항목 개수를 얼마나 받을지가 요청서에 적혀 있지 않습니다.", [
+      "제한 없이 받기",
+      "긴 입력칸(대본·카피)에만 글자 수 제한 두기 — 숫자를 알려 주세요",
+      "항목 개수를 제한하기 — 숫자를 알려 주세요",
+    ]);
+  }
+  const listed = evidence.join(", ");
+  return proposeFirst(
+    `요청서에는 ${quoteJoin(evidence)}처럼 길이 제한이 적혀 있고, 나머지 입력칸에는 제한이 적혀 있지 않습니다.`,
+    [
+      `${listed}만 제한하고 나머지 입력칸은 제한 없이 받기`,
+      "모든 긴 입력칸에 같은 제한을 적용하기",
+      "제한을 아예 두지 않기",
+    ],
+    `${listed}만 제한, 나머지 입력칸은 제한 없음`,
+    prdBasis(evidence),
+    "prd",
+  );
+}
+
+function requiredKit(evidence: string[]): QuestionKit {
+  if (evidence.length === 0) {
+    return askOnly("꼭 채워야 하는 항목과 비워도 되는 항목이 요청서에 나뉘어 있지 않습니다.", [
+      "모든 항목을 꼭 채우게 하기",
+      "일부만 꼭 채우게 하기 — 항목을 알려 주세요",
+      "전부 비워도 되게 하기",
+    ]);
+  }
+  const required = evidence.map((text) => text.replace(/\s*필수$/, ""));
+  const listed = required.join(", ");
+  return proposeFirst(
+    `요청서에는 ${quoteJoin(required)} 등 ${required.length}개 항목이 꼭 채워야 하는 것으로 적혀 있습니다.`,
+    [
+      `요청서에 적힌 ${required.length}개만 꼭 채우게 하고 나머지는 선택으로 두기`,
+      "여기에 몇 개를 더 꼭 채우게 하기 — 항목을 알려 주세요",
+      "전부 선택으로 두기",
+    ],
+    `꼭 채울 항목: ${listed} / 나머지는 선택`,
+    prdBasis(required),
+    "prd",
+  );
+}
+
+function choiceKit(evidence: string[]): QuestionKit {
+  if (evidence.length === 0) {
+    return askOnly("골라서 쓰는 항목의 선택지 문구가 요청서에 적혀 있지 않습니다.", [
+      "선택지 문구를 직접 알려 주기",
+      "선택지 없이 직접 입력으로 받기",
+    ]);
+  }
+  const listed = evidence.join(" · ");
+  return proposeFirst(
+    `고르는 항목의 선택지가 요청서에 이렇게 적혀 있습니다 — ${listed}`,
+    [
+      "요청서에 적힌 선택지를 그대로 쓰기",
+      "여기에 ‘기타(직접 입력)’을 더하기",
+      "선택지를 다르게 정하기 — 문구를 알려 주세요",
+    ],
+    listed,
+    prdBasis(evidence),
+    "prd",
+  );
+}
+
+function conditionalKit(evidence: string[]): QuestionKit {
+  if (evidence.length === 0) {
+    return askOnly(
+      "앞 단계에서 고른 값에 따라 어떤 칸이 더 나오는지가 요청서에 적혀 있지 않습니다.",
+      [
+        "고른 값과 상관없이 항상 같은 칸을 보여 주기",
+        "고른 값에 따라 칸을 다르게 보여 주기 — 조합을 알려 주세요",
+      ],
+    );
+  }
+  const listed = evidence.join(" · ");
+  return proposeFirst(
+    `무엇을 고르면 어떤 칸이 나오는지가 요청서에 이렇게 적혀 있습니다 — ${listed}`,
+    [
+      "요청서에 적힌 조합 그대로 보여 주기",
+      "조건 없이 모든 칸을 항상 보여 주기",
+      "조합을 다르게 정하기 — 알려 주세요",
+    ],
+    listed,
+    prdBasis(evidence),
+    "prd",
+  );
+}
+
+function attachKit(evidence: string[]): QuestionKit {
+  if (evidence.length === 0) {
+    return askOnly("참고 자료를 어떤 방법으로 넘길지가 요청서에 적혀 있지 않습니다.", [
+      "링크만 받기",
+      "파일 첨부만 받기",
+      "링크·파일 둘 다 받기",
+      "메신저(웍스방)로 직접 전달받기",
+    ]);
+  }
+  const listed = evidence.join(" · ");
+  return proposeFirst(
+    `참고 자료 전달 방식이 요청서에 이렇게 적혀 있습니다 — ${listed}`,
+    [
+      "요청서에 적힌 그대로 받기",
+      "파일 첨부 대신 메신저(웍스방)로 직접 전달받기",
+      "링크만 받기",
+    ],
+    listed,
+    prdBasis(evidence),
+    "prd",
+  );
+}
+
+/* --- live code values, translated to business Korean by the glossary ---- *
+ * liveDbBrief reports what the system actually stores ("… codes=[C026A,…]"). A code is
+ * never shown to a non-developer, and inventing names for codes would be inventing policy,
+ * so a live value only becomes a proposal when projects/<slug>/glossary.json spells out what
+ * each code means in business Korean. Today crm's glossary maps words to tables but carries
+ * no code labels, so this path yields 제안 없음 — by design, not by accident.
+ */
+
+type GlossaryCodeMap = Map<string, Map<string, string>>;
+
+type GlossaryTerm = {
+  word?: string;
+  column?: string;
+  table?: string;
+  codes?: Record<string, string> | Array<{ value?: string; label?: string }>;
+};
+
+function codeEntries(codes: GlossaryTerm["codes"]): Array<[string, string]> {
+  if (!codes) return [];
+  if (Array.isArray(codes)) {
+    return codes
+      .filter((row) => typeof row?.value === "string" && typeof row?.label === "string")
+      .map((row) => [String(row.value).toUpperCase(), String(row.label)] as [string, string]);
+  }
+  return Object.entries(codes)
+    .filter(([, label]) => typeof label === "string" && label.trim())
+    .map(([value, label]) => [value.toUpperCase(), String(label)] as [string, string]);
+}
+
+/** Safe when the file is missing or hand-broken — an empty map means "no live proposal". */
+async function loadGlossaryCodes(projectSlug: string): Promise<GlossaryCodeMap> {
+  const map: GlossaryCodeMap = new Map();
+  const file = resolveFromRepo(path.join("projects", projectSlug, "glossary.json"));
+  if (!(await pathExists(file))) return map;
+  try {
+    const raw = JSON.parse((await readFile(file, "utf8")).replace(/^\uFEFF/, "")) as {
+      terms?: GlossaryTerm[];
+    };
+    for (const term of raw.terms ?? []) {
+      const entries = codeEntries(term.codes);
+      if (!entries.length || !term.column) continue;
+      const keys = [term.column.toUpperCase()];
+      if (term.table) keys.push(`${term.table.toUpperCase()}.${term.column.toUpperCase()}`);
+      for (const key of keys) map.set(key, new Map(entries));
+    }
+  } catch {
+    return new Map();
+  }
+  return map;
+}
+
+/**
+ * Business labels for the first live code column the glossary can fully translate.
+ * Partial coverage is no coverage: a half-named list would leave the user guessing.
+ */
+function liveChoiceLabels(liveSummary: string, glossary: GlossaryCodeMap): string[] {
+  if (glossary.size === 0) return [];
+  for (const line of liveSummary.split(/\r?\n/)) {
+    const match = line.match(/^([A-Z0-9_]+)\.([A-Z0-9_]+)\s+codes=\[([^\]]*)\]/);
+    if (!match) continue;
+    const [, table, column, list] = match;
+    const labels = glossary.get(`${table}.${column}`) ?? glossary.get(column!);
+    if (!labels) continue;
+    const codes = list!.split(",").map((code) => code.trim().toUpperCase()).filter(Boolean);
+    if (codes.length === 0) continue;
+    const named = codes.map((code) => labels.get(code) ?? "");
+    if (named.some((name) => !name)) continue;
+    return named;
+  }
+  return [];
+}
+
+function listFilterKit(liveLabels: string[]): QuestionKit {
+  const options = [
+    "구분을 나누지 않고 한 목록으로 보기",
+    "구분 이름을 직접 알려 주기",
+  ];
+  if (liveLabels.length === 0) {
+    return askOnly("목록에서 어떤 구분으로 나눠 볼지가 요청서에 적혀 있지 않습니다.", options);
+  }
+  const listed = liveLabels.join(" · ");
+  return proposeFirst(
+    `목록 구분이 요청서에 적혀 있지 않지만, 지금 업무에서는 ${listed} 단계로 나눠 쓰고 있습니다.`,
+    [`지금 쓰는 대로 ${listed}로 나누기`, ...options],
+    `목록 구분: ${listed}`,
+    `지금 실제로 쓰고 있는 구분입니다 — ${listed}`,
+    "live",
+  );
+}
+
+/** A topic decided in an earlier request that was not pre-filled — propose it, don't assume it. */
+function withLedgerProposal(kit: QuestionKit, decided?: { answer: string; source: string }): QuestionKit {
+  if (kit.proposal || !decided?.answer.trim()) return kit;
+  const answer = decided.answer.trim();
+  const options = kit.options.includes(answer) ? kit.options : [answer, ...kit.options];
+  return {
+    situation: kit.situation,
+    options,
+    proposal: {
+      optionNo: options.indexOf(answer) + 1,
+      answer,
+      basis: `이전 요청(${decided.source})에서 같은 내용을 이렇게 정했습니다 — ${answer}`,
+      source: "ledger",
+    },
+  };
+}
+
 export type PrdContradiction = {
   topic: ClarificationTopic;
   /** The denial that conflicts with the PRD. */
@@ -260,7 +612,7 @@ export function prdContradictions(
   const pending = new Map<string, PrdContradiction>();
   for (const item of resolved) {
     const topic = (item.topic || "other") as ClarificationTopic;
-    if (item.overridesPrd || !isNegativeOrSkipAnswer(item.answer)) {
+    if (item.fromProposal || item.overridesPrd || !isNegativeOrSkipAnswer(item.answer)) {
       pending.delete(topic);
       continue;
     }
@@ -276,8 +628,19 @@ export function prdContradictions(
   return [...pending.values()];
 }
 
-/** Topics already covered by ## 확인된 결정 or prior answers */
-function resolvedTopicsFromPrd(prd: string, resolved: ClarificationsDoc["resolved"]): Set<string> {
+/**
+ * Topics already covered by ## 확인된 결정 or prior answers.
+ *
+ * scope="decided" counts only what somebody actually decided (the 확인된 결정 section and
+ * answered questions). scope="all" also counts keywords in the PRD body — that is the right
+ * rule for topics we can only ask blind, but for the five evidence topics body text is
+ * *evidence for a proposal*, not a decision, so those questions are gated on "decided".
+ */
+function resolvedTopicsFromPrd(
+  prd: string,
+  resolved: ClarificationsDoc["resolved"],
+  scope: "all" | "decided" = "all",
+): Set<string> {
   // A denial that contradicts the PRD covers nothing until the user has confirmed it once.
   const contradicted = new Set<string>(prdContradictions(prd, resolved).map((item) => item.topic));
   const topics = new Set<string>();
@@ -288,7 +651,7 @@ function resolvedTopicsFromPrd(prd: string, resolved: ClarificationsDoc["resolve
   }
   const section = prd.match(/(?:^|\n)#+\s*확인된\s*결정([\s\S]*)$/m)?.[1] ?? "";
   const blob = `${section}\n${resolved.map((r) => `${r.question}\n${r.answer}`).join("\n")}`;
-  const full = `${prd}\n${blob}`;
+  const full = scope === "decided" ? blob : `${prd}\n${blob}`;
 
   if (/권한|역할|담당|승인|영업|콘텐츠\s*팀|요청자/.test(blob) || /콘텐츠\s*팀/.test(full)) {
     topics.add("who_does");
@@ -369,27 +732,68 @@ function hasChoiceLabelsInText(text: string): boolean {
  * Non-developer PRD gaps only. Questions must be everyday work Korean —
  * no column names, API, ENUM, FK, modify/extend jargon.
  */
-function heuristicQuestions(
-  prd: string,
-  title: string,
-  liveSummary: string,
-  covered: Set<string>,
-): ClarificationItem[] {
+type QuestionContext = {
+  prd: string;
+  title: string;
+  liveSummary: string;
+  /** Decided OR merely mentioned in the PRD body — the gate for blind questions. */
+  covered: Set<string>;
+  /** Actually decided by somebody — the gate for the five evidence topics. */
+  decided: Set<string>;
+  /** Live code values the glossary could name in business Korean (usually empty). */
+  liveLabels: string[];
+  /** Earlier requests' decisions, by topic — a proposal source of last resort. */
+  ledger: Map<string, { answer: string; source: string }>;
+};
+
+function heuristicQuestions(ctx: QuestionContext): ClarificationItem[] {
+  const { prd, title, liveSummary, covered, decided } = ctx;
   const items: ClarificationItem[] = [];
   const push = (
     topic: ClarificationTopic,
     kind: ClarificationKind,
     question: string,
     reason: string,
+    kit: QuestionKit,
   ) => {
     if (covered.has(topic)) return;
     if (items.some((item) => item.topic === topic)) return;
+    const withLedger = withLedgerProposal(kit, ctx.ledger.get(topic));
     items.push({
       id: `q-${crypto.randomUUID().slice(0, 8)}`,
       kind,
       topic,
       question,
       reason,
+      situation: withLedger.situation,
+      options: withLedger.options,
+      ...(withLedger.proposal ? { proposal: withLedger.proposal } : {}),
+      needsUser: !withLedger.proposal,
+    });
+  };
+  /** Evidence topics: a PRD that spells the answer out becomes a proposal, not a skip. */
+  const pushEvidence = (
+    topic: ClarificationTopic,
+    kind: ClarificationKind,
+    question: string,
+    reason: string,
+    kit: (evidence: string[]) => QuestionKit,
+  ) => {
+    if (decided.has(topic)) return;
+    if (items.some((item) => item.topic === topic)) return;
+    const evidence = prdEvidenceFor(prd, topic);
+    const built = withLedgerProposal(kit(evidence), ctx.ledger.get(topic));
+    items.push({
+      id: `q-${crypto.randomUUID().slice(0, 8)}`,
+      kind,
+      topic,
+      question,
+      reason,
+      ...(evidence.length ? { evidence } : {}),
+      situation: built.situation,
+      options: built.options,
+      ...(built.proposal ? { proposal: built.proposal } : {}),
+      needsUser: !built.proposal,
     });
   };
 
@@ -403,15 +807,19 @@ function heuristicQuestions(
   const mentionsConditional =
     /조건부|선택값에\s*따라|유형별|추가\s*입력\s*항목|매트릭스/.test(prd);
   const mentionsLimit = /글자|자\s*제한|최대|200자|개수\s*제한/.test(prd);
-  const hasDecisions = /##\s*확인된\s*결정/.test(prd);
 
   // Who uses / approves
   if (!/권한|역할|담당|승인|영업|콘텐츠\s*팀|요청자/.test(prd)) {
     push(
       "who_does",
       "policy",
-      "이 요청·화면은 누가 작성하고, 누가 확인·승인하나요? (예: 영업 / 콘텐츠팀 / 둘 다)",
+      "이 요청은 누가 작성하고, 누가 확인·승인하나요?",
       "담당·승인 주체가 없으면 버튼·권한 흐름을 그릴 수 없음",
+      askOnly("누가 작성하고 누가 확인·승인하는지가 요청서에 적혀 있지 않습니다.", [
+        "영업(요청자)이 작성하고 콘텐츠팀이 확인",
+        "콘텐츠팀이 작성부터 확인까지",
+        "영업이 작성하고 별도 확인 없이 바로 진행",
+      ]),
     );
   }
 
@@ -424,35 +832,36 @@ function heuristicQuestions(
     push(
       "new_or_change",
       "scope",
-      "지금 쓰는 화면을 고치는 건가요, 새 화면을 만드는 건가요? 알고 있는 메뉴 이름이 있으면 알려 주세요.",
+      "지금 쓰는 화면을 고치는 건가요, 새 화면을 만드는 건가요?",
       "기존 수정 vs 신규에 따라 라우트·셸 배치가 갈림",
+      askOnly("기존 화면을 고치는지 새 화면을 만드는지가 요청서에 적혀 있지 않습니다.", [
+        "지금 쓰는 화면을 고치기 — 메뉴 이름을 알려 주세요",
+        "새 화면을 만들기",
+      ]),
     );
   }
 
   // screen_layout is NOT asked here — only after PRD ready (see reviewPrdClarificationsCli)
 
-  // Required vs optional on form-like PRDs
-  if (hasForm && !/필수|선택\s*항목|미기입\s*시/.test(prd)) {
-    push(
+  // Required vs optional on form-like PRDs — the PRD's own "필수" lines become the proposal
+  if (hasForm) {
+    pushEvidence(
       "required_optional",
       "ambiguity",
-      "꼭 채워야 하는 항목과, 비워도 되는 항목을 나눠 주세요.",
-      "폼성 PRD인데 필수/선택 구분이 없음",
+      "꼭 채워야 하는 항목과 비워도 되는 항목을 어떻게 나눌까요?",
+      "폼성 PRD — 필수/선택 확정 필요",
+      requiredKit,
     );
   }
 
-  // Choice lists without actual values — skip if PRD already lists labels (이미지/영상 등)
-  if (
-    mentionsChoice &&
-    !hasChoiceLabelsInText(prd) &&
-    !/드롭다운|선택\s*목록|선택지\s*[:=]|옵션\s*[:=]|예\s*[:：]/.test(prd) &&
-    !hasDecisions
-  ) {
-    push(
+  // Choice lists — the labels the PRD already lists become the proposal
+  if (mentionsChoice) {
+    pushEvidence(
       "choice_values",
       "data",
-      "선택해서 고르는 항목이 있으면, 화면에 보일 선택지 문구를 적어 주세요. (예: 이미지/영상, 또는 지면 목록)",
-      "선택형은 있는데 실제 선택지 문구가 없음",
+      "골라서 쓰는 항목의 선택지 문구를 어떻게 할까요?",
+      "선택형 항목의 선택지 문구 확정 필요",
+      choiceKit,
     );
   }
 
@@ -463,54 +872,60 @@ function heuristicQuestions(
     !hasChoiceLabelsInText(prd) &&
     !/선택지|목록\s*값|예\s*[:：].{0,40}\//.test(prd)
   ) {
-    push(
+    pushEvidence(
       "choice_values",
       "data",
-      "드롭다운으로 하기로 한 항목들의 실제 선택지(화면에 보이는 이름)를 정해주세요. 목록에 없는 값은 ‘기타(직접 입력)’을 허용할까요?",
+      "드롭다운으로 하기로 한 항목의 선택지를 어떻게 할까요?",
       "드롭다운 확정인데 선택지 목록이 비어 있음",
+      choiceKit,
     );
   }
 
-  // Conditional fields — skip if PRD already maps 이미지→가이드 fields or says none
-  if (
-    mentionsConditional &&
-    !/이미지.{0,40}가이드|영상.{0,40}대본|노출\s*항목|조건부.{0,12}없|선택값에\s*따라.{0,24}없/.test(prd)
-  ) {
-    push(
+  // Conditional fields
+  if (mentionsConditional) {
+    pushEvidence(
       "conditional_fields",
       "ambiguity",
-      "앞 단계에서 고른 값에 따라 나중에 달라지는 입력칸이 있나요? 있다면 ‘무엇을 고르면 → 어떤 칸이 나오는지’를 알려 주세요.",
-      "조건부 언급은 있으나 조합→필드 매핑이 약함",
+      "앞 단계에서 고른 값에 따라 달라지는 입력칸을 어떻게 할까요?",
+      "조건부 노출 조합 확정 필요",
+      conditionalKit,
     );
   }
 
   // Attach / reference method
-  if (mentionsAttach && !/링크\s*첨부|파일\s*첨부|웍스|없음/.test(prd)) {
-    push(
+  if (mentionsAttach) {
+    pushEvidence(
       "attach_method",
       "data",
-      "참고 자료는 어떻게 넘기나요? (링크 / 파일 첨부 / 메신저·웍스방 전달 / 없음 중 무엇이며, 각각 꼭 채울 칸이 있나요?)",
-      "첨부·레퍼런스 언급은 있으나 전달 방식 미확정",
+      "참고 자료는 어떤 방법으로 넘길까요?",
+      "첨부·레퍼런스 전달 방식 확정 필요",
+      attachKit,
     );
   }
 
   // Limits
-  if ((/리스트|복수|여러\s*개|추가\s*소구|대본|카피/.test(prd) || mentionsLimit) && !/\d+\s*자|최대\s*\d+|항목\s*수/.test(prd)) {
-    push(
+  if (/리스트|복수|여러\s*개|추가\s*소구|대본|카피/.test(prd) || mentionsLimit) {
+    pushEvidence(
       "limits",
       "data",
-      "글자 수나 항목 개수 제한이 필요한가요? 있다면 숫자로 알려 주세요. (예: 대본 최대 200자, 추가 항목 최대 5개)",
-      "복수/장문 입력이 보이나 상한이 없음",
+      "글자 수·항목 개수 제한을 어떻게 할까요?",
+      "복수/장문 입력이 있어 상한 확정 필요",
+      limitsKit,
     );
   }
 
-  // After submit
-  if (hasForm && !/제출\s*후|알림|담당|제작\s*착수|다음\s*단계/.test(prd)) {
+  // After submit — "다음 단계 넘어가지 못하도록"(입력 단계 이동)은 제출 이후 흐름이 아니다
+  if (hasForm && !/제출\s*후|요청\s*후|알림|담당자|제작\s*착수/.test(prd)) {
     push(
       "after_submit",
       "policy",
-      "요청을 제출하면 다음에 누가 무엇을 하나요? (예: 콘텐츠팀이 확인 후 제작 시작)",
+      "요청을 제출하면 다음에 누가 무엇을 하나요?",
       "제출 이후 업무 흐름이 PRD에 없음",
+      askOnly("요청을 제출한 다음 누가 무엇을 하는지가 요청서에 적혀 있지 않습니다.", [
+        "콘텐츠팀이 확인한 뒤 제작 시작",
+        "담당자를 정한 뒤 제작 시작",
+        "바로 제작 대기 목록으로 넘기기",
+      ]),
     );
   }
 
@@ -518,13 +933,18 @@ function heuristicQuestions(
   if (
     hasForm &&
     /상태|진행|제작/.test(prd) &&
-    !/수정\s*가능|초기화|도중에\s*변경|재입력/.test(prd)
+    !/제출.{0,8}수정|요청.{0,8}수정|초기화|도중에\s*변경|재입력/.test(prd)
   ) {
     push(
       "edit_rules",
       "policy",
-      "제출한 뒤에도 내용을 고칠 수 있나요? 고칠 수 있다면 어느 단계까지이며, 유형을 바꾸면 이미 쓴 내용은 지울까요?",
+      "제출한 뒤에도 내용을 고칠 수 있나요?",
       "진행 상태가 언급되나 수정·초기화 규칙 없음",
+      askOnly("제출한 뒤에 내용을 고칠 수 있는지가 요청서에 적혀 있지 않습니다.", [
+        "제출한 뒤에는 고칠 수 없음",
+        "제작이 시작되기 전까지만 고칠 수 있음",
+        "언제든 고칠 수 있음",
+      ]),
     );
   }
 
@@ -533,18 +953,24 @@ function heuristicQuestions(
     push(
       "privacy",
       "policy",
-      "개인정보(연락처 등)는 누구에게 보이게 하고, 가리거나 숨길 규칙이 있나요?",
+      "개인정보(연락처 등)는 누구에게 보이게 할까요?",
       "개인정보 언급 — 표시 정책 필요",
+      askOnly("개인정보를 누구에게 보여 줄지가 요청서에 적혀 있지 않습니다.", [
+        "요청한 사람과 콘텐츠팀에게만 보이기",
+        "모두에게 보이되 일부를 가리기",
+        "제한 없이 보이기",
+      ]),
     );
   }
 
-  // List filters — ask in business terms; skip if live DB already has codes
-  if (hasList && !/상태|필터|탭/.test(prd) && !/codes=\[/.test(liveSummary)) {
+  // List filters — live code values only become a proposal when the glossary can name them
+  if (hasList && !/상태|필터|탭/.test(prd) && (!/codes=\[/.test(liveSummary) || ctx.liveLabels.length > 0)) {
     push(
       "choice_values",
       "data",
-      "목록에서 나누어 보고 싶은 구분(진행 중 / 완료 등)이 있으면, 화면에 쓸 이름들로 알려 주세요.",
+      "목록을 어떤 구분으로 나눠 볼까요?",
       "목록성 요구인데 구분·필터 기준이 없음",
+      listFilterKit(ctx.liveLabels),
     );
   }
 
@@ -553,18 +979,24 @@ function heuristicQuestions(
     push(
       "done_when",
       "ambiguity",
-      `"${title}"이(가) 잘 됐다고 보려면 무엇이 가능해야 하나요? 한두 문장으로 적어 주세요.`,
+      `"${title}"이(가) 잘 됐다고 보려면 무엇이 가능해야 하나요?`,
       "본문이 짧아 완료 기준이 불명확",
+      askOnly("무엇이 되면 이 요청이 잘 됐다고 볼지가 요청서에 적혀 있지 않습니다.", [
+        "요청을 끝까지 등록할 수 있으면 완료",
+        "등록한 요청을 담당 팀이 확인할 수 있으면 완료",
+        "완료 기준을 직접 알려 주기",
+      ]),
     );
   }
 
   // Flow present but no common fields detail
   if (hasFlow && hasForm && !/랜딩|지면|타겟|필수/.test(prd) && items.length < 3) {
-    push(
+    pushEvidence(
       "required_optional",
       "ambiguity",
-      "단계별로 꼭 넣어야 하는 정보를 순서대로 적어 주세요. (예: 1) 유형 고르기 2) 공통 정보 …)",
+      "단계별로 꼭 넣어야 하는 정보를 어떻게 정할까요?",
       "요청 구조는 있으나 단계별 입력 내용이 빈약",
+      requiredKit,
     );
   }
 
@@ -651,6 +1083,8 @@ export type PendingAnswerEntry = {
   /** Denial kept after the PRD was quoted back — record it as overriding the PRD. */
   overridesPrd?: boolean;
   prdEvidence?: string[];
+  /** Accepted the system's proposal verbatim (「제안대로」 included). */
+  fromProposal?: boolean;
 };
 
 export type PendingAnswersDoc = {
@@ -788,7 +1222,167 @@ function screenLayoutQuestion(): ClarificationItem {
     question:
       "PRD가 확정됐습니다. 화면은 어떤 형태로 보여 주면 될까요? (예: 전체 페이지 입력폼 / 팝업·모달 / 목록 표 / 단계별로 넘어가는 화면). 섞여 있으면 단계마다 적어 주세요.",
     reason: "애매한 업무 결정 확정·승인 후에만 화면 양식을 묻는다",
+    situation: "요청서가 확정됐습니다. 이제 화면을 어떤 형태로 보여 줄지만 정하면 됩니다.",
+    options: ["전체 페이지 입력폼", "팝업·모달", "목록 표", "단계별로 넘어가는 화면"],
+    needsUser: true,
   };
+}
+
+/* ------------------------------------------------------------------ *
+ * PRD 확정(ready)도 승인이 필요하다
+ *
+ * The last business answer used to flip the run to ready on its own. What the request
+ * now says is restated in plain Korean and confirmed like every other decision: the
+ * confirmation is just one more question, so it goes through the same staging gate.
+ * ------------------------------------------------------------------ */
+
+const PRD_CONFIRM_QID = "q-prd-ready";
+
+/** Body only — applied answers append to 확인된 결정, and that must not re-open the approval. */
+function prdBodyHash(prd: string): string {
+  const body = prd.replace(/(?:^|\n)#+\s*확인된\s*결정[\s\S]*$/m, "");
+  return crypto.createHash("sha1").update(body.replace(/\s+/g, " ").trim(), "utf8").digest("hex");
+}
+
+/** Newest answer per topic, in business Korean — the recap the user approves. */
+function decisionRecap(resolved: ResolvedClarification[]): string[] {
+  const byTopic = new Map<string, string>();
+  for (const item of resolved) {
+    const topic = item.topic || "other";
+    if (topic === "prd_ready" || !item.answer?.trim()) continue;
+    byTopic.set(topic, item.answer.trim());
+  }
+  return [...byTopic].map(([topic, answer]) => `${topicLabelKo(topic)}: ${answer}`);
+}
+
+function prdConfirmQuestion(resolved: ResolvedClarification[]): ClarificationItem {
+  const recap = decisionRecap(resolved);
+  const situation =
+    recap.length > 0
+      ? `지금까지 이렇게 정했습니다.\n${recap.map((line) => `  · ${line}`).join("\n")}`
+      : "따로 정해야 할 애매한 부분은 남아 있지 않습니다.";
+  return {
+    id: PRD_CONFIRM_QID,
+    kind: "policy",
+    topic: "prd_ready",
+    question: "요청서를 이대로 확정할까요?",
+    reason: "마지막 업무 질문이 끝났지만 확정은 사용자 승인 뒤에만 한다",
+    situation,
+    options: ["네, 이대로 확정합니다", "아니요, 더 고칠 부분이 있어요"],
+    needsUser: true,
+  };
+}
+
+/** 네/이대로/확정 — deterministic, mirrors the chat's approval wording. */
+function isAffirmativeAnswer(text: string): boolean {
+  const value = text.trim();
+  if (!value) return false;
+  if (/아니|아뇨|취소|고칠|고쳐|수정|더\s*볼|아직|잠깐/.test(value)) return false;
+  return (
+    /^(네|넵|예|응|그래|오케이|ok|okay|yes|좋)/i.test(value) ||
+    /이대로|확정(합|해|할|하)|그대로\s*(가|해|진행)|맞습니다|맞아요/.test(value)
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * 「제안대로」 — bulk accept
+ *
+ * The reference email thread answered several questions at once ("1번 → 제안대로 ①,
+ * 5번은 ②, 나머지 제안대로"). Parsing is a regex over the user's own text — no LLM —
+ * and what gets stored is the proposal's text, never the phrase. Questions with
+ * 제안 없음 are never covered: they come back so the agent asks them one by one.
+ * ------------------------------------------------------------------ */
+
+const BULK_PHRASE = /제안\s*대로/;
+
+export type BulkAcceptance = {
+  /** The user actually used the phrase (or a per-number 제안대로). */
+  matched: boolean;
+  accepted: Array<{ item: ClarificationItem; answer: string; via: "proposal" | "option" }>;
+  /** 제안 없음 — must be asked separately. */
+  needsUser: ClarificationItem[];
+  /** "3번 빼고" — deliberately left open. */
+  excluded: ClarificationItem[];
+};
+
+/** ① … ⑩ or a bare digit that follows a question number. */
+function optionIndexFromClause(clause: string): number | null {
+  const circled = clause.match(/[①-⑩]/)?.[0];
+  if (circled) return OPTION_KEYS.indexOf(circled) + 1;
+  const plain = clause.match(/\d+\s*번(?:은|는|만|:|：)?\s*(\d+)\s*번?/);
+  if (plain?.[1]) return Number(plain[1]);
+  return null;
+}
+
+export function parseBulkAcceptance(text: string, open: ClarificationItem[]): BulkAcceptance {
+  const empty: BulkAcceptance = { matched: false, accepted: [], needsUser: [], excluded: [] };
+  const value = (text ?? "").trim();
+  if (!value) return empty;
+
+  const clauses = value
+    .split(/[\n,，、;；]|\s+그리고\s+/)
+    .map((clause) => clause.trim())
+    .filter(Boolean);
+
+  const byNo = new Map<number, ClarificationItem>();
+  open.forEach((item, index) => byNo.set(item.no ?? index + 1, item));
+
+  const excludedNos = new Set<number>();
+  const explicit = new Map<number, number>();
+  let acceptRest = false;
+  let anyBulk = false;
+
+  for (const clause of clauses) {
+    const numbers = [...clause.matchAll(/(\d+)\s*번/g)].map((match) => Number(match[1]));
+    const hasBulk = BULK_PHRASE.test(clause);
+    if (hasBulk) anyBulk = true;
+    if (/빼고|제외|말고|빼\s*줘|빼주/.test(clause)) {
+      for (const no of numbers) excludedNos.add(no);
+      // "3번 빼고 제안대로" is one clause: the exclusion AND the bulk accept for the rest.
+      if (hasBulk) acceptRest = true;
+      continue;
+    }
+    const optionNo = numbers.length > 0 ? optionIndexFromClause(clause) : null;
+    if (numbers.length > 0 && optionNo) {
+      for (const no of numbers) explicit.set(no, optionNo);
+      continue;
+    }
+    if (hasBulk && numbers.length > 0) {
+      for (const no of numbers) explicit.set(no, 0); // 0 = 그 번호는 제안대로
+      continue;
+    }
+    if (hasBulk) acceptRest = true;
+  }
+
+  // Numbered choices stand on their own. Requiring the 제안대로 phrase meant "1번은 ①, 2번은 ①"
+  // was dropped entirely — which is exactly how a user answers the 제안 없음 questions left over
+  // after a bulk accept, since those are the ones bulk accept never covers.
+  if (!anyBulk && explicit.size === 0) return empty;
+
+  const result: BulkAcceptance = { matched: true, accepted: [], needsUser: [], excluded: [] };
+  for (const [no, item] of byNo) {
+    if (excludedNos.has(no)) {
+      result.excluded.push(item);
+      continue;
+    }
+    const chosen = explicit.get(no);
+    if (chosen && chosen > 0) {
+      const answer = item.options?.[chosen - 1];
+      if (answer) {
+        result.accepted.push({ item, answer, via: "option" });
+        continue;
+      }
+    }
+    if (!item.proposal) {
+      // Never bulk-accept a question the system has no evidence for.
+      if (chosen !== undefined || acceptRest) result.needsUser.push(item);
+      continue;
+    }
+    if (chosen !== undefined || acceptRest) {
+      result.accepted.push({ item, answer: item.proposal.answer, via: "proposal" });
+    }
+  }
+  return result;
 }
 
 export async function reviewPrdClarificationsCli(
@@ -810,22 +1404,16 @@ export async function reviewPrdClarificationsCli(
   const prev = await loadClarificationsDoc(config, runId);
   const live = await liveDbBrief(config, assetSlug, prdContent);
   const covered = resolvedTopicsFromPrd(prdContent, prev.resolved);
-
-  const businessOpen = heuristicQuestions(prdContent, run.title, live, covered).filter((item) => {
-    if (item.topic === "choice_values" && /목록에서 나누어/.test(item.question) && /codes=\[/.test(live)) {
-      return false;
-    }
-    // Never ask layout during ambiguity loop
-    if (item.topic === "screen_layout") return false;
-    return true;
-  });
+  // Only what somebody decided closes an evidence topic; PRD body text feeds the proposal.
+  const decided = resolvedTopicsFromPrd(prdContent, prev.resolved, "decided");
 
   // Sync this run's own answers into the project ledger (memory across requests).
   // Prefilled entries keep their original run's provenance and are not re-recorded.
+  // The PRD-confirmation answer is this run's approval, never a decision to reuse elsewhere.
   await recordDecisions(
     projectSlug,
     prev.resolved
-      .filter((item) => !item.prefilledFrom)
+      .filter((item) => !item.prefilledFrom && item.topic !== "prd_ready")
       .map((item) => ({
         topic: item.topic || "other",
         question: item.question,
@@ -839,6 +1427,27 @@ export async function reviewPrdClarificationsCli(
   // it is adopted as a pre-filled decision AND announced to the user, never silently.
   const ledger = await loadDecisionLedger(projectSlug);
   const current = currentLedgerAnswers(ledger);
+
+  // Earlier requests are a proposal source for anything the ledger does NOT pre-fill.
+  const ledgerProposals = new Map<string, { answer: string; source: string }>();
+  for (const [topic, hit] of current) {
+    if (topic === "prd_ready" || !hit.answer.trim() || hit.byRun === runId) continue;
+    ledgerProposals.set(topic, { answer: hit.answer.trim(), source: hit.byRunNo || hit.byRun });
+  }
+
+  const businessOpen = heuristicQuestions({
+    prd: prdContent,
+    title: run.title,
+    liveSummary: live,
+    covered,
+    decided,
+    liveLabels: liveChoiceLabels(live, await loadGlossaryCodes(assetSlug)),
+    ledger: ledgerProposals,
+  }).filter((item) => {
+    // Never ask layout during ambiguity loop
+    if (item.topic === "screen_layout") return false;
+    return true;
+  });
   const prefilled: ClarificationsDoc["resolved"] = [];
   const ledgerNotices: string[] = [];
   const prefillFromLedger = (item: ClarificationItem): boolean => {
@@ -860,6 +1469,7 @@ export async function reviewPrdClarificationsCli(
   // words. Until it is confirmed the topic stays open — it must not be silently accepted.
   const contradictions = prdContradictions(prdContent, prev.resolved);
   const contradictedTopics = new Set(contradictions.map((item) => item.topic));
+  // A denial the user is being asked to reconsider is never auto-accepted by 「제안대로」.
   const rechecks: ClarificationItem[] = contradictions.map((item) => ({
     id: `q-recheck-${item.topic}`,
     kind: "ambiguity",
@@ -867,6 +1477,10 @@ export async function reviewPrdClarificationsCli(
     question: item.question,
     reason: `PRD에 근거가 있는데 답변이 이를 부정함 — 1회만 재확인`,
     evidence: item.evidence,
+    situation: `앞서 「${item.answer}」라고 답하셨는데, 요청서에는 ${quoteJoin(item.evidence)}처럼 적혀 있습니다.`,
+    options: [`요청서에 적힌 ${item.evidence.length}가지를 반영하기`, `앞서 답한 대로 두기`],
+    basis: prdBasis(item.evidence),
+    needsUser: true,
   }));
 
   let open: ClarificationItem[] = [
@@ -875,10 +1489,22 @@ export async function reviewPrdClarificationsCli(
       (item) => !contradictedTopics.has(item.topic) && !prefillFromLedger(item),
     ),
   ];
-  let status: ClarificationsDoc["status"] = open.length === 0 ? "ready" : "clarifying";
+  let status: ClarificationsDoc["status"] = "clarifying";
   let phase: "clarify" | "layout" | "ready" = "clarify";
 
+  // 확정(ready)은 사용자가 승인해야 한다. The last business answer presents what the request
+  // now says and asks 「요청서를 이대로 확정할까요?」 — nothing becomes ready on its own.
+  const bodyHash = prdBodyHash(prdContent);
+  const prdApproved = prev.prdConfirm?.bodyHash === bodyHash;
+  let awaitingPrdConfirm = false;
+
+  if (open.length === 0 && !prdApproved) {
+    open = [prdConfirmQuestion(prev.resolved)];
+    awaitingPrdConfirm = true;
+  }
+
   if (open.length === 0) {
+    status = "ready";
     // PRD approved (ready) — only then ask screen form if missing
     if (!hasScreenLayoutAnswered(prdContent, covered)) {
       const layout = screenLayoutQuestion();
@@ -893,6 +1519,8 @@ export async function reviewPrdClarificationsCli(
       phase = "ready";
     }
   }
+
+  open = numberQuestions(open);
 
   // Persist adopted decisions into the PRD's 확인된 결정 section (marked with their source) so the
   // build pipeline sees them exactly as if they had been answered here.
@@ -918,14 +1546,17 @@ export async function reviewPrdClarificationsCli(
     rounds: prev.rounds + 1,
     updatedAt: new Date().toISOString(),
     channel: "chat",
+    ...(prev.prdConfirm ? { prdConfirm: prev.prdConfirm } : {}),
     audience: "non_developer",
   };
   await saveClarificationsDoc(config, runId, doc);
   await setRunStatus(config, projectSlug, runId, status);
 
-  const message =
-    phase === "clarify"
-      ? `보완 질문 ${open.length}건 — 채팅에서 확정하고 답변을 반영.`
+  const proposalCount = open.filter((item) => item.proposal).length;
+  const message = awaitingPrdConfirm
+    ? "업무 질문이 끝났습니다. 정해진 내용을 전하고 「요청서를 이대로 확정할까요?」를 물으세요. 승인 전에는 확정하지 않습니다."
+    : phase === "clarify"
+      ? `보완 질문 ${open.length}건(제안 있음 ${proposalCount}건) — 채팅에서 확정하고 답변을 반영.`
       : phase === "layout"
         ? "PRD 승인(ready)됨. 화면 형태만 정해 주세요. (양식 확정 후 와이어프레임 생성)"
         : "보완·화면 양식 확정 완료 — 와이어프레임 빌드 가능.";
@@ -940,6 +1571,11 @@ export async function reviewPrdClarificationsCli(
         audience: "non_developer",
         channel: "chat",
         open,
+        /** 사용자에게 그대로 읽어 줄 문구 — 번호·상황·선택지·제안·근거가 모두 들어 있음. */
+        prompts: open.map((item) => item.prompt ?? item.question),
+        awaitingPrdConfirm,
+        proposalCount,
+        needsUserNos: open.filter((item) => item.needsUser).map((item) => item.no),
         resolvedCount: doc.resolved.length,
         ledgerNotices,
         collisions,
@@ -949,6 +1585,11 @@ export async function reviewPrdClarificationsCli(
         liveDbBrief: live.slice(0, 2000),
         chat_instructions: [
           "이 루프의 목적은 개발 명세가 아니라 PRD 확정·보완입니다.",
+          "prompts를 번호와 함께 그대로 읽어 주세요. 상황·선택지·제안·근거를 임의로 바꾸거나 요약하지 마세요.",
+          "제안이 붙은 질문은 사용자가 「제안대로」 한마디로 한꺼번에 답할 수 있다고 알려 주세요. (예: 「제안대로」, 「3번 빼고 제안대로」, 「5번은 ②, 나머지 제안대로」)",
+          "needsUserNos의 번호는 제안이 없는 질문입니다. 「제안대로」에 포함되지 않으니 따로 물어 답을 받으세요.",
+          "제안·근거에 없는 내용을 지어내지 마세요. 근거가 없으면 「제안 없음 — 확인이 필요합니다」 그대로 전하세요.",
+          "awaitingPrdConfirm=true면 업무 질문이 끝난 상태입니다. 정해진 내용을 전하고 「요청서를 이대로 확정할까요?」를 물으세요. 승인 답도 prd_answer로 넣고 승인 뒤에만 확정됩니다.",
           "open 질문을 업무 말로 채팅에서 물어 부족한 결정을 채우세요.",
           "테이블·컬럼·코드값·API·경로 등 개발 개념은 사용자에게 말하지 마세요.",
           "reason·liveDbBrief는 내부용입니다. 필요하면 ‘업무 흐름을 정하려고요’ 정도만.",
@@ -975,9 +1616,11 @@ export async function answerPrdClarificationsCli(
 ): Promise<void> {
   const runId = readFlag(args, "--run-id")?.trim();
   const answersRaw = readFlag(args, "--answers")?.trim();
-  if (!runId || !answersRaw) {
+  // 「제안대로」 — the user's own words, parsed by regex here and never sent to a model.
+  const bulkText = readFlag(args, "--bulk-text")?.trim();
+  if (!runId || (!answersRaw && !bulkText)) {
     throw new Error(
-      'usage: wireframe prd answer --run-id slug --answers \'[{"id":"q1","answer":"..."}]\' [--project crm]',
+      'usage: wireframe prd answer --run-id slug (--answers \'[{"id":"q1","answer":"..."}]\' | --bulk-text "제안대로") [--project crm]',
     );
   }
   const projectSlug = readFlag(args, "--project")?.trim() ?? config.defaultProject;
@@ -987,13 +1630,22 @@ export async function answerPrdClarificationsCli(
   const run = project.runs.find((entry) => entry.runId === runId);
   if (!run) throw new Error(`run not found: ${runId}`);
 
-  const answers = (JSON.parse(answersRaw) as Array<{ id?: string; topic?: string; answer: string }>)
-    .map((entry) => ({
-      id: String(entry.id ?? "").trim(),
-      topic: String(entry.topic ?? "").trim(),
-      answer: String(entry.answer ?? "").trim(),
-    }))
-    .filter((entry) => entry.answer);
+  const parsedAnswers = (
+    answersRaw
+      ? (JSON.parse(answersRaw) as Array<{ id?: string; topic?: string; answer: string }>)
+      : []
+  ).map((entry) => ({
+    id: String(entry.id ?? "").trim(),
+    topic: String(entry.topic ?? "").trim(),
+    answer: String(entry.answer ?? "").trim(),
+  }));
+  // 「제안대로」 itself is never stored as an answer — the proposal's own wording is.
+  // An answer that carries the phrase is treated as the bulk instruction it actually is.
+  const bulkSource =
+    bulkText ?? parsedAnswers.map((entry) => entry.answer).find((text) => BULK_PHRASE.test(text));
+  const answers = parsedAnswers.filter(
+    (entry) => entry.answer && !BULK_PHRASE.test(entry.answer),
+  );
 
   const prev = await loadClarificationsDoc(config, runId);
   // Pre-filled decisions (adopted from an earlier run) are not open questions, but the user may
@@ -1012,6 +1664,12 @@ export async function answerPrdClarificationsCli(
     const index = pending.findIndex((item) => !resolvedFor.has(item.id) && predicate(item));
     return index === -1 ? undefined : pending[index];
   };
+
+  // 「제안대로」 first: proposals fill in, explicit --answers still take the questions they name.
+  const bulk = bulkSource ? parseBulkAcceptance(bulkSource, prev.open) : null;
+  for (const hit of bulk?.accepted ?? []) {
+    resolvedFor.set(hit.item.id, hit.answer);
+  }
 
   const overrides = new Map<string, string>();
   for (const entry of answers) {
@@ -1049,6 +1707,7 @@ export async function answerPrdClarificationsCli(
       target: "open",
       kind: item.kind,
       reason: item.reason,
+      ...(item.proposal?.answer === answer ? { fromProposal: true } : {}),
     });
   }
   for (const item of prev.resolved) {
@@ -1065,7 +1724,44 @@ export async function answerPrdClarificationsCli(
     });
   }
 
+  const bulkOutcome = bulk
+    ? {
+        bulkAccepted: bulk.accepted.map((hit) => ({
+          no: hit.item.no,
+          topic: hit.item.topic,
+          answer: hit.answer,
+          via: hit.via,
+        })),
+        // 근거가 없는 질문은 「제안대로」로 덮이지 않는다 — 그대로 다시 물어야 한다.
+        needsUser: [...bulk.needsUser, ...bulk.excluded].map((item) => ({
+          no: item.no,
+          topic: item.topic,
+          question: item.question,
+          prompt: item.prompt ?? item.question,
+          reason: bulk.excluded.includes(item) ? "사용자가 제외함" : "제안 없음",
+        })),
+      }
+    : null;
+
   if (staged.length === 0) {
+    if (bulk?.matched) {
+      console.log(
+        JSON.stringify(
+          {
+            ok: true,
+            runId,
+            staged: false,
+            saved: false,
+            ...bulkOutcome,
+            message:
+              "「제안대로」로 확정할 수 있는 질문이 없습니다. 아래 질문은 근거가 없어 직접 답을 받아야 합니다.",
+          },
+          null,
+          2,
+        ),
+      );
+      return;
+    }
     throw new Error("no matching answers for open questions");
   }
 
@@ -1078,6 +1774,9 @@ export async function answerPrdClarificationsCli(
   const challenges: PrdContradiction[] = [];
 
   for (const entry of staged) {
+    // The system's own proposal was read out of the PRD, so it can never contradict it —
+    // and a proposal that quotes an option called "없음" must not read as a denial.
+    if (entry.fromProposal) continue;
     if (!isNegativeOrSkipAnswer(entry.answer)) continue;
     const evidence = prdEvidenceFor(prdContent, entry.topic);
     if (evidence.length === 0) continue;
@@ -1132,13 +1831,19 @@ export async function answerPrdClarificationsCli(
         confirmQuestion: CONFIRM_QUESTION,
         challenges,
         open: prev.open,
+        ...(bulkOutcome ?? {}),
         message:
           challenges.length > 0
             ? "아직 기록하지 않았습니다. challenges의 question을 그대로 물어 확인부터 받으세요."
-            : "아직 기록하지 않았습니다. restatement를 그대로 전한 뒤 「이대로 확정할까요?」를 묻고 멈추세요.",
+            : bulkOutcome && bulkOutcome.needsUser.length > 0
+              ? `「제안대로」 처리했습니다 — ${bulkOutcome.bulkAccepted.length}건 확정 대기. needsUser 중 「제안 없음」인 ${
+                  bulkOutcome.needsUser.filter((item) => item.reason === "제안 없음").length
+                }건은 근거가 없어 사용자가 직접 답해야 합니다. restatement를 전하고 「이대로 확정할까요?」를 물은 뒤, 그 질문들을 이어서 물으세요.`
+              : "아직 기록하지 않았습니다. restatement를 그대로 전한 뒤 「이대로 확정할까요?」를 묻고 멈추세요.",
         chat_instructions: [
           "이 답변은 보관만 됐습니다. 승인 전에는 요청서에 반영되지 않습니다.",
           "restatement를 업무 말로 그대로 전하고 「이대로 확정할까요?」라고 물으세요.",
+          "needsUser가 있으면 「아래 N건은 근거가 없어 직접 답해 주셔야 합니다」라고 알리고 그 prompt를 그대로 물으세요.",
           "승인(네/좋아요/저장해 주세요)하면 prd_apply, 취소(아니요/취소)면 prd_discard, 다르게 고치면 prd_answer를 다시 부르세요.",
           "challenges가 있으면 그 question을 그대로 물으세요. 사용자가 같은 답을 유지하면 그 답을 그대로 다시 prd_answer 하세요 — PRD보다 우선한다고 기록됩니다.",
           "파일·경로·도구 이름은 사용자에게 말하지 마세요.",
@@ -1201,6 +1906,7 @@ export async function applyPrdAnswersCli(config: WireframeConfig, args: string[]
       reason: source?.reason ?? entry.reason ?? "채팅에서 확정된 답",
       answer: entry.answer,
       resolvedAt: now,
+      ...(entry.fromProposal ? { fromProposal: true } : {}),
       ...(overridesPrd ? { overridesPrd: true, prdEvidence: entry.prdEvidence ?? [] } : {}),
     };
   });
@@ -1236,10 +1942,14 @@ export async function applyPrdAnswersCli(config: WireframeConfig, args: string[]
       ? merged.replace(block, `$1${item.answer}`)
       : appendAnswersToPrd(merged, [{ question: item.question, answer: item.answer }]);
   }
-  if (newlyResolved.length > 0) {
+  // 「요청서를 이대로 확정할까요?」에 대한 답은 요청서의 결정이 아니라 승인 자체다.
+  const confirmAnswer = newlyResolved.find((item) => item.topic === "prd_ready");
+  const prdConfirmed = Boolean(confirmAnswer && isAffirmativeAnswer(confirmAnswer.answer));
+  const decisionAnswers = newlyResolved.filter((item) => item.topic !== "prd_ready");
+  if (decisionAnswers.length > 0) {
     merged = appendAnswersToPrd(
       merged,
-      newlyResolved.map((item) => ({
+      decisionAnswers.map((item) => ({
         question: item.question,
         // Keep the conflict visible in the document the build reads.
         answer: item.overridesPrd
@@ -1250,6 +1960,10 @@ export async function applyPrdAnswersCli(config: WireframeConfig, args: string[]
   }
   await writeFile(prdPath, `${merged.trimEnd()}\n`, "utf8");
 
+  const prdConfirm = prdConfirmed
+    ? { bodyHash: prdBodyHash(merged), confirmedAt: now }
+    : prev.prdConfirm;
+
   await saveClarificationsDoc(config, runId, {
     status: "clarifying",
     phase: "clarify",
@@ -1258,13 +1972,17 @@ export async function applyPrdAnswersCli(config: WireframeConfig, args: string[]
     rounds: prev.rounds,
     updatedAt: now,
     channel: "chat",
+    ...(prdConfirm ? { prdConfirm } : {}),
     audience: "non_developer",
   });
 
   // Grow the project memory: only approved answers become ledger entries.
+  // The PRD approval is this run's gate, not a decision other requests can inherit.
   await recordDecisions(
     projectSlug,
-    [...newlyResolved, ...overridden].map((item) => ({
+    [...newlyResolved, ...overridden]
+      .filter((item) => item.topic !== "prd_ready")
+      .map((item) => ({
       topic: item.topic || "other",
       question: item.question,
       answer: item.answer,

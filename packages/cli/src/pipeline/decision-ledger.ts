@@ -122,6 +122,7 @@ const TOPIC_LABEL_KO: Record<string, string> = {
   edit_rules: "제출 후 수정 규칙",
   privacy: "개인정보 표시",
   done_when: "완료 기준",
+  prd_ready: "요청서 확정",
   other: "기타",
 };
 

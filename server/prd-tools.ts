@@ -147,6 +147,36 @@ export function prdAnswer(input: {
   return { ok: true, ...parseJsonStdout(result.stdout) };
 }
 
+/**
+ * 「제안대로」 — the user accepted the proposals in one line. The phrase is parsed by the CLI
+ * (regex over this exact text, no model), and what gets staged is each proposal's own wording.
+ * Questions with 제안 없음 come back in needsUser so the agent asks them separately.
+ */
+export function looksLikeBulkAccept(text: string): boolean {
+  return /제안\s*대로/.test(text ?? "");
+}
+
+export function prdAnswerBulk(input: {
+  root: string;
+  runId: string;
+  project?: string;
+  text: string;
+}): CliJson {
+  const project = input.project || "crm";
+  const result = runWireframeCli(input.root, [
+    "prd",
+    "answer",
+    "--run-id",
+    input.runId,
+    "--project",
+    project,
+    "--bulk-text",
+    input.text.slice(0, 2000),
+  ]);
+  if (!result.ok) return { ok: false, error: result.stderr || result.stdout };
+  return { ok: true, ...parseJsonStdout(result.stdout) };
+}
+
 /** The user approved the restatement — write the staged answers for real and re-review. */
 export function prdAnswerApply(input: { root: string; runId: string; project?: string }): CliJson {
   const project = input.project || "crm";
@@ -503,6 +533,7 @@ const TOPIC_LABEL_KO: Record<string, string> = {
   edit_rules: "제출 후 수정 규칙",
   privacy: "개인정보 표시",
   done_when: "완료 기준",
+  prd_ready: "요청서 확정",
   other: "기타",
 };
 

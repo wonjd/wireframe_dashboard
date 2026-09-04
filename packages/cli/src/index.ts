@@ -34,6 +34,7 @@ wireframe run confirm --run-id slug [--project crm]
 wireframe run list [--project crm]
 wireframe prd review --run-id slug [--project crm] [--asset-project crm]
 wireframe prd answer --run-id slug --answers '[{"id":"q1","answer":"..."}]' [--project crm]   (제시만 — 저장 안 함)
+wireframe prd answer --run-id slug --bulk-text "3번 빼고 제안대로" [--project crm]            (제안 일괄 수락 — 제시만)
 wireframe prd answer-apply --run-id slug [--project crm]     (사용자가 승인한 답을 기록)
 wireframe prd answer-discard --run-id slug [--project crm]   (제시한 답을 버림)
 wireframe decisions list [--project crm]
