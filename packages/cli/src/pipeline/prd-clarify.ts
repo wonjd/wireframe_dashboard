@@ -711,11 +711,21 @@ function resolvedTopicsFromPrd(
 function isNegativeOrSkipAnswer(text: string): boolean {
   const t = text.trim();
   if (!t) return false;
-  // Short N/A answers from non-devs
-  if (/^(없(다|음|어요)?|해당\s*없(음|다)?|없음|몰라요|모름|해당\s*사항\s*없|N\/?A|no)$/i.test(t)) {
+  // Short N/A answers from non-devs. 없습니다/없네요 are the polite forms a 실무자 actually
+  // types, and leaving them out let the most common denial slip past the PRD contradiction
+  // check entirely — the answer was recorded without ever being challenged.
+  const NEG = /없(?:다|음|어요|습니다|네요|는데요)/;
+  if (
+    /^(?:없(?:다|음|어요|습니다|네요|는데요)|해당\s*없(?:음|다|습니다)?|몰라요|모름|해당\s*사항\s*없\S*|N\/?A|no)$/i.test(
+      t,
+    )
+  ) {
     return true;
   }
-  return /없(다|음|어요)|해당\s*없|노출되지\s*않|선택지\s*없|추가\s*없|조건부.{0,8}없/.test(t);
+  return (
+    NEG.test(t) ||
+    /해당\s*없|노출되지\s*않|선택지\s*없|추가\s*없|조건부.{0,8}없/.test(t)
+  );
 }
 
 function hasChoiceLabelsInText(text: string): boolean {
@@ -1048,7 +1058,7 @@ async function liveDbBrief(config: WireframeConfig, assetSlug: string, prd: stri
   }
 }
 
-function appendAnswersToPrd(
+export function appendAnswersToPrd(
   content: string,
   answers: Array<{ question: string; answer: string }>,
 ): string {

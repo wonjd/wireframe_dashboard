@@ -13,6 +13,7 @@ import { listRuns } from "./commands/run/list.js";
 import { updateRun } from "./commands/run/update.js";
 import { renderRun } from "./commands/render.js";
 import { buildShell } from "./commands/shell.js";
+import { prdImpactCli } from "./commands/prd/impact.js";
 import { loadConfig } from "./lib/config.js";
 import {
   answerPrdClarificationsCli,
@@ -37,6 +38,8 @@ wireframe prd answer --run-id slug --answers '[{"id":"q1","answer":"..."}]' [--p
 wireframe prd answer --run-id slug --bulk-text "3번 빼고 제안대로" [--project crm]            (제안 일괄 수락 — 제시만)
 wireframe prd answer-apply --run-id slug [--project crm]     (사용자가 승인한 답을 기록)
 wireframe prd answer-discard --run-id slug [--project crm]   (제시한 답을 버림)
+wireframe prd impact --run-id slug [--project crm] [--source prd|answers] [--prd ./file.md]
+                                                             (승인 전 영향 미리보기 — 읽기 전용)
 wireframe decisions list [--project crm]
 wireframe render --run-id slug [--project crm] [--artifact id] [--instruction text]
 
@@ -132,6 +135,10 @@ export async function runCli(argv: string[]): Promise<void> {
   }
   if (command === "prd" && subcommand === "answer-discard") {
     await discardPrdAnswersCli(config, rest);
+    return;
+  }
+  if (command === "prd" && subcommand === "impact") {
+    await prdImpactCli(config, rest);
     return;
   }
   if (command === "decisions" && subcommand === "list") {

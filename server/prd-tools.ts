@@ -108,6 +108,93 @@ export function prdSave(input: {
   }
 }
 
+/* ------------------------------------------------------------------ *
+ * 영향 미리보기 — 승인 전에 "무엇이 바뀌는지"를 이름으로 보여 준다
+ *
+ * Approving a staged change used to be blind. The CLI computes the answer deterministically
+ * (packages/cli/src/pipeline/impact-preview.ts): the staged PRD's documents are built in
+ * memory and diffed against the ones on disk, so no LLM, no network and no live DB is
+ * involved, and the HTML renderer is never run. Everything staging returns carries it, so
+ * the chat agent can relay it before it asks for approval.
+ * ------------------------------------------------------------------ */
+
+export type ImpactSummary = {
+  hasImpact: boolean;
+  /** The exact business-Korean block to relay. "" when nothing generated changes. */
+  impactPreview: string;
+  screens: Array<{ text: string; note?: string }>;
+  features: Array<{ text: string; note?: string }>;
+  flow: Array<{ text: string; note?: string }>;
+  /** true when this request's screens were already approved. */
+  confirmed: boolean;
+};
+
+const EMPTY_IMPACT: ImpactSummary = {
+  hasImpact: false,
+  impactPreview: "",
+  screens: [],
+  features: [],
+  flow: [],
+  confirmed: false,
+};
+
+function asImpactItems(value: unknown): Array<{ text: string; note?: string }> {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(isPlainObject)
+    .filter((row) => typeof row.text === "string" && row.text.trim())
+    .map((row) => ({
+      text: String(row.text),
+      ...(typeof row.note === "string" && row.note ? { note: row.note } : {}),
+    }));
+}
+
+/**
+ * Read-only. A failure here must never block the proposal the user is waiting on — the
+ * preview simply goes quiet, exactly as it does when the run has never been built.
+ */
+export function prdImpact(input: {
+  root: string;
+  runId: string;
+  project?: string;
+  source?: "prd" | "answers";
+}): ImpactSummary {
+  const args = ["prd", "impact", "--run-id", input.runId, "--project", input.project || "crm"];
+  if (input.source) args.push("--source", input.source);
+  const result = runWireframeCli(input.root, args, { timeoutMs: 60_000 });
+  if (!result.ok) return EMPTY_IMPACT;
+  const out = parseJsonStdout(result.stdout);
+  if (out.ok !== true || typeof out.impactPreview !== "string") return EMPTY_IMPACT;
+  return {
+    hasImpact: out.hasImpact === true && out.impactPreview.length > 0,
+    impactPreview: out.impactPreview,
+    screens: asImpactItems(out.screens),
+    features: asImpactItems(out.features),
+    flow: asImpactItems(out.flow),
+    confirmed: out.confirmed === true,
+  };
+}
+
+/** Merge the preview into a staging result, plus the one instruction that must ride with it. */
+function withImpact(result: CliJson, impact: ImpactSummary): CliJson {
+  if (!impact.hasImpact) return { ...result, impact: { ...impact } };
+  const existing = Array.isArray(result.chat_instructions)
+    ? (result.chat_instructions as unknown[]).filter((line): line is string => typeof line === "string")
+    : [];
+  return {
+    ...result,
+    impact: { ...impact },
+    impactPreview: impact.impactPreview,
+    chat_instructions: [
+      "impactPreview를 승인을 묻기 전에 줄바꿈까지 그대로 전하세요. 요약하거나 개수로 바꾸지 마세요.",
+      ...(impact.confirmed
+        ? ["이미 승인된 화면이 포함돼 있습니다. 사용자가 멈춰 서서 판단하도록 그 사실을 분명히 전하세요."]
+        : []),
+      ...existing,
+    ],
+  };
+}
+
 export function prdReview(input: { root: string; runId: string; project?: string }): CliJson {
   const project = input.project || "crm";
   const result = runWireframeCli(input.root, [
@@ -144,7 +231,12 @@ export function prdAnswer(input: {
     JSON.stringify(input.answers),
   ]);
   if (!result.ok) return { ok: false, error: result.stderr || result.stdout };
-  return { ok: true, ...parseJsonStdout(result.stdout) };
+  const staged = parseJsonStdout(result.stdout);
+  if (staged.staged !== true) return { ok: true, ...staged };
+  return withImpact(
+    { ok: true, ...staged },
+    prdImpact({ root: input.root, runId: input.runId, project, source: "answers" }),
+  );
 }
 
 /**
@@ -174,7 +266,12 @@ export function prdAnswerBulk(input: {
     input.text.slice(0, 2000),
   ]);
   if (!result.ok) return { ok: false, error: result.stderr || result.stdout };
-  return { ok: true, ...parseJsonStdout(result.stdout) };
+  const staged = parseJsonStdout(result.stdout);
+  if (staged.staged !== true) return { ok: true, ...staged };
+  return withImpact(
+    { ok: true, ...staged },
+    prdImpact({ root: input.root, runId: input.runId, project, source: "answers" }),
+  );
 }
 
 /** The user approved the restatement — write the staged answers for real and re-review. */
@@ -1716,15 +1813,20 @@ export function prdPropose(input: {
   if (!fs.existsSync(specDir)) fs.mkdirSync(specDir, { recursive: true });
   fs.writeFileSync(file, `${JSON.stringify(doc, null, 2)}\n`, "utf8");
 
-  return {
-    ok: true,
-    runId: realRunId,
-    pending: true,
-    restacked: Boolean(prev),
-    summary,
-    newChanges,
-    proposedAt: doc.proposedAt,
-  };
+  return withImpact(
+    {
+      ok: true,
+      runId: realRunId,
+      pending: true,
+      restacked: Boolean(prev),
+      summary,
+      newChanges,
+      proposedAt: doc.proposedAt,
+    },
+    // The draft is on disk now, so the preview is of the whole stack the user will approve,
+    // not just of this one edit.
+    prdImpact({ root: input.root, runId: realRunId, project, source: "prd" }),
+  );
 }
 
 /** User approved: write the staged draft for real, clear the stage, re-review. */

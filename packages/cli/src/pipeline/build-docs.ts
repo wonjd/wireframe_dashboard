@@ -86,7 +86,8 @@ type PrdSection = {
 
 const CONFIRMED_HEADING = /(?:^|\n)#+\s*확인된\s*결정/;
 
-function cleanLabel(raw: string): string {
+/** Strip numbering/markup/필수·선택형 meta so a raw PRD heading reads as a business name. */
+export function cleanLabel(raw: string): string {
   return raw
     .replace(/^#+\s*/, "")
     .replace(/^[①-⑮]\s*/, "")
@@ -272,7 +273,7 @@ function featureFieldFromControl(control: FieldControl): FeatureField | null {
  * with those from tables unrelated to the PRD, and raw column names/code constants
  * must not reach this user-facing document.
  */
-function featureFieldsForStep(domain: DomainSpec, stepNo: number): FeatureField[] {
+export function featureFieldsForStep(domain: DomainSpec, stepNo: number): FeatureField[] {
   const blueprint = domain.fieldBlueprints.find((bp) => bp.stepNo === stepNo);
   const prdFields = (blueprint?.fields ?? []).filter((field) => field.source === "prd");
 

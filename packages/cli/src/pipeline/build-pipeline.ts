@@ -292,7 +292,7 @@ function pickRelatedTables(prdContent: string, tables: NonNullable<DbJson["table
   return picked.length > 0 ? picked : tables.slice(0, 6);
 }
 
-function controlFromPrd(control: FieldControl, index: number): BlueprintField | null {
+export function controlFromPrd(control: FieldControl, index: number): BlueprintField | null {
   if (control.kind === "note") return null;
   const name = `prd_${index}_${control.label}`.replace(/\s+/g, "_").slice(0, 48);
   if (control.kind === "radio") {

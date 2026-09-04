@@ -193,6 +193,11 @@ const SYSTEM = `당신은 비개발자(실무자)용 요청서 확정 도우미�
 - challenges가 오면 그 question을 **그대로** 물으세요. 요청서에 적힌 내용을 답이 부정하고 있다는 뜻입니다
 - 사용자가 그래도 같은 답을 유지하면 그 답을 그대로 prd_answer 한 뒤 승인받으세요. **같은 주제를 두 번 넘게 되묻지 마세요**
 
+승인을 묻기 전에 무엇이 바뀌는지 먼저 보여 주세요:
+- prd_propose·prd_answer가 impactPreview를 돌려주면 **줄바꿈까지 그대로** 옮긴 뒤에 승인을 물으세요
+- 요약하지도, 개수(「화면 2장」)로 바꾸지도 마세요. 비어 있으면 아무 말도 하지 마세요
+- 「이미 승인된 화면입니다」가 붙어 있으면 그 사실을 분명히 전하고 사용자가 판단하게 두세요
+
 필수 행동:
 - 새 PRD를 붙여 넣으면 즉시 prd_save(title, content) → prd_review
 - 사용자가 답하면 **반드시 prd_answer** (말로만 확정하지 마세요)
@@ -395,6 +400,30 @@ function runTool(
     };
   };
 
+  /**
+   * The staging tools attach a business-language 영향 미리보기 (what this change would touch,
+   * named screen by screen). It is the whole point of asking before approving, so it must
+   * survive every result the agent rewrites on its way out.
+   */
+  const carryImpact = (
+    from: Record<string, unknown>,
+    into: Record<string, unknown>,
+  ): Record<string, unknown> => {
+    if (typeof from.impactPreview !== "string" || !from.impactPreview) return into;
+    return {
+      ...into,
+      impact: from.impact,
+      impactPreview: from.impactPreview,
+      chat_instructions: from.chat_instructions,
+    };
+  };
+
+  /** One sentence appended to a staging message so the preview cannot be skipped. */
+  const impactHint = (out: Record<string, unknown>): string =>
+    typeof out.impactPreview === "string" && out.impactPreview
+      ? " impactPreview는 이 수정이 무엇을 건드리는지 적은 것입니다 — 승인을 묻기 전에 줄바꿈까지 그대로 전하세요."
+      : "";
+
   const proposeResult = (
     out: Record<string, unknown>,
     runId: string,
@@ -413,7 +442,7 @@ function runTool(
       );
     }
     return applySnap(
-      {
+      carryImpact(out, {
         ok: true,
         saved: false,
         pending: true,
@@ -421,8 +450,10 @@ function runTool(
         summary,
         newChanges: fresh,
         message:
-          "아직 저장하지 않았습니다. summary를 업무 말로 그대로 전한 뒤 「이대로 저장할까요? 아니면 더 고칠까요?」라고 묻고 이번 턴을 끝내세요. 승인하면 prd_apply, 취소하면 prd_discard, 더 고치면 prd_propose를 다시 부르세요.",
-      },
+          typeof out.impactPreview === "string" && out.impactPreview
+            ? "아직 저장하지 않았습니다. summary를 업무 말로 전하고, impactPreview를 그대로 이어 붙인 뒤 「이대로 저장할까요? 아니면 더 고칠까요?」라고 묻고 이번 턴을 끝내세요. 승인하면 prd_apply, 취소하면 prd_discard, 더 고치면 prd_propose를 다시 부르세요."
+            : "아직 저장하지 않았습니다. summary를 업무 말로 그대로 전한 뒤 「이대로 저장할까요? 아니면 더 고칠까요?」라고 묻고 이번 턴을 끝내세요. 승인하면 prd_apply, 취소하면 prd_discard, 더 고치면 prd_propose를 다시 부르세요.",
+      }),
       runId,
     );
   };
@@ -564,7 +595,7 @@ function runTool(
                     needsUser.length > 0
                       ? ` needsUser ${needsUser.length}건은 근거가 없어 「제안대로」에 포함되지 않았습니다. 「아래 ${needsUser.length}건은 근거가 없어 직접 답해 주셔야 합니다」라고 알리고 그 prompt를 그대로 물으세요.`
                       : ""
-                  }`
+                  }${impactHint(out)}`
                 : "제안이 붙은 질문이 없습니다. needsUser의 prompt를 그대로 물어 답을 받으세요.",
           },
           runId,
@@ -622,7 +653,7 @@ function runTool(
         message:
           challenges.length > 0
             ? "아직 기록하지 않았습니다. challenges의 question을 그대로 물어 확인부터 받고 이번 턴을 끝내세요. 사용자가 같은 답을 유지하면 그 답으로 prd_answer를 다시 부르고, 승인하면 prd_apply 하세요."
-            : "아직 기록하지 않았습니다. restatement를 업무 말로 그대로 전한 뒤 「이대로 확정할까요?」라고 묻고 이번 턴을 끝내세요. 승인하면 prd_apply, 취소하면 prd_discard, 다르게 답하면 prd_answer를 다시 부르세요.",
+            : `아직 기록하지 않았습니다. restatement를 업무 말로 그대로 전한 뒤 「이대로 확정할까요?」라고 묻고 이번 턴을 끝내세요. 승인하면 prd_apply, 취소하면 prd_discard, 다르게 답하면 prd_answer를 다시 부르세요.${impactHint(out)}`,
       },
       runId,
     );
