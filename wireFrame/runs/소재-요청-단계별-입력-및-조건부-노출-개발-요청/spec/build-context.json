@@ -1,0 +1,30 @@
+{
+  "sources": {
+    "prd": {
+      "path": "runs/소재-요청-단계별-입력-및-조건부-노출-개발-요청/input/v1.md",
+      "chars": 2694
+    },
+    "jsonAssets": {
+      "projectSlug": "crm",
+      "files": [
+        "design.json",
+        "routes.json",
+        "api.json",
+        "db.json",
+        "shell.html"
+      ]
+    },
+    "liveDb": {
+      "ok": true,
+      "tables": [
+        "INCENTIVE_DAILY_MT",
+        "CONTENT_MT",
+        "INCENTIVE_MT",
+        "FILE_MT",
+        "ENT_MT"
+      ]
+    }
+  },
+  "prdHash": "9d592c6c3454926389b5acbf72cf1d95ef3d9cfd",
+  "generatedAt": "2026-09-04T05:59:46.607Z"
+}

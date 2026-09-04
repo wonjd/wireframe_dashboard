@@ -1,0 +1,295 @@
+{
+  "runId": "crm-신규계정-성장유지-관리-개발-요청-메일-타임라인",
+  "projectSlug": "crm",
+  "assetProjectSlug": "crm",
+  "prdTitle": "CRM 신규계정 성장·유지 관리 개발 요청 — 메일 타임라인",
+  "uiPattern": "page",
+  "entities": [
+    "ent",
+    "account",
+    "content",
+    "growth",
+    "incentive",
+    "file"
+  ],
+  "tables": [
+    "ACCOUNT_MT",
+    "GROWTH_END_MT",
+    "GROWTH_JUDGMENT_MT",
+    "GROWTH_ROUND_EDIT_HT",
+    "GROWTH_CONTRACT_ROUND_MT",
+    "GROWTH_OPS_EVENT_HT"
+  ],
+  "steps": [],
+  "stepSpecs": [],
+  "fieldBlueprints": [
+    {
+      "screenKind": "overview",
+      "title": "개요",
+      "fields": []
+    },
+    {
+      "stepNo": 1,
+      "screenKind": "form",
+      "title": "요청 입력",
+      "fields": [
+        {
+          "name": "ACCOUNT_MT.ACCOUNT_DIV_CD",
+          "label": "ACCOUNT DIV",
+          "control": "radio",
+          "required": false,
+          "options": [
+            "agency",
+            "management",
+            "creator",
+            "wonjd",
+            "important"
+          ],
+          "source": "db",
+          "table": "ACCOUNT_MT",
+          "column": "ACCOUNT_DIV_CD"
+        },
+        {
+          "name": "ACCOUNT_MT.PLATFORM",
+          "label": "PLATFORM",
+          "control": "select",
+          "required": false,
+          "options": [
+            "클립아트코리아",
+            "미드저니",
+            "베오3",
+            "Microsoft365",
+            "크리플래닛 (인플루언서 모집, 조건희본부장)",
+            "클립아트코리아 (이미지/영상)",
+            "베오3(아트비 계정(예전))",
+            "원정대 인스타그램 계정",
+            "아비크 외부 나스 경로",
+            "산돌구름"
+          ],
+          "source": "db",
+          "table": "ACCOUNT_MT",
+          "column": "PLATFORM"
+        },
+        {
+          "name": "GROWTH_END_MT.END_TYPE",
+          "label": "END TYPE",
+          "control": "radio",
+          "required": true,
+          "options": [
+            "EXPIRED_NO_RENEWAL",
+            "MID_TERM_TERMINATION"
+          ],
+          "source": "db",
+          "table": "GROWTH_END_MT",
+          "column": "END_TYPE"
+        },
+        {
+          "name": "GROWTH_END_MT.END_REASON",
+          "label": "END REASON",
+          "control": "text",
+          "required": true,
+          "source": "db",
+          "table": "GROWTH_END_MT",
+          "column": "END_REASON"
+        },
+        {
+          "name": "GROWTH_JUDGMENT_MT.JUDGMENT_TYPE",
+          "label": "JUDGMENT TYPE",
+          "control": "radio",
+          "required": true,
+          "options": [
+            "FIRST_RENEWAL",
+            "PILOT_CONVERSION"
+          ],
+          "source": "db",
+          "table": "GROWTH_JUDGMENT_MT",
+          "column": "JUDGMENT_TYPE"
+        },
+        {
+          "name": "GROWTH_JUDGMENT_MT.STATUS",
+          "label": "상태",
+          "control": "text",
+          "required": true,
+          "source": "db",
+          "table": "GROWTH_JUDGMENT_MT",
+          "column": "STATUS"
+        },
+        {
+          "name": "GROWTH_ROUND_EDIT_HT.EDIT_TYPE",
+          "label": "EDIT TYPE",
+          "control": "radio",
+          "required": true,
+          "options": [
+            "BACKFILL_CREATE",
+            "CANCEL_TYPO_FIX"
+          ],
+          "source": "db",
+          "table": "GROWTH_ROUND_EDIT_HT",
+          "column": "EDIT_TYPE"
+        },
+        {
+          "name": "GROWTH_CONTRACT_ROUND_MT.ENGAGEMENT_NO",
+          "label": "ENGAGEMENT NO",
+          "control": "text",
+          "required": true,
+          "source": "db",
+          "table": "GROWTH_CONTRACT_ROUND_MT",
+          "column": "ENGAGEMENT_NO"
+        },
+        {
+          "name": "GROWTH_CONTRACT_ROUND_MT.LIFETIME_ROUND_NO",
+          "label": "LIFETIME ROUND NO",
+          "control": "text",
+          "required": true,
+          "source": "db",
+          "table": "GROWTH_CONTRACT_ROUND_MT",
+          "column": "LIFETIME_ROUND_NO"
+        },
+        {
+          "name": "GROWTH_CONTRACT_ROUND_MT.ROUND_NO",
+          "label": "ROUND NO",
+          "control": "text",
+          "required": true,
+          "source": "db",
+          "table": "GROWTH_CONTRACT_ROUND_MT",
+          "column": "ROUND_NO"
+        },
+        {
+          "name": "GROWTH_CONTRACT_ROUND_MT.CONTRACT_TYPE",
+          "label": "CONTRACT TYPE",
+          "control": "text",
+          "required": true,
+          "source": "db",
+          "table": "GROWTH_CONTRACT_ROUND_MT",
+          "column": "CONTRACT_TYPE"
+        },
+        {
+          "name": "GROWTH_CONTRACT_ROUND_MT.ORIGINAL_END_YMD",
+          "label": "ORIGINAL END YMD",
+          "control": "text",
+          "required": true,
+          "source": "db",
+          "table": "GROWTH_CONTRACT_ROUND_MT",
+          "column": "ORIGINAL_END_YMD"
+        }
+      ],
+      "enums": [
+        {
+          "name": "ACCOUNT_MT.ACCOUNT_DIV_CD",
+          "label": "ACCOUNT DIV",
+          "options": [
+            "agency",
+            "management",
+            "creator",
+            "wonjd",
+            "important"
+          ]
+        },
+        {
+          "name": "ACCOUNT_MT.PLATFORM",
+          "label": "PLATFORM",
+          "options": [
+            "클립아트코리아",
+            "미드저니",
+            "베오3",
+            "Microsoft365",
+            "크리플래닛 (인플루언서 모집, 조건희본부장)",
+            "클립아트코리아 (이미지/영상)",
+            "베오3(아트비 계정(예전))",
+            "원정대 인스타그램 계정",
+            "아비크 외부 나스 경로",
+            "산돌구름"
+          ]
+        },
+        {
+          "name": "GROWTH_END_MT.END_TYPE",
+          "label": "END TYPE",
+          "options": [
+            "EXPIRED_NO_RENEWAL",
+            "MID_TERM_TERMINATION"
+          ]
+        },
+        {
+          "name": "GROWTH_JUDGMENT_MT.JUDGMENT_TYPE",
+          "label": "JUDGMENT TYPE",
+          "options": [
+            "FIRST_RENEWAL",
+            "PILOT_CONVERSION"
+          ]
+        },
+        {
+          "name": "GROWTH_ROUND_EDIT_HT.EDIT_TYPE",
+          "label": "EDIT TYPE",
+          "options": [
+            "BACKFILL_CREATE",
+            "CANCEL_TYPO_FIX"
+          ]
+        }
+      ]
+    }
+  ],
+  "requirements": [],
+  "judgements": [
+    {
+      "target": "build-context",
+      "rule": "triple context: PRD + JSON(crm) + live DB [INCENTIVE_DAILY_MT, CONTENT_MT, INCENTIVE_MT, FILE_MT, ENT_MT]"
+    },
+    {
+      "target": "ACCOUNT_DIV_CD",
+      "rule": "ACCOUNT_MT.ACCOUNT_DIV_CD 코드 5개 — 탭 또는 radio"
+    },
+    {
+      "target": "PLATFORM",
+      "rule": "ACCOUNT_MT.PLATFORM 코드 10개 — select/필터"
+    },
+    {
+      "target": "END_TYPE",
+      "rule": "GROWTH_END_MT.END_TYPE 코드 2개 — 탭 또는 radio"
+    },
+    {
+      "target": "JUDGMENT_TYPE",
+      "rule": "GROWTH_JUDGMENT_MT.JUDGMENT_TYPE 코드 2개 — 탭 또는 radio"
+    },
+    {
+      "target": "EDIT_TYPE",
+      "rule": "GROWTH_ROUND_EDIT_HT.EDIT_TYPE 코드 2개 — 탭 또는 radio"
+    },
+    {
+      "target": "step-1",
+      "rule": "요청 입력: 12 fields · ui=page/form"
+    }
+  ],
+  "assumptions": [
+    {
+      "text": "화면 양식 미확정 → page으로 가정",
+      "reason": "PRD에 모달/표/페이지/단계 양식 답이 없어 휴리스틱 적용"
+    }
+  ],
+  "sources": {
+    "prd": {
+      "path": "runs/crm-신규계정-성장유지-관리-개발-요청-메일-타임라인/input/v1.md",
+      "chars": 1017
+    },
+    "jsonAssets": {
+      "projectSlug": "crm",
+      "files": [
+        "design.json",
+        "routes.json",
+        "api.json",
+        "db.json",
+        "shell.html"
+      ]
+    },
+    "liveDb": {
+      "ok": true,
+      "tables": [
+        "INCENTIVE_DAILY_MT",
+        "CONTENT_MT",
+        "INCENTIVE_MT",
+        "FILE_MT",
+        "ENT_MT"
+      ]
+    }
+  },
+  "generatedAt": "2026-09-04T05:57:25.039Z"
+}

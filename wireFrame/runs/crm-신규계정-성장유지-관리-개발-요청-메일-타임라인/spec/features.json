@@ -1,0 +1,38 @@
+{
+  "runId": "crm-신규계정-성장유지-관리-개발-요청-메일-타임라인",
+  "root": {
+    "label": "PRD",
+    "runId": "crm-신규계정-성장유지-관리-개발-요청-메일-타임라인"
+  },
+  "groups": [
+    {
+      "no": "1",
+      "label": "전체 흐름: 1차 요청부터 개발팀 검토, 업무 기준 확정, 상세 질문, 예외상황 질문, 개발항목 및 일정 제시, 우선순위 지정, 1순위 간이 화면 및 자동화 제안까지 포함.",
+      "importance": "medium",
+      "status": "draft",
+      "children": []
+    },
+    {
+      "no": "2",
+      "label": "최종 확정 요구사항 요약:",
+      "importance": "medium",
+      "status": "draft",
+      "children": []
+    },
+    {
+      "no": "3",
+      "label": "개발 일정 및 의존성:",
+      "importance": "medium",
+      "status": "draft",
+      "children": []
+    },
+    {
+      "no": "4",
+      "label": "사용자 확인 보충 결정 포함하여 모든 모호성 해소됨.",
+      "importance": "medium",
+      "status": "draft",
+      "children": []
+    }
+  ],
+  "generatedAt": "2026-09-04T05:57:25.045Z"
+}

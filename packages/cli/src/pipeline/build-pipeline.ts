@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { projectOutputPaths, resolveFromRepo } from "../lib/config.js";
-import { parsePrdSteps, parseStepSummaries, parseUiPattern, type FieldControl, type StepSpec, type UiPattern } from "./prd-parser.js";
+import { parsePrdSteps, parseUiPattern, type FieldControl, type StepSpec, type UiPattern } from "./prd-parser.js";
 
 export type DbColumn = {
   name: string;
@@ -132,7 +132,6 @@ export type DomainSpec = {
   uiPattern: UiPattern;
   entities: string[];
   tables: string[];
-  steps: Array<{ no: number; label: string }>;
   stepSpecs: StepSpec[];
   fieldBlueprints: FieldBlueprint[];
   requirements: string[];
@@ -517,7 +516,7 @@ function buildFieldBlueprints(input: {
         ? "list"
         : input.uiPattern === "detail"
           ? "detail"
-          : input.uiPattern === "page" && steps.length <= 1
+          : input.uiPattern === "page" && input.stepSpecs.length <= 1
             ? "form"
             : "wizard-step";
 
@@ -542,7 +541,6 @@ export function buildDomain(input: {
   assets: ProjectAssets;
   sources?: DomainSpec["sources"];
 }): DomainSpec {
-  const steps = parseStepSummaries(input.prdContent);
   const stepSpecs = parsePrdSteps(input.prdContent);
 
   const requirements = input.prdContent
@@ -556,10 +554,10 @@ export function buildDomain(input: {
   const tables = relatedTables.map((table) => table.name);
 
   const judgements: DomainSpec["judgements"] = [];
-  if (steps.length > 0) {
+  if (stepSpecs.length > 0) {
     judgements.push({
       target: "wizard",
-      rule: `${steps.length}단계 요청 흐름 — 단계별 화면 분리`,
+      rule: `${stepSpecs.length}단계 요청 흐름 — 단계별 화면 분리`,
     });
   }
   if (input.prdContent.includes("검색") || /list|목록/.test(input.prdContent)) {
@@ -596,7 +594,7 @@ export function buildDomain(input: {
     }
   }
 
-  const uiPattern = parseUiPattern(input.prdContent, steps.length > 1);
+  const uiPattern = parseUiPattern(input.prdContent, stepSpecs.length > 1);
 
   const fieldBlueprints = buildFieldBlueprints({
     stepSpecs,
@@ -651,7 +649,6 @@ export function buildDomain(input: {
     uiPattern,
     entities,
     tables,
-    steps,
     stepSpecs,
     fieldBlueprints,
     requirements,
@@ -776,9 +773,7 @@ export function buildManifest(input: {
   const steps =
     input.domain.stepSpecs.length > 0
       ? input.domain.stepSpecs.map((step) => ({ no: step.no, label: step.title }))
-      : input.domain.steps.length > 0
-        ? input.domain.steps
-        : [{ no: 1, label: input.run.title }];
+      : [{ no: 1, label: input.run.title }];
 
   for (const step of steps) {
     const id = `${String(step.no).padStart(2, "0")}-step-${step.no}`;

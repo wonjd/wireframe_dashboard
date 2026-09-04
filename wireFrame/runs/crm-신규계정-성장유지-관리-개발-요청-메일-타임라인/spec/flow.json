@@ -1,0 +1,20 @@
+{
+  "runId": "crm-신규계정-성장유지-관리-개발-요청-메일-타임라인",
+  "lanes": [
+    {
+      "id": "request",
+      "label": "요청 흐름"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "start",
+      "kind": "start",
+      "label": "시작",
+      "lane": "request",
+      "artifactId": null
+    }
+  ],
+  "edges": [],
+  "generatedAt": "2026-09-04T05:57:25.045Z"
+}

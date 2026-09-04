@@ -1,0 +1,30 @@
+{
+  "sources": {
+    "prd": {
+      "path": "runs/crm-신규계정-성장유지-관리-개발-요청-메일-타임라인/input/v1.md",
+      "chars": 1017
+    },
+    "jsonAssets": {
+      "projectSlug": "crm",
+      "files": [
+        "design.json",
+        "routes.json",
+        "api.json",
+        "db.json",
+        "shell.html"
+      ]
+    },
+    "liveDb": {
+      "ok": true,
+      "tables": [
+        "INCENTIVE_DAILY_MT",
+        "CONTENT_MT",
+        "INCENTIVE_MT",
+        "FILE_MT",
+        "ENT_MT"
+      ]
+    }
+  },
+  "prdHash": "9ac08599e3da6d66b9c396140d1a1baf74277ab0",
+  "generatedAt": "2026-09-04T05:57:25.043Z"
+}

@@ -408,9 +408,9 @@ export function buildFeaturesDoc(input: {
 }): FeaturesDoc {
   const sections = parsePrdSections(input.prdContent);
   const ctx = buildStatusContext(input.prdContent, input.domain, input.clarifications);
-  const stepEntries: StepLinkEntry[] = [...input.domain.steps]
+  const stepEntries: StepLinkEntry[] = [...input.domain.stepSpecs]
     .sort((a, b) => a.no - b.no)
-    .map((step) => ({ no: step.no, key: normalizeForMatch(cleanLabel(step.label)) }));
+    .map((step) => ({ no: step.no, key: normalizeForMatch(cleanLabel(step.title)) }));
 
   const groups: FeatureGroup[] = sections.map((section) => {
     const question = isQuestionSection(section.title);
@@ -592,7 +592,9 @@ export function buildFlowDoc(input: {
   };
   const lanes: FlowDoc["lanes"] = [requestLane];
 
-  const steps = [...input.domain.steps].sort((a, b) => a.no - b.no);
+  const steps = [...input.domain.stepSpecs]
+    .sort((a, b) => a.no - b.no)
+    .map((spec) => ({ no: spec.no, label: spec.title }));
   const specByNo = new Map(input.domain.stepSpecs.map((spec) => [spec.no, spec]));
   const artifactIdOf = (no: number): string | null =>
     input.manifest.artifacts.find((artifact) => artifact.no === no && /step/.test(artifact.id))

@@ -16,7 +16,7 @@ import {
   type FieldBlueprint,
   type ManifestSpec,
 } from "./build-pipeline.js";
-import { parsePrdSteps, parseStepSummaries, parseUiPattern, type StepSpec } from "./prd-parser.js";
+import { parsePrdSteps, parseUiPattern, type StepSpec } from "./prd-parser.js";
 
 /**
  * 영향 미리보기 — what a staged PRD change will actually touch, named in business Korean.
@@ -122,9 +122,8 @@ function blueprintScreenKind(
  * and entirely off the live DB.
  */
 export function projectDomain(cached: DomainSpec, prdContent: string): DomainSpec {
-  const steps = parseStepSummaries(prdContent);
   const stepSpecs = parsePrdSteps(prdContent);
-  const uiPattern = parseUiPattern(prdContent, steps.length > 1);
+  const uiPattern = parseUiPattern(prdContent, stepSpecs.length > 1);
 
   const cachedByStep = new Map<number, FieldBlueprint>();
   for (const blueprint of cached.fieldBlueprints ?? []) {
@@ -151,7 +150,7 @@ export function projectDomain(cached: DomainSpec, prdContent: string): DomainSpe
     });
   }
 
-  return { ...cached, uiPattern, steps, stepSpecs, fieldBlueprints };
+  return { ...cached, uiPattern, stepSpecs, fieldBlueprints };
 }
 
 /** True when this step's fields are the DB/API snapshot's, not the PRD's — so we cannot prove it unaffected. */

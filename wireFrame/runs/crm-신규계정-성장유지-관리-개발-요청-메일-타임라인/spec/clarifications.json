@@ -1,0 +1,148 @@
+{
+  "status": "ready",
+  "phase": "ready",
+  "open": [],
+  "resolved": [
+    {
+      "id": "q-6ccbb03f",
+      "kind": "ambiguity",
+      "topic": "required_optional",
+      "question": "꼭 채워야 하는 항목과 비워도 되는 항목을 어떻게 나눌까요?",
+      "reason": "폼성 PRD — 필수/선택 확정 필요",
+      "situation": "꼭 채워야 하는 항목과 비워도 되는 항목이 요청서에 나뉘어 있지 않습니다.",
+      "options": [
+        "꼭 채울 항목: 콘텐츠 유형, 랜딩페이지, 지면, 타겟, 핵심 소구 1순위, 레퍼런스 전달 방식, 제작방식, 메인 카피 / 나머지는 선택",
+        "모든 항목을 꼭 채우게 하기",
+        "일부만 꼭 채우게 하기 — 항목을 알려 주세요",
+        "전부 비워도 되게 하기"
+      ],
+      "proposal": {
+        "optionNo": 1,
+        "answer": "꼭 채울 항목: 콘텐츠 유형, 랜딩페이지, 지면, 타겟, 핵심 소구 1순위, 레퍼런스 전달 방식, 제작방식, 메인 카피 / 나머지는 선택",
+        "basis": "이전 요청(PRD-001)에서 같은 내용을 이렇게 정했습니다 — 꼭 채울 항목: 콘텐츠 유형, 랜딩페이지, 지면, 타겟, 핵심 소구 1순위, 레퍼런스 전달 방식, 제작방식, 메인 카피 / 나머지는 선택",
+        "source": "ledger"
+      },
+      "needsUser": false,
+      "answer": "꼭 채울 항목: 콘텐츠 유형, 랜딩페이지, 지면, 타겟, 핵심 소구 1순위, 레퍼런스 전달 방식, 제작방식, 메인 카피 / 나머지는 선택",
+      "resolvedAt": "2026-09-04T05:52:06.133Z",
+      "prefilledFrom": "PRD-001"
+    },
+    {
+      "id": "q-f6232f5b",
+      "kind": "data",
+      "topic": "attach_method",
+      "question": "참고 자료는 어떤 방법으로 넘길까요?",
+      "reason": "첨부·레퍼런스 전달 방식 확정 필요",
+      "situation": "참고 자료를 어떤 방법으로 넘길지가 요청서에 적혀 있지 않습니다.",
+      "options": [
+        "레퍼런스 전달 방식: 링크 첨부 / 파일 첨부 / 없음",
+        "링크만 받기",
+        "파일 첨부만 받기",
+        "링크·파일 둘 다 받기",
+        "메신저(웍스방)로 직접 전달받기"
+      ],
+      "proposal": {
+        "optionNo": 1,
+        "answer": "레퍼런스 전달 방식: 링크 첨부 / 파일 첨부 / 없음",
+        "basis": "이전 요청(PRD-001)에서 같은 내용을 이렇게 정했습니다 — 레퍼런스 전달 방식: 링크 첨부 / 파일 첨부 / 없음",
+        "source": "ledger"
+      },
+      "needsUser": false,
+      "answer": "레퍼런스 전달 방식: 링크 첨부 / 파일 첨부 / 없음",
+      "resolvedAt": "2026-09-04T05:52:06.133Z",
+      "prefilledFrom": "PRD-001"
+    },
+    {
+      "id": "q-52c801ce",
+      "kind": "policy",
+      "topic": "edit_rules",
+      "question": "제출한 뒤에도 내용을 고칠 수 있나요?",
+      "reason": "진행 상태가 언급되나 수정·초기화 규칙 없음",
+      "situation": "제출한 뒤에 내용을 고칠 수 있는지가 요청서에 적혀 있지 않습니다.",
+      "options": [
+        "고칠 수 없다",
+        "제출한 뒤에는 고칠 수 없음",
+        "제작이 시작되기 전까지만 고칠 수 있음",
+        "언제든 고칠 수 있음"
+      ],
+      "proposal": {
+        "optionNo": 1,
+        "answer": "고칠 수 없다",
+        "basis": "이전 요청(PRD-001)에서 같은 내용을 이렇게 정했습니다 — 고칠 수 없다",
+        "source": "ledger"
+      },
+      "needsUser": false,
+      "answer": "고칠 수 없다",
+      "resolvedAt": "2026-09-04T05:52:06.133Z",
+      "prefilledFrom": "PRD-001"
+    },
+    {
+      "id": "q-prd-ready",
+      "kind": "policy",
+      "topic": "prd_ready",
+      "question": "요청서를 이대로 확정할까요?",
+      "reason": "마지막 업무 질문이 끝났지만 확정은 사용자 승인 뒤에만 한다",
+      "answer": "네",
+      "resolvedAt": "2026-09-04T05:52:15.342Z"
+    },
+    {
+      "id": "q-c6d2372b",
+      "kind": "data",
+      "topic": "limits",
+      "question": "글자 수·항목 개수 제한을 어떻게 할까요?",
+      "reason": "복수/장문 입력이 있어 상한 확정 필요",
+      "situation": "글자 수나 항목 개수를 얼마나 받을지가 요청서에 적혀 있지 않습니다.",
+      "options": [
+        "최종 대본 최대 200자만 제한, 나머지 입력칸은 제한 없음",
+        "제한 없이 받기",
+        "긴 입력칸(대본·카피)에만 글자 수 제한 두기 — 숫자를 알려 주세요",
+        "항목 개수를 제한하기 — 숫자를 알려 주세요"
+      ],
+      "proposal": {
+        "optionNo": 1,
+        "answer": "최종 대본 최대 200자만 제한, 나머지 입력칸은 제한 없음",
+        "basis": "이전 요청(PRD-001)에서 같은 내용을 이렇게 정했습니다 — 최종 대본 최대 200자만 제한, 나머지 입력칸은 제한 없음",
+        "source": "ledger"
+      },
+      "needsUser": false,
+      "answer": "최종 대본 최대 200자만 제한, 나머지 입력칸은 제한 없음",
+      "resolvedAt": "2026-09-04T05:52:17.648Z",
+      "prefilledFrom": "PRD-001"
+    },
+    {
+      "id": "q-screen-layout",
+      "kind": "scope",
+      "topic": "screen_layout",
+      "question": "PRD가 확정됐습니다. 화면은 어떤 형태로 보여 주면 될까요? (예: 전체 페이지 입력폼 / 팝업·모달 / 목록 표 / 단계별로 넘어가는 화면). 섞여 있으면 단계마다 적어 주세요.",
+      "reason": "애매한 업무 결정 확정·승인 후에만 화면 양식을 묻는다",
+      "situation": "요청서가 확정됐습니다. 이제 화면을 어떤 형태로 보여 줄지만 정하면 됩니다.",
+      "options": [
+        "전체 페이지 입력폼",
+        "팝업·모달",
+        "목록 표",
+        "단계별로 넘어가는 화면"
+      ],
+      "needsUser": true,
+      "answer": "네",
+      "resolvedAt": "2026-09-04T05:52:17.648Z",
+      "prefilledFrom": "PRD-001"
+    },
+    {
+      "id": "q-prd-ready",
+      "kind": "policy",
+      "topic": "prd_ready",
+      "question": "요청서를 이대로 확정할까요?",
+      "reason": "마지막 업무 질문이 끝났지만 확정은 사용자 승인 뒤에만 한다",
+      "answer": "네 이대로 확정합니다",
+      "resolvedAt": "2026-09-04T05:57:17.497Z"
+    }
+  ],
+  "rounds": 4,
+  "updatedAt": "2026-09-04T05:57:19.802Z",
+  "channel": "chat",
+  "prdConfirm": {
+    "bodyHash": "d64b329a87f526aa9ae30866fd7acc733c8e07e0",
+    "confirmedAt": "2026-09-04T05:57:17.497Z"
+  },
+  "audience": "non_developer"
+}

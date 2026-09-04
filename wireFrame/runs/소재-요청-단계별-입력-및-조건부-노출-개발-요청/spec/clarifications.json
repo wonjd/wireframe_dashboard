@@ -1,0 +1,101 @@
+{
+  "status": "ready",
+  "phase": "ready",
+  "open": [],
+  "resolved": [
+    {
+      "id": "q-caa2d372",
+      "kind": "ambiguity",
+      "topic": "required_optional",
+      "question": "꼭 채워야 하는 항목과 비워도 되는 항목을 어떻게 나눌까요?",
+      "reason": "폼성 PRD — 필수/선택 확정 필요",
+      "answer": "꼭 채울 항목: 콘텐츠 유형, 랜딩페이지, 지면, 타겟, 핵심 소구 1순위, 레퍼런스 전달 방식, 제작방식, 메인 카피 / 나머지는 선택",
+      "resolvedAt": "2026-09-04T05:49:00.671Z",
+      "fromProposal": true
+    },
+    {
+      "id": "q-0857cb19",
+      "kind": "data",
+      "topic": "choice_values",
+      "question": "골라서 쓰는 항목의 선택지 문구를 어떻게 할까요?",
+      "reason": "선택형 항목의 선택지 문구 확정 필요",
+      "answer": "콘텐츠 유형: 이미지 / 영상 · 랜딩페이지: (동일 광고주 최다 사용값) / 직접 입력 · 레퍼런스 전달 방식: 링크 첨부 / 파일 첨부 / 없음 · 기획의도 / 테스트 목적: 기존 고성과 소구 확장 / 탐색 목적 테스트 / 기타 · 제작방식: 가이드(대본·카피) 그대로 제작 / 자유 제작(참고용)",
+      "resolvedAt": "2026-09-04T05:49:00.671Z",
+      "fromProposal": true
+    },
+    {
+      "id": "q-8e943d00",
+      "kind": "ambiguity",
+      "topic": "conditional_fields",
+      "question": "앞 단계에서 고른 값에 따라 달라지는 입력칸을 어떻게 할까요?",
+      "reason": "조건부 노출 조합 확정 필요",
+      "answer": "이미지 · 가이드(대본·카피) 그대로 제작 → 메인 카피 · 이미지 · 가이드(대본·카피) 그대로 제작 → 서브 카피 · 영상 · 가이드(대본·카피) 그대로 제작 → 최종 대본 · 영상 · 가이드(대본·카피) 그대로 제작 → 필수 유지 문장 / 요소",
+      "resolvedAt": "2026-09-04T05:49:00.671Z",
+      "fromProposal": true
+    },
+    {
+      "id": "q-06d4250c",
+      "kind": "data",
+      "topic": "attach_method",
+      "question": "참고 자료는 어떤 방법으로 넘길까요?",
+      "reason": "첨부·레퍼런스 전달 방식 확정 필요",
+      "answer": "레퍼런스 전달 방식: 링크 첨부 / 파일 첨부 / 없음",
+      "resolvedAt": "2026-09-04T05:49:00.671Z",
+      "fromProposal": true
+    },
+    {
+      "id": "q-8e0c7f61",
+      "kind": "data",
+      "topic": "limits",
+      "question": "글자 수·항목 개수 제한을 어떻게 할까요?",
+      "reason": "복수/장문 입력이 있어 상한 확정 필요",
+      "answer": "최종 대본 최대 200자만 제한, 나머지 입력칸은 제한 없음",
+      "resolvedAt": "2026-09-04T05:49:00.671Z",
+      "fromProposal": true
+    },
+    {
+      "id": "q-dd7d1a34",
+      "kind": "policy",
+      "topic": "after_submit",
+      "question": "요청을 제출하면 다음에 누가 무엇을 하나요?",
+      "reason": "제출 이후 업무 흐름이 PRD에 없음",
+      "answer": "요청제출후 광고제작팀이 제작한다",
+      "resolvedAt": "2026-09-04T05:49:00.671Z"
+    },
+    {
+      "id": "q-c7d362be",
+      "kind": "policy",
+      "topic": "edit_rules",
+      "question": "제출한 뒤에도 내용을 고칠 수 있나요?",
+      "reason": "진행 상태가 언급되나 수정·초기화 규칙 없음",
+      "answer": "고칠 수 없다",
+      "resolvedAt": "2026-09-04T05:49:00.671Z"
+    },
+    {
+      "id": "q-prd-ready",
+      "kind": "policy",
+      "topic": "prd_ready",
+      "question": "요청서를 이대로 확정할까요?",
+      "reason": "마지막 업무 질문이 끝났지만 확정은 사용자 승인 뒤에만 한다",
+      "answer": "네",
+      "resolvedAt": "2026-09-04T05:49:12.116Z"
+    },
+    {
+      "id": "q-screen-layout",
+      "kind": "scope",
+      "topic": "screen_layout",
+      "question": "PRD가 확정됐습니다. 화면은 어떤 형태로 보여 주면 될까요? (예: 전체 페이지 입력폼 / 팝업·모달 / 목록 표 / 단계별로 넘어가는 화면). 섞여 있으면 단계마다 적어 주세요.",
+      "reason": "애매한 업무 결정 확정·승인 후에만 화면 양식을 묻는다",
+      "answer": "네",
+      "resolvedAt": "2026-09-04T05:49:25.461Z"
+    }
+  ],
+  "rounds": 4,
+  "updatedAt": "2026-09-04T05:49:27.987Z",
+  "channel": "chat",
+  "prdConfirm": {
+    "bodyHash": "b3b58126881821dd5bcfc9208051dfe3203cbf40",
+    "confirmedAt": "2026-09-04T05:49:12.116Z"
+  },
+  "audience": "non_developer"
+}

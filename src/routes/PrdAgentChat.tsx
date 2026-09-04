@@ -117,10 +117,11 @@ export function PrdAgentChat({
   useEffect(() => {
     const payload = JSON.stringify({ messages, runId, status, phase });
     localStorage.setItem(storageKey(runId || queryRunId), payload);
-    // Keep the "new" slot pointing at the run this session created. Without this it stays
-    // frozen at the pre-runId snapshot, so remounting /prd/new restores the chat history with
-    // runId undefined — and the agent then asks the user to paste the PRD again.
-    if (runId && !queryRunId) localStorage.setItem(storageKey(), payload);
+    // The "new" slot is only a scratchpad for a request that has no id yet. Once the run exists
+    // its history belongs to that run's key, and "새 PRD" must open an empty chat — mirroring
+    // the session here made 새 PRD resume the previous conversation instead of starting one.
+    // A refresh that loses runId is recovered server-side by recoverRunId(), not from here.
+    if (runId && !queryRunId) localStorage.removeItem(storageKey());
   }, [messages, runId, status, phase, queryRunId]);
 
   useEffect(() => {

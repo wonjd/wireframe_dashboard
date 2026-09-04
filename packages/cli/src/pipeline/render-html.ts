@@ -1445,9 +1445,7 @@ export function renderArtifactHtml(input: {
     runTitle: input.runTitle,
     step: stepSpec,
     blueprint,
-    allSteps: input.domain.stepSpecs.length
-      ? input.domain.stepSpecs
-      : input.domain.steps.map((s) => ({ no: s.no, title: s.label, controls: [] })),
+    allSteps: input.domain.stepSpecs,
     assets: input.assets,
     styles: input.assets.shellStyles,
     hints,
