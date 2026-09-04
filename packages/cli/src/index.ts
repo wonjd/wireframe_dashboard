@@ -16,6 +16,8 @@ import { buildShell } from "./commands/shell.js";
 import { loadConfig } from "./lib/config.js";
 import {
   answerPrdClarificationsCli,
+  applyPrdAnswersCli,
+  discardPrdAnswersCli,
   reviewPrdClarificationsCli,
 } from "./pipeline/prd-clarify.js";
 import { listDecisionsCli } from "./pipeline/decision-ledger.js";
@@ -31,7 +33,9 @@ wireframe run build --run-id slug [--project crm] [--asset-project crm]
 wireframe run confirm --run-id slug [--project crm]
 wireframe run list [--project crm]
 wireframe prd review --run-id slug [--project crm] [--asset-project crm]
-wireframe prd answer --run-id slug --answers '[{"id":"q1","answer":"..."}]' [--project crm]
+wireframe prd answer --run-id slug --answers '[{"id":"q1","answer":"..."}]' [--project crm]   (제시만 — 저장 안 함)
+wireframe prd answer-apply --run-id slug [--project crm]     (사용자가 승인한 답을 기록)
+wireframe prd answer-discard --run-id slug [--project crm]   (제시한 답을 버림)
 wireframe decisions list [--project crm]
 wireframe render --run-id slug [--project crm] [--artifact id] [--instruction text]
 
@@ -119,6 +123,14 @@ export async function runCli(argv: string[]): Promise<void> {
   }
   if (command === "prd" && subcommand === "answer") {
     await answerPrdClarificationsCli(config, rest);
+    return;
+  }
+  if (command === "prd" && subcommand === "answer-apply") {
+    await applyPrdAnswersCli(config, rest);
+    return;
+  }
+  if (command === "prd" && subcommand === "answer-discard") {
+    await discardPrdAnswersCli(config, rest);
     return;
   }
   if (command === "decisions" && subcommand === "list") {

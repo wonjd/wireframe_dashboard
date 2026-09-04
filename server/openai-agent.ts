@@ -1,6 +1,9 @@
 import { openAiModel, requireOpenAiKey } from "./env.js";
 import {
   prdAnswer,
+  prdAnswerApply,
+  prdAnswerDiscard,
+  prdAnswersPendingGet,
   prdApply,
   prdBuild,
   prdConflicts,
@@ -70,7 +73,7 @@ const TOOLS = [
     function: {
       name: "prd_apply",
       description:
-        "The user approved the staged change (네/좋아요/저장해 주세요). Writes it for real and re-reviews. Only call after the user has seen the summary and said yes.",
+        "The user approved what you restated (네/좋아요/저장해 주세요). Writes the staged answers and/or the staged PRD change for real and re-reviews. Only call after the user has seen the restatement/summary and said yes.",
       parameters: { type: "object", properties: {} },
     },
   },
@@ -79,7 +82,7 @@ const TOOLS = [
     function: {
       name: "prd_discard",
       description:
-        "The user rejected the staged change outright (아니요/취소/원래대로). Throws the draft away. If the user instead wants further edits, call prd_propose again — do NOT discard first.",
+        "The user rejected what you restated outright (아니요/취소/원래대로). Throws the staged answers or the staged PRD change away. If the user instead wants a different answer or further edits, call prd_answer / prd_propose again — do NOT discard first.",
       parameters: { type: "object", properties: {} },
     },
   },
@@ -96,7 +99,7 @@ const TOOLS = [
     function: {
       name: "prd_answer",
       description:
-        "Save user answers to open questions, then re-review. Call this whenever the user answers — including screen form (모달/표/페이지/단계별). If you do not know the question id, send topic instead (screen_layout for 화면 형태) or just the answer; the server matches it to the open question.",
+        "Stage user answers to open questions — NOTHING is written yet. Call this whenever the user answers, including screen form (모달/표/페이지/단계별). If you do not know the question id, send topic instead (screen_layout for 화면 형태) or just the answer; the server matches it to the open question. Returns restatement[] (plain Korean 확정안) and challenges[] (the answer denies something the request text spells out). Relay them, ask 이대로 확정할까요?, and stop; the answer is recorded only by prd_apply.",
       parameters: {
         type: "object",
         properties: {
@@ -167,6 +170,14 @@ const SYSTEM = `당신은 비개발자(실무자)용 요청서 확정 도우미�
 - 더 고쳐 달라고 하면 **prd_discard 없이 prd_propose를 다시** 부르세요 (앞서 만든 변경안 위에 얹힙니다)
 - 처음 붙여 넣는 새 요청서만 예외 — 비교할 것이 없으니 prd_save로 바로 저장합니다
 
+애매한 점에 대한 답도 승인 뒤에만 기록합니다:
+- 사용자가 답하면 **prd_answer**를 부르세요. 이때는 **보관만** 되고 요청서에는 아직 반영되지 않습니다
+- 돌아온 restatement를 평문으로 그대로 전한 뒤 「이대로 확정할까요?」라고 **묻고 멈추세요**
+- 「네/좋아요/저장해 주세요」면 **prd_apply**, 「아니요/취소」면 **prd_discard**
+- 다르게 고쳐 답하면 **prd_discard 없이 prd_answer를 다시** 부르세요 (앞 답 위에 얹힙니다)
+- challenges가 오면 그 question을 **그대로** 물으세요. 요청서에 적힌 내용을 답이 부정하고 있다는 뜻입니다
+- 사용자가 그래도 같은 답을 유지하면 그 답을 그대로 prd_answer 한 뒤 승인받으세요. **같은 주제를 두 번 넘게 되묻지 마세요**
+
 필수 행동:
 - 새 PRD를 붙여 넣으면 즉시 prd_save(title, content) → prd_review
 - 사용자가 답하면 **반드시 prd_answer** (말로만 확정하지 마세요)
@@ -188,9 +199,11 @@ type AgentState = {
   phase?: string;
   built?: boolean;
   artifactCount?: number;
-  /** A rewrite of this run's PRD is staged and waiting for the user's yes. */
+  /** A rewrite of this run's PRD, or an answer to an open question, is waiting for the user's yes. */
   pending?: boolean;
   pendingSummary?: string[];
+  /** Staged clarification answers specifically (they apply/discard before a staged PRD change). */
+  pendingAnswers?: boolean;
 };
 
 type OpenQ = { id: string; question: string; topic?: string; kind?: string };
@@ -233,6 +246,26 @@ function recentUserLayoutAnswer(messages: Array<{ role: string; content: string 
 
 function wantsBuild(text: string): boolean {
   return /생성|만들어|진행|빌드|시작|와이어\s*프레임|초안/.test(text);
+}
+
+/** 네/좋아요/저장해 주세요 — the same yes the staged PRD change already uses. */
+function saysApprove(text: string): boolean {
+  const value = text.trim();
+  if (!value || value.length > 60) return false;
+  // "네, 이 4가지를 반영해 주세요" answers the re-ask with a different decision — not a yes.
+  if (/아니|취소|원래대로|하지\s*마|말고|아직|잠깐|\d+\s*가지/.test(value)) return false;
+  return (
+    /^(네|넵|예|응|어|그래|오케이|ok|okay|좋아|좋아요|좋습니다|맞아|맞아요|맞습니다|확정|저장|반영|그대로)/i.test(
+      value,
+    ) || /확정(해|할|하)|저장(해|할|해서)|그대로\s*(해|가|진행)/.test(value)
+  );
+}
+
+/** 아니요/취소/원래대로 */
+function saysReject(text: string): boolean {
+  const value = text.trim();
+  if (!value || value.length > 60) return false;
+  return /^(아니|아뇨|노|no)/i.test(value) || /취소|원래대로|하지\s*마세요|되돌/.test(value);
 }
 
 /**
@@ -280,6 +313,12 @@ function refreshState(root: string, state: AgentState): { state: AgentState; ope
     const snap = prdGet({ root, runId: state.runId, project: state.project });
     const clar = snap.clarifications as { open?: OpenQ[] } | null;
     const pending = prdPendingGet({ root, runId: state.runId, project: state.project });
+    // Answers wait for the same yes as a PRD rewrite — both must block an auto-build.
+    const answers = prdAnswersPendingGet({ root, runId: state.runId, project: state.project });
+    const answersPending = answers.pending === true;
+    const answerRestatement = Array.isArray(answers.restatement)
+      ? (answers.restatement as string[])
+      : [];
     return {
       state: {
         ...state,
@@ -287,8 +326,13 @@ function refreshState(root: string, state: AgentState): { state: AgentState; ope
         phase: typeof snap.phase === "string" ? snap.phase : state.phase,
         artifactCount:
           typeof snap.artifactCount === "number" ? snap.artifactCount : state.artifactCount,
-        pending: pending.pending === true,
-        pendingSummary: Array.isArray(pending.summary) ? (pending.summary as string[]) : [],
+        pending: pending.pending === true || answersPending,
+        pendingAnswers: answersPending,
+        pendingSummary: answersPending
+          ? answerRestatement
+          : Array.isArray(pending.summary)
+            ? (pending.summary as string[])
+            : [],
       },
       open: Array.isArray(clar?.open) ? clar.open : [],
     };
@@ -511,12 +555,17 @@ function runTool(
         state,
       };
     }
+    const challenges = Array.isArray(out.challenges) ? (out.challenges as unknown[]) : [];
     return applySnap(
       {
         ok: true,
         ...out,
+        saved: false,
+        pending: true,
         message:
-          "답이 반영됐습니다. phase=ready면 즉시 prd_build를 호출하세요. 사용자에게 나중이라고 말하지 마세요.",
+          challenges.length > 0
+            ? "아직 기록하지 않았습니다. challenges의 question을 그대로 물어 확인부터 받고 이번 턴을 끝내세요. 사용자가 같은 답을 유지하면 그 답으로 prd_answer를 다시 부르고, 승인하면 prd_apply 하세요."
+            : "아직 기록하지 않았습니다. restatement를 업무 말로 그대로 전한 뒤 「이대로 확정할까요?」라고 묻고 이번 턴을 끝내세요. 승인하면 prd_apply, 취소하면 prd_discard, 다르게 답하면 prd_answer를 다시 부르세요.",
       },
       runId,
     );
@@ -553,6 +602,37 @@ function runTool(
   }
 
   if (name === "prd_apply") {
+    // Answers and PRD rewrites share the same 네/아니요 wording, so one approval tool covers
+    // both. The PRD change goes first: the answers append onto the text it produces.
+    const stagedPrd = prdPendingGet({ root, runId, project }).pending === true;
+    const stagedAnswers = prdAnswersPendingGet({ root, runId, project }).pending === true;
+    if (stagedAnswers) {
+      const applied = stagedPrd ? prdApply({ root, runId, project }) : { ok: true };
+      const out = prdAnswerApply({ root, runId, project });
+      if (out.ok === false) {
+        return {
+          result: {
+            ok: false,
+            pending: false,
+            error:
+              "지금 확정 대기 중인 답이 없습니다. 사용자의 답을 prd_answer로 먼저 제시하세요.",
+          },
+          state,
+        };
+      }
+      return applySnap(
+        {
+          ok: true,
+          saved: true,
+          pending: false,
+          open: Array.isArray(out.open) ? out.open : undefined,
+          summary: applied.ok === false ? undefined : (applied as { summary?: unknown }).summary,
+          message:
+            "승인대로 기록했습니다. 반영됐다고 짧게 알리고, open이 남았으면 업무 말로 이어서 물으세요. phase=ready면 prd_build 하세요.",
+        },
+        runId,
+      );
+    }
     const out = prdApply({ root, runId, project });
     if (out.ok === false) {
       return {
@@ -581,6 +661,19 @@ function runTool(
   }
 
   if (name === "prd_discard") {
+    if (prdAnswersPendingGet({ root, runId, project }).pending === true) {
+      const dropped = prdAnswerDiscard({ root, runId, project });
+      return applySnap(
+        {
+          ok: dropped.ok !== false,
+          pending: false,
+          discarded: dropped.discarded === true,
+          message:
+            "확정 대기 중이던 답을 버렸습니다. 요청서는 그대로입니다. 어떤 답으로 할지 다시 물으세요.",
+        },
+        runId,
+      );
+    }
     const out = prdDiscard({ root, runId, project });
     // applySnap re-reads the stage, so state.pending (and the pendingPrd the UI banner
     // hangs off) clears in the same turn instead of lingering as a false "저장 대기 중".
@@ -601,19 +694,25 @@ function runTool(
       return { result: { ok: false, error: "불러오기에 실패했어요." }, state };
     }
     const pending = prdPendingGet({ root, runId, project });
+    const answers = prdAnswersPendingGet({ root, runId, project });
+    const answersPending = answers.pending === true;
     return applySnap(
       {
         ok: true,
         ...out,
         // A staged draft is what the next edit must build on, so hand the model that text
         // rather than the saved one — otherwise a follow-up edit silently drops the first.
-        pending: pending.pending === true,
+        pending: pending.pending === true || answersPending,
         pendingSummary: pending.summary,
+        pendingAnswers: answersPending,
+        pendingAnswerRestatement: answers.restatement,
         content: pending.pending === true ? pending.content : out.content,
         message:
-          pending.pending === true
-            ? "승인 대기 중인 변경안이 있습니다. content는 그 변경안 본문입니다. 사용자가 승인하면 prd_apply, 더 고치면 이 본문을 고쳐 prd_propose 하세요."
-            : undefined,
+          answersPending
+            ? "확정 대기 중인 답이 있습니다. pendingAnswerRestatement를 그대로 전하고 「이대로 확정할까요?」를 물으세요. 승인하면 prd_apply, 취소하면 prd_discard."
+            : pending.pending === true
+              ? "승인 대기 중인 변경안이 있습니다. content는 그 변경안 본문입니다. 사용자가 승인하면 prd_apply, 더 고치면 이 본문을 고쳐 prd_propose 하세요."
+              : undefined,
       },
       runId,
     );
@@ -721,9 +820,29 @@ function ensureProgress(
     }
   }
 
-  // Auto-answer screen_layout from recent short user replies
+  // A staged answer is the user's word waiting for their own yes: apply it only on an explicit
+  // approval, drop it on an explicit rejection, and otherwise leave it staged.
+  let note: string | undefined;
+  if (cur.runId && cur.pendingAnswers) {
+    if (saysApprove(userText)) {
+      const out = prdAnswerApply({ root, runId: cur.runId, project: cur.project });
+      if (out.ok !== false) {
+        const refreshed = refreshState(root, cur);
+        cur = refreshed.state;
+        curOpen = refreshed.open;
+      }
+    } else if (saysReject(userText)) {
+      prdAnswerDiscard({ root, runId: cur.runId, project: cur.project });
+      const refreshed = refreshState(root, cur);
+      cur = refreshed.state;
+      curOpen = refreshed.open;
+      note = "확정 대기 중이던 답을 취소했습니다. 요청서는 그대로예요. 어떻게 정할지 알려 주세요.";
+    }
+  }
+
+  // Auto-answer screen_layout from recent short user replies — staged, never written silently.
   const layoutQ = curOpen.find((q) => q.topic === "screen_layout" || /화면\s*(형태|양식)/.test(q.question));
-  if (cur.runId && layoutQ && cur.phase === "layout") {
+  if (cur.runId && layoutQ && cur.phase === "layout" && !cur.pendingAnswers) {
     const answer = recentUserLayoutAnswer(userMessages);
     if (answer) {
       const out = prdAnswer({
@@ -736,9 +855,15 @@ function ensureProgress(
         const refreshed = refreshState(root, cur);
         cur = refreshed.state;
         curOpen = refreshed.open;
+        const lines = Array.isArray(out.restatement)
+          ? (out.restatement as string[])
+          : (cur.pendingSummary ?? []);
+        // The answer is staged, so the turn must end on the confirmation question.
+        note = `${lines.join(" / ")} — 이대로 확정할까요?`;
       }
     }
   }
+  if (note) return { state: cur, open: curOpen, note };
 
   // Auto-build when ready and user asked, or just became ready with no open Qs
   // A staged rewrite is still awaiting the user's yes — building now would hand them
@@ -823,9 +948,11 @@ export async function runPrdAgentChat(input: AgentChatInput): Promise<AgentChatR
       (bootOpen.length
         ? ` 지금 열린 질문: ${bootOpen.map((q) => `${q.id}=${q.topic || q.kind || "other"}`).join(", ")}. 이 id를 그대로 prd_answer에 쓰세요.`
         : "") +
-      (state.pending
-        ? ` 승인 대기 중인 변경안이 있습니다: ${(state.pendingSummary ?? []).join(" / ")}. 사용자가 승인하면 prd_apply, 취소하면 prd_discard, 더 고치면 prd_propose를 다시 부르세요.`
-        : "")
+      (state.pendingAnswers
+        ? ` 확정 대기 중인 답이 있습니다: ${(state.pendingSummary ?? []).join(" / ")}. 그대로 전하고 「이대로 확정할까요?」를 물으세요. 승인하면 prd_apply, 취소하면 prd_discard, 다르게 답하면 prd_answer를 다시 부르세요.`
+        : state.pending
+          ? ` 승인 대기 중인 변경안이 있습니다: ${(state.pendingSummary ?? []).join(" / ")}. 사용자가 승인하면 prd_apply, 취소하면 prd_discard, 더 고치면 prd_propose를 다시 부르세요.`
+          : "")
     : `새 요청입니다. 본문이 오면 prd_save만 하세요.`;
 
   const messages: ChatMessage[] = [

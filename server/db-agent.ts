@@ -246,6 +246,8 @@ export type DbAgentChatResult = {
   };
   matchedTerms?: Array<ReturnType<typeof serializeTerm>>;
   trace?: string[];
+  usage?: TokenUsage;
+  usageCalls?: number;
 };
 
 function packResult(
@@ -253,6 +255,8 @@ function packResult(
   lastResult: QueryResult | undefined,
   matched: GlossaryTerm[],
   trace: string[],
+  usage?: TokenUsage,
+  usageCalls?: number,
 ): DbAgentChatResult {
   return {
     ok: true,
@@ -269,6 +273,8 @@ function packResult(
       : undefined,
     matchedTerms: matched.slice(0, 12).map(serializeTerm),
     trace,
+    usage,
+    usageCalls,
   };
 }
 
@@ -289,6 +295,8 @@ export async function runDbAgentChat(input: DbAgentChatInput): Promise<DbAgentCh
   const trace: string[] = [];
   let lastResult: QueryResult | undefined;
   const matched: GlossaryTerm[] = [];
+  let turnUsage = emptyUsage();
+  let usageCalls = 0;
 
   // Prefetch terms from the latest user message so UI always has something useful
   const lastUser = [...input.messages].reverse().find((m) => m.role === "user");
@@ -302,7 +310,11 @@ export async function runDbAgentChat(input: DbAgentChatInput): Promise<DbAgentCh
   }
 
   for (let round = 0; round < 8; round += 1) {
-    const assistant = await chatCompletion(messages);
+    const { message: assistant, usage } = await chatCompletion(messages);
+    if (usage) {
+      turnUsage = addUsage(turnUsage, usage);
+      usageCalls += 1;
+    }
     messages.push(assistant);
 
     const calls = assistant.tool_calls;
@@ -312,6 +324,8 @@ export async function runDbAgentChat(input: DbAgentChatInput): Promise<DbAgentCh
         lastResult,
         matched,
         trace,
+        turnUsage,
+        usageCalls,
       );
     }
 
@@ -340,5 +354,7 @@ export async function runDbAgentChat(input: DbAgentChatInput): Promise<DbAgentCh
     lastResult,
     matched,
     trace,
+    turnUsage,
+    usageCalls,
   );
 }

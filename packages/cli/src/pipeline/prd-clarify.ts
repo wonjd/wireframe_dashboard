@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, access } from "node:fs/promises";
+import { readFile, writeFile, mkdir, access, unlink } from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
 import type { WireframeConfig } from "../lib/config.js";
@@ -11,7 +11,9 @@ import {
   loadDecisionLedger,
   prefillNotice,
   recordDecisions,
+  topicLabelKo,
 } from "./decision-ledger.js";
+import { parseConditionalMatrix, parsePrdSteps, type FieldControl } from "./prd-parser.js";
 
 export type ClarificationKind = "ambiguity" | "policy" | "scope" | "data";
 
@@ -38,17 +40,32 @@ export type ClarificationItem = {
   question: string;
   /** Internal: why we ask — may mention assets; chat must NOT dump this raw to non-devs. */
   reason: string;
+  /** PRD's own words behind a re-ask (see prdEvidenceFor) — safe to show, business language. */
+  evidence?: string[];
 };
 
 export type ClarificationsPhase = "clarify" | "layout" | "ready";
+
+export type ResolvedClarification = ClarificationItem & {
+  answer: string;
+  resolvedAt: string;
+  /** prefilledFrom = adopted from an earlier run's ledger decision (PRD-00x) — not asked here. */
+  prefilledFrom?: string;
+  /**
+   * The user denied ("없다") something the PRD spells out, was shown the PRD's own words, and
+   * kept the denial. Recorded so the PRD/answer conflict stays traceable instead of silent.
+   */
+  overridesPrd?: boolean;
+  /** The PRD lines this answer overrides. */
+  prdEvidence?: string[];
+};
 
 export type ClarificationsDoc = {
   status: "clarifying" | "ready";
   /** clarify = 업무 미결, layout = PRD 승인 후 화면 형태만, ready = 빌드 가능 */
   phase?: ClarificationsPhase;
   open: ClarificationItem[];
-  /** prefilledFrom = adopted from an earlier run's ledger decision (PRD-00x) — not asked here. */
-  resolved: Array<ClarificationItem & { answer: string; resolvedAt: string; prefilledFrom?: string }>;
+  resolved: ResolvedClarification[];
   rounds: number;
   updatedAt: string;
   channel: "chat";
@@ -110,19 +127,168 @@ async function saveClarificationsDoc(
   await writeFile(file, `${JSON.stringify(doc, null, 2)}\n`, "utf8");
 }
 
+/* ------------------------------------------------------------------ */
+/* PRD evidence for a topic — deterministic, reuses the build parsers.  */
+/* A "없다" answer must not close a topic the PRD itself spells out.     */
+/* ------------------------------------------------------------------ */
+
+/** Parsing the same PRD once per process is enough — the CLI is one-shot. */
+let evidenceMemo: { prd: string; controls: FieldControl[]; conditional: string[] } | null = null;
+
+function parsedControls(prd: string): { controls: FieldControl[]; conditional: string[] } {
+  if (evidenceMemo?.prd === prd) return evidenceMemo;
+  let controls: FieldControl[] = [];
+  let conditional: string[] = [];
+  try {
+    controls = parsePrdSteps(prd).flatMap((step) => step.controls);
+  } catch {
+    controls = [];
+  }
+  try {
+    conditional = conditionalQuotes(parseConditionalMatrix(prd));
+  } catch {
+    conditional = [];
+  }
+  evidenceMemo = { prd, controls, conditional };
+  return evidenceMemo;
+}
+
+/** "이미지 · 가이드 제작 → 메인 카피" — the combo comes from the parsed hint, not a new parser. */
+function conditionalQuotes(controls: FieldControl[]): string[] {
+  const quotes: string[] = [];
+  for (const control of controls) {
+    if (control.kind === "note") continue;
+    const hint = "hint" in control ? (control.hint ?? "") : "";
+    const combo = hint.match(/^(.*?)\s*선택\s*시\s*노출/)?.[1]?.trim() ?? "";
+    const quote = combo ? `${combo} → ${control.label}` : control.label;
+    if (quote && !quotes.includes(quote)) quotes.push(quote);
+  }
+  return quotes;
+}
+
+function labelOf(control: FieldControl): string {
+  return control.kind === "note" ? "" : control.label;
+}
+
+const EVIDENCE_MAX = 8;
+
+/**
+ * The PRD's own words for a topic, in business Korean. Empty when the PRD says nothing —
+ * only then may a negative answer close the topic.
+ */
+export function prdEvidenceFor(prd: string, topic: string): string[] {
+  const { controls, conditional } = parsedControls(prd);
+  const quotes: string[] = [];
+  const push = (text: string): void => {
+    const value = text.trim();
+    if (value && !quotes.includes(value)) quotes.push(value);
+  };
+
+  if (topic === "conditional_fields") {
+    conditional.forEach(push);
+  } else if (topic === "required_optional") {
+    for (const control of controls) {
+      if (control.kind === "note" || !control.required) continue;
+      push(`${control.label} 필수`);
+    }
+  } else if (topic === "choice_values") {
+    for (const control of controls) {
+      if (control.kind !== "radio" && control.kind !== "select") continue;
+      if (!control.options?.length) continue;
+      push(`${control.label}: ${control.options.join(" / ")}`);
+    }
+  } else if (topic === "attach_method") {
+    for (const control of controls) {
+      const label = labelOf(control);
+      if (!label || !/레퍼런스|첨부|업로드|파일/.test(label)) continue;
+      const options =
+        (control.kind === "radio" || control.kind === "select") && control.options?.length
+          ? `: ${control.options.join(" / ")}`
+          : "";
+      push(`${label}${options}`);
+    }
+  } else if (topic === "limits") {
+    for (const control of controls) {
+      if (control.kind !== "textarea" || !control.maxLength) continue;
+      push(`${control.label} 최대 ${control.maxLength}자`);
+    }
+  }
+
+  return quotes.slice(0, EVIDENCE_MAX);
+}
+
+/** 이/가 by final jamo — a non-hangul tail defaults to 가. */
+function subjectParticle(word: string): string {
+  const code = word.trim().slice(-1).charCodeAt(0);
+  if (Number.isNaN(code) || code < 0xac00 || code > 0xd7a3) return "가";
+  return (code - 0xac00) % 28 === 0 ? "가" : "이";
+}
+
+const TOPIC_PHRASE_KO: Record<string, string> = {
+  conditional_fields: "선택에 따라 달라지는 항목",
+  required_optional: "꼭 채워야 하는 항목",
+  choice_values: "고를 수 있는 선택지",
+  attach_method: "참고 자료 전달 방식",
+  limits: "글자·항목 제한",
+};
+
+export type PrdContradiction = {
+  topic: ClarificationTopic;
+  /** The denial that conflicts with the PRD. */
+  answer: string;
+  /** The PRD's own words, business language — safe to show. */
+  evidence: string[];
+  /** Plain-Korean re-ask, asked once and only once per topic. */
+  question: string;
+};
+
+function contradictionQuestion(topic: string, answer: string, evidence: string[]): string {
+  const phrase = TOPIC_PHRASE_KO[topic] ?? topicLabelKo(topic);
+  const count = evidence.length;
+  return `PRD에는 「${evidence[0]}」처럼 ${phrase}이 ${count}가지 적혀 있습니다. 「${answer}」${subjectParticle(answer)} 맞나요, 아니면 이 ${count}가지를 반영할까요?`;
+}
+
+/**
+ * Answers that deny what the PRD spells out and have NOT yet been re-confirmed.
+ * A later answer on the same topic (a real answer, or the denial kept after the re-ask)
+ * clears it — so a topic is never challenged more than once.
+ */
+export function prdContradictions(
+  prd: string,
+  resolved: ResolvedClarification[],
+): PrdContradiction[] {
+  const pending = new Map<string, PrdContradiction>();
+  for (const item of resolved) {
+    const topic = (item.topic || "other") as ClarificationTopic;
+    if (item.overridesPrd || !isNegativeOrSkipAnswer(item.answer)) {
+      pending.delete(topic);
+      continue;
+    }
+    const evidence = prdEvidenceFor(prd, topic);
+    if (evidence.length === 0) continue;
+    pending.set(topic, {
+      topic,
+      answer: item.answer.trim(),
+      evidence,
+      question: contradictionQuestion(topic, item.answer.trim(), evidence),
+    });
+  }
+  return [...pending.values()];
+}
+
 /** Topics already covered by ## 확인된 결정 or prior answers */
 function resolvedTopicsFromPrd(prd: string, resolved: ClarificationsDoc["resolved"]): Set<string> {
-  const topics = new Set<string>(resolved.map((item) => item.topic || "other"));
+  // A denial that contradicts the PRD covers nothing until the user has confirmed it once.
+  const contradicted = new Set<string>(prdContradictions(prd, resolved).map((item) => item.topic));
+  const topics = new Set<string>();
+  for (const item of resolved) {
+    const topic = item.topic || "other";
+    if (contradicted.has(topic)) continue;
+    topics.add(topic);
+  }
   const section = prd.match(/(?:^|\n)#+\s*확인된\s*결정([\s\S]*)$/m)?.[1] ?? "";
   const blob = `${section}\n${resolved.map((r) => `${r.question}\n${r.answer}`).join("\n")}`;
   const full = `${prd}\n${blob}`;
-
-  // Explicit negative / N/A answers for a resolved item always cover that topic
-  for (const item of resolved) {
-    if (isNegativeOrSkipAnswer(item.answer)) {
-      topics.add(item.topic || "other");
-    }
-  }
 
   if (/권한|역할|담당|승인|영업|콘텐츠\s*팀|요청자/.test(blob) || /콘텐츠\s*팀/.test(full)) {
     topics.add("who_does");
@@ -171,6 +337,10 @@ function resolvedTopicsFromPrd(prd: string, resolved: ClarificationsDoc["resolve
   }
   if (/개인정보|마스킹|연락처/.test(blob)) topics.add("privacy");
   if (/완료\s*기준|성공\s*기준|끝으로\s*본다/.test(blob)) topics.add("done_when");
+
+  // The PRD text itself is what the denial contradicts, so its keywords must not re-cover
+  // the topic behind the user's back — the re-ask below is the only way to close it.
+  for (const topic of contradicted) topics.delete(topic);
 
   return topics;
 }
@@ -459,6 +629,123 @@ function appendAnswersToPrd(
   return `${content.trimEnd()}\n\n## 확인된 결정\n${block}`;
 }
 
+/* ------------------------------------------------------------------ *
+ * Staged answers (제시 → 승인 → 기록)
+ *
+ * PRD *content* edits already wait for the user's yes in spec/pending-prd.json.
+ * Clarification answers used to be written the moment they arrived — into input/vN.md,
+ * clarifications.json and the project decision ledger at once. They are staged here
+ * beside pending-prd.json instead: nothing lands until `prd answer-apply`.
+ * ------------------------------------------------------------------ */
+
+export type PendingAnswerEntry = {
+  /** Open-question id, or the id of the pre-filled decision being overridden. */
+  id: string;
+  topic: string;
+  question: string;
+  answer: string;
+  /** open = answers an open question, override = replaces a decision adopted from an earlier run. */
+  target: "open" | "override";
+  kind?: ClarificationKind;
+  reason?: string;
+  /** Denial kept after the PRD was quoted back — record it as overriding the PRD. */
+  overridesPrd?: boolean;
+  prdEvidence?: string[];
+};
+
+export type PendingAnswersDoc = {
+  runId: string;
+  entries: PendingAnswerEntry[];
+  /** Topics already re-asked once — never challenge the same topic twice. */
+  challenged: string[];
+  /** Deterministic plain-Korean restatement shown before approval. */
+  restatement: string[];
+  basedOnVersion: number;
+  stagedAt: string;
+};
+
+const PENDING_ANSWERS_MAX_BYTES = 256 * 1024;
+
+function pendingAnswersPath(config: WireframeConfig, runId: string): string {
+  return path.join(getRunRoot(config, runId), "spec", "pending-answers.json");
+}
+
+/** Safe when absent, truncated or hand-edited — a broken stage reads as "nothing staged". */
+export async function loadPendingAnswers(
+  config: WireframeConfig,
+  runId: string,
+): Promise<{ doc: PendingAnswersDoc | null; corrupt: boolean }> {
+  const file = pendingAnswersPath(config, runId);
+  if (!(await pathExists(file))) return { doc: null, corrupt: false };
+  let parsed: unknown;
+  try {
+    const stripped = (await readFile(file, "utf8")).replace(/^\uFEFF/, "");
+    if (Buffer.byteLength(stripped, "utf8") > PENDING_ANSWERS_MAX_BYTES * 2) {
+      return { doc: null, corrupt: true };
+    }
+    parsed = JSON.parse(stripped);
+  } catch {
+    return { doc: null, corrupt: true };
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return { doc: null, corrupt: true };
+  }
+  const raw = parsed as Partial<PendingAnswersDoc>;
+  const entries = (Array.isArray(raw.entries) ? raw.entries : []).filter(
+    (entry): entry is PendingAnswerEntry =>
+      Boolean(entry) &&
+      typeof entry === "object" &&
+      typeof (entry as PendingAnswerEntry).id === "string" &&
+      typeof (entry as PendingAnswerEntry).answer === "string" &&
+      Boolean((entry as PendingAnswerEntry).answer.trim()),
+  );
+  if (entries.length === 0) return { doc: null, corrupt: true };
+  return {
+    doc: {
+      runId,
+      entries,
+      challenged: (Array.isArray(raw.challenged) ? raw.challenged : []).filter(
+        (topic): topic is string => typeof topic === "string",
+      ),
+      restatement: (Array.isArray(raw.restatement) ? raw.restatement : []).filter(
+        (line): line is string => typeof line === "string",
+      ),
+      basedOnVersion: typeof raw.basedOnVersion === "number" ? raw.basedOnVersion : 0,
+      stagedAt: typeof raw.stagedAt === "string" ? raw.stagedAt : "",
+    },
+    corrupt: false,
+  };
+}
+
+async function savePendingAnswers(
+  config: WireframeConfig,
+  runId: string,
+  doc: PendingAnswersDoc,
+): Promise<void> {
+  const file = pendingAnswersPath(config, runId);
+  await mkdir(path.dirname(file), { recursive: true });
+  await writeFile(file, `${JSON.stringify(doc, null, 2)}\n`, "utf8");
+}
+
+async function clearPendingAnswers(config: WireframeConfig, runId: string): Promise<boolean> {
+  const file = pendingAnswersPath(config, runId);
+  if (!(await pathExists(file))) return false;
+  try {
+    await unlink(file);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** "화면 형태: 모달" — deterministic, no LLM. */
+function restatementLine(entry: PendingAnswerEntry): string {
+  const suffix = entry.overridesPrd ? " (PRD에 적힌 내용보다 이 답을 우선)" : "";
+  return `${topicLabelKo(entry.topic || "other")}: ${entry.answer}${suffix}`;
+}
+
+const CONFIRM_QUESTION = "이대로 확정할까요?";
+
 async function setRunStatus(
   config: WireframeConfig,
   projectSlug: string,
@@ -569,7 +856,25 @@ export async function reviewPrdClarificationsCli(
     return true;
   };
 
-  let open: ClarificationItem[] = businessOpen.filter((item) => !prefillFromLedger(item));
+  // An answer that denies what the PRD spells out is re-asked ONCE, quoting the PRD's own
+  // words. Until it is confirmed the topic stays open — it must not be silently accepted.
+  const contradictions = prdContradictions(prdContent, prev.resolved);
+  const contradictedTopics = new Set(contradictions.map((item) => item.topic));
+  const rechecks: ClarificationItem[] = contradictions.map((item) => ({
+    id: `q-recheck-${item.topic}`,
+    kind: "ambiguity",
+    topic: item.topic,
+    question: item.question,
+    reason: `PRD에 근거가 있는데 답변이 이를 부정함 — 1회만 재확인`,
+    evidence: item.evidence,
+  }));
+
+  let open: ClarificationItem[] = [
+    ...rechecks,
+    ...businessOpen.filter(
+      (item) => !contradictedTopics.has(item.topic) && !prefillFromLedger(item),
+    ),
+  ];
   let status: ClarificationsDoc["status"] = open.length === 0 ? "ready" : "clarifying";
   let phase: "clarify" | "layout" | "ready" = "clarify";
 
@@ -603,6 +908,7 @@ export async function reviewPrdClarificationsCli(
   }
 
   const collisions = await detectScreenCollisions(config, runId);
+  const staged = await loadPendingAnswers(config, runId);
 
   const doc: ClarificationsDoc = {
     status,
@@ -637,13 +943,18 @@ export async function reviewPrdClarificationsCli(
         resolvedCount: doc.resolved.length,
         ledgerNotices,
         collisions,
+        contradictions,
+        pendingAnswers: Boolean(staged.doc),
+        pendingRestatement: staged.doc?.restatement ?? [],
         liveDbBrief: live.slice(0, 2000),
         chat_instructions: [
           "이 루프의 목적은 개발 명세가 아니라 PRD 확정·보완입니다.",
           "open 질문을 업무 말로 채팅에서 물어 부족한 결정을 채우세요.",
           "테이블·컬럼·코드값·API·경로 등 개발 개념은 사용자에게 말하지 마세요.",
           "reason·liveDbBrief는 내부용입니다. 필요하면 ‘업무 흐름을 정하려고요’ 정도만.",
-          "답 → prd_answer 도구로 반영 → 재질문.",
+          "답 → prd_answer로 제시 → 사용자가 승인해야 기록 → 재질문.",
+          "contradictions가 있으면 그 question을 그대로 물으세요. PRD에 적힌 내용을 답변이 부정하고 있습니다. 같은 주제를 두 번 넘게 되묻지 마세요.",
+          "pendingAnswers=true면 아직 확정되지 않은 답이 있습니다. pendingRestatement를 전하고 「이대로 확정할까요?」를 물으세요.",
           "화면 형태(모달/표/페이지 등)는 애매한 부분이 다 확정되고 PRD가 ready인 뒤에만 묻습니다.",
           "phase=layout이면 PRD는 이미 승인된 상태입니다. 화면 형태만 묻고 빌드는 양식 답 뒤에 하세요.",
           "phase=ready일 때만 와이어프레임 빌드를 시작하세요.",
@@ -726,33 +1037,193 @@ export async function answerPrdClarificationsCli(
     if (target && !overrides.has(target.id)) overrides.set(target.id, entry.answer);
   }
 
-  const newlyResolved: ClarificationsDoc["resolved"] = [];
-  const unanswered: ClarificationItem[] = [];
+  const staged: PendingAnswerEntry[] = [];
   for (const item of prev.open) {
     const answer = resolvedFor.get(item.id);
-    if (answer) {
-      newlyResolved.push({ ...item, answer, resolvedAt: new Date().toISOString() });
-    } else {
-      unanswered.push(item);
-    }
+    if (!answer) continue;
+    staged.push({
+      id: item.id,
+      topic: item.topic || "other",
+      question: item.question,
+      answer,
+      target: "open",
+      kind: item.kind,
+      reason: item.reason,
+    });
   }
+  for (const item of prev.resolved) {
+    const answer = overrides.get(item.id);
+    if (!answer) continue;
+    staged.push({
+      id: item.id,
+      topic: item.topic || "other",
+      question: item.question,
+      answer,
+      target: "override",
+      kind: item.kind,
+      reason: item.reason,
+    });
+  }
+
+  if (staged.length === 0) {
+    throw new Error("no matching answers for open questions");
+  }
+
+  // 모호한 점 → 답변 → "이렇게 확정하겠습니다" → 승인 → 기록.
+  // Nothing below writes input/vN.md, clarifications.json or the decision ledger.
+  const prdPath = path.join(getRunRoot(config, runId), "input", `v${run.prdVersion}.md`);
+  const prdContent = await readFile(prdPath, "utf8");
+  const before = await loadPendingAnswers(config, runId);
+  const challengedTopics = new Set<string>(before.doc?.challenged ?? []);
+  const challenges: PrdContradiction[] = [];
+
+  for (const entry of staged) {
+    if (!isNegativeOrSkipAnswer(entry.answer)) continue;
+    const evidence = prdEvidenceFor(prdContent, entry.topic);
+    if (evidence.length === 0) continue;
+    entry.prdEvidence = evidence;
+    // Second denial on the same topic (re-ask answered, or a denial already recorded):
+    // accept it and mark that it overrides the PRD. Never challenge the same topic twice.
+    const askedBefore =
+      challengedTopics.has(entry.topic) ||
+      entry.id.startsWith("q-recheck-") ||
+      prev.resolved.some(
+        (item) => (item.topic || "other") === entry.topic && isNegativeOrSkipAnswer(item.answer),
+      );
+    if (askedBefore) {
+      entry.overridesPrd = true;
+      continue;
+    }
+    challengedTopics.add(entry.topic);
+    challenges.push({
+      topic: entry.topic as ClarificationTopic,
+      answer: entry.answer,
+      evidence,
+      question: contradictionQuestion(entry.topic, entry.answer, evidence),
+    });
+  }
+
+  // Further edits re-stage on top of the draft instead of discarding it.
+  const kept = (before.doc?.entries ?? []).filter(
+    (entry) => !staged.some((next) => next.id === entry.id && next.target === entry.target),
+  );
+  const entries = [...kept, ...staged];
+  const restatement = entries.map(restatementLine);
+
+  await savePendingAnswers(config, runId, {
+    runId,
+    entries,
+    challenged: [...challengedTopics],
+    restatement,
+    basedOnVersion: run.prdVersion,
+    stagedAt: new Date().toISOString(),
+  });
+
+  console.log(
+    JSON.stringify(
+      {
+        ok: true,
+        runId,
+        staged: true,
+        saved: false,
+        restacked: Boolean(before.doc),
+        restatement,
+        restatementText: restatement.join(" / "),
+        confirmQuestion: CONFIRM_QUESTION,
+        challenges,
+        open: prev.open,
+        message:
+          challenges.length > 0
+            ? "아직 기록하지 않았습니다. challenges의 question을 그대로 물어 확인부터 받으세요."
+            : "아직 기록하지 않았습니다. restatement를 그대로 전한 뒤 「이대로 확정할까요?」를 묻고 멈추세요.",
+        chat_instructions: [
+          "이 답변은 보관만 됐습니다. 승인 전에는 요청서에 반영되지 않습니다.",
+          "restatement를 업무 말로 그대로 전하고 「이대로 확정할까요?」라고 물으세요.",
+          "승인(네/좋아요/저장해 주세요)하면 prd_apply, 취소(아니요/취소)면 prd_discard, 다르게 고치면 prd_answer를 다시 부르세요.",
+          "challenges가 있으면 그 question을 그대로 물으세요. 사용자가 같은 답을 유지하면 그 답을 그대로 다시 prd_answer 하세요 — PRD보다 우선한다고 기록됩니다.",
+          "파일·경로·도구 이름은 사용자에게 말하지 마세요.",
+        ],
+      },
+      null,
+      2,
+    ),
+  );
+}
+
+/** 승인됨 — staged answers are written for real: PRD, clarifications, ledger. */
+export async function applyPrdAnswersCli(config: WireframeConfig, args: string[]): Promise<void> {
+  const runId = readFlag(args, "--run-id")?.trim();
+  if (!runId) throw new Error("usage: wireframe prd answer-apply --run-id slug [--project crm]");
+  const projectSlug = readFlag(args, "--project")?.trim() ?? config.defaultProject;
+
+  const index = await loadIndex(config);
+  const project = getProject(index, projectSlug);
+  const run = project.runs.find((entry) => entry.runId === runId);
+  if (!run) throw new Error(`run not found: ${runId}`);
+
+  const { doc: stage, corrupt } = await loadPendingAnswers(config, runId);
+  if (!stage) {
+    await clearPendingAnswers(config, runId);
+    console.log(
+      JSON.stringify(
+        {
+          ok: false,
+          runId,
+          corrupt,
+          error: "확정 대기 중인 답변이 없습니다. 먼저 답을 받아 제시해 주세요.",
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+
+  const prev = await loadClarificationsDoc(config, runId);
+  const prdPath = path.join(getRunRoot(config, runId), "input", `v${run.prdVersion}.md`);
+  const prdContent = await readFile(prdPath, "utf8");
+  const now = new Date().toISOString();
+
+  const openEntries = stage.entries.filter((entry) => entry.target === "open");
+  const overrideEntries = stage.entries.filter((entry) => entry.target === "override");
+  const answeredIds = new Set(openEntries.map((entry) => entry.id));
+  const answeredTopics = new Set(openEntries.map((entry) => entry.topic));
+
+  const newlyResolved: ResolvedClarification[] = openEntries.map((entry) => {
+    const source = prev.open.find((item) => item.id === entry.id);
+    // Reaching approval means the user saw the PRD's own words and kept the denial.
+    const overridesPrd = Boolean(entry.overridesPrd || (entry.prdEvidence?.length && isNegativeOrSkipAnswer(entry.answer)));
+    return {
+      id: entry.id,
+      kind: source?.kind ?? entry.kind ?? "ambiguity",
+      topic: (source?.topic ?? entry.topic ?? "other") as ClarificationTopic,
+      question: source?.question ?? entry.question,
+      reason: source?.reason ?? entry.reason ?? "채팅에서 확정된 답",
+      answer: entry.answer,
+      resolvedAt: now,
+      ...(overridesPrd ? { overridesPrd: true, prdEvidence: entry.prdEvidence ?? [] } : {}),
+    };
+  });
+
   // Apply overrides of pre-filled decisions: the user's word wins over the adopted answer.
-  const overridden: ClarificationsDoc["resolved"] = [];
+  const overridden: ResolvedClarification[] = [];
   const keptResolved = prev.resolved.map((item) => {
-    const next = overrides.get(item.id);
-    if (!next) return item;
-    const updated = { ...item, answer: next, resolvedAt: new Date().toISOString() };
+    const entry = overrideEntries.find((candidate) => candidate.id === item.id);
+    if (!entry) return item;
+    const updated: ResolvedClarification = { ...item, answer: entry.answer, resolvedAt: now };
     delete updated.prefilledFrom;
+    if (entry.overridesPrd) {
+      updated.overridesPrd = true;
+      updated.prdEvidence = entry.prdEvidence ?? [];
+    }
     overridden.push(updated);
     return updated;
   });
 
-  if (newlyResolved.length === 0 && overridden.length === 0) {
-    throw new Error("no matching answers for open questions");
-  }
+  const unanswered = prev.open.filter(
+    (item) => !answeredIds.has(item.id) && !answeredTopics.has(item.topic),
+  );
 
-  const prdPath = path.join(getRunRoot(config, runId), "input", `v${run.prdVersion}.md`);
-  const prdContent = await readFile(prdPath, "utf8");
   const escapeRe = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   let merged = prdContent;
   // Replace the marked prefill answer line in place — the stale adopted answer must not linger
@@ -768,7 +1239,13 @@ export async function answerPrdClarificationsCli(
   if (newlyResolved.length > 0) {
     merged = appendAnswersToPrd(
       merged,
-      newlyResolved.map((item) => ({ question: item.question, answer: item.answer })),
+      newlyResolved.map((item) => ({
+        question: item.question,
+        // Keep the conflict visible in the document the build reads.
+        answer: item.overridesPrd
+          ? `${item.answer} — PRD에 적힌 내용보다 이 답을 우선(사용자 재확인)`
+          : item.answer,
+      })),
     );
   }
   await writeFile(prdPath, `${merged.trimEnd()}\n`, "utf8");
@@ -779,12 +1256,12 @@ export async function answerPrdClarificationsCli(
     open: unanswered,
     resolved: [...keptResolved, ...newlyResolved],
     rounds: prev.rounds,
-    updatedAt: new Date().toISOString(),
+    updatedAt: now,
     channel: "chat",
     audience: "non_developer",
   });
 
-  // Grow the project memory: every resolved answer (including overrides) becomes a ledger entry.
+  // Grow the project memory: only approved answers become ledger entries.
   await recordDecisions(
     projectSlug,
     [...newlyResolved, ...overridden].map((item) => ({
@@ -795,8 +1272,37 @@ export async function answerPrdClarificationsCli(
       byRunNo: run.no,
     })),
   );
+  await clearPendingAnswers(config, runId);
   await setRunStatus(config, projectSlug, runId, "clarifying");
 
   // Re-review
   await reviewPrdClarificationsCli(config, ["--run-id", runId, "--project", projectSlug]);
+}
+
+/** 취소됨 — drop the staged answers, leave the PRD and clarifications untouched. */
+export async function discardPrdAnswersCli(config: WireframeConfig, args: string[]): Promise<void> {
+  const runId = readFlag(args, "--run-id")?.trim();
+  if (!runId) throw new Error("usage: wireframe prd answer-discard --run-id slug [--project crm]");
+  const projectSlug = readFlag(args, "--project")?.trim() ?? config.defaultProject;
+
+  const index = await loadIndex(config);
+  const project = getProject(index, projectSlug);
+  if (!project.runs.some((entry) => entry.runId === runId)) {
+    throw new Error(`run not found: ${runId}`);
+  }
+
+  const discarded = await clearPendingAnswers(config, runId);
+  console.log(
+    JSON.stringify(
+      {
+        ok: true,
+        runId,
+        staged: false,
+        discarded,
+        message: "확정 대기 중이던 답을 버렸습니다. 요청서는 그대로입니다.",
+      },
+      null,
+      2,
+    ),
+  );
 }

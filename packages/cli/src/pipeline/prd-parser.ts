@@ -447,7 +447,8 @@ function parseConditionalProse(section: string): FieldControl[] | null {
   return controls.some((control) => control.kind !== "note") ? controls : null;
 }
 
-function parseConditionalMatrix(prd: string): FieldControl[] {
+/** Exported read-only: the clarify loop checks a "없다" answer against these same fields. */
+export function parseConditionalMatrix(prd: string): FieldControl[] {
   const section =
     extractSection(
       prd,

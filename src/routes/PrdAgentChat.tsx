@@ -18,6 +18,12 @@ type ChatResponse = {
   pendingSummary?: string[];
   error?: string;
   trace?: string[];
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+  usageCalls?: number;
 };
 
 function storageKey(runId?: string): string {
@@ -86,6 +92,10 @@ export function PrdAgentChat({
   // a button here would be a second way to mutate the PRD, which the studio must not have.
   const [pendingSummary, setPendingSummary] = useState<string[] | null>(null);
   const [health, setHealth] = useState<{ openai: boolean; model: string } | null>(null);
+  const [tokenUsage, setTokenUsage] = useState<{
+    last?: { prompt: number; completion: number; total: number; calls: number };
+    session: { prompt: number; completion: number; total: number };
+  }>({ session: { prompt: 0, completion: 0, total: 0 } });
   const bottomRef = useRef<HTMLDivElement>(null);
   const builtForReady = useRef<string | null>(null);
   const runIdRef = useRef<string | undefined>(queryRunId || initial.runId);
@@ -196,6 +206,20 @@ export function PrdAgentChat({
       if (data.status) setStatus(data.status);
       if (data.phase) setPhase(data.phase);
       setPendingSummary(data.pendingPrd ? (data.pendingSummary ?? []) : null);
+      if (data.usage) {
+        const prompt = data.usage.prompt_tokens || 0;
+        const completion = data.usage.completion_tokens || 0;
+        const total = data.usage.total_tokens || prompt + completion;
+        const calls = data.usageCalls || 1;
+        setTokenUsage((prev) => ({
+          last: { prompt, completion, total, calls },
+          session: {
+            prompt: prev.session.prompt + prompt,
+            completion: prev.session.completion + completion,
+            total: prev.session.total + total,
+          },
+        }));
+      }
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: data.assistantMessage || "(빈 응답)" },
@@ -245,6 +269,7 @@ export function PrdAgentChat({
     setError(null);
     setBuildNotice(null);
     setPendingSummary(null);
+    setTokenUsage({ session: { prompt: 0, completion: 0, total: 0 } });
     builtForReady.current = null;
   }
 
@@ -296,6 +321,15 @@ export function PrdAgentChat({
       ) : null}
       {health?.openai ? (
         <div className="wfs-chat-banner">OpenAI 연결됨 · model {health.model}</div>
+      ) : null}
+      {tokenUsage.last ? (
+        <div className="wfs-chat-banner">
+          tokens 이번 턴 in {tokenUsage.last.prompt.toLocaleString()} / out{" "}
+          {tokenUsage.last.completion.toLocaleString()} / total{" "}
+          {tokenUsage.last.total.toLocaleString()}
+          {tokenUsage.last.calls > 1 ? ` (${tokenUsage.last.calls}회 호출)` : ""}
+          {" · "}세션 Σ {tokenUsage.session.total.toLocaleString()}
+        </div>
       ) : null}
       {phase === "layout" ? (
         <div className="wfs-chat-banner is-warn">

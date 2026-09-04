@@ -122,6 +122,10 @@ export function prdReview(input: { root: string; runId: string; project?: string
   return { ok: true, ...parseJsonStdout(result.stdout) };
 }
 
+/**
+ * Stage answers to the open questions. Writes nothing: input/vN.md, clarifications.json and
+ * the decision ledger only change on prdAnswerApply, after the user approves the restatement.
+ */
 export function prdAnswer(input: {
   root: string;
   runId: string;
@@ -141,6 +145,110 @@ export function prdAnswer(input: {
   ]);
   if (!result.ok) return { ok: false, error: result.stderr || result.stdout };
   return { ok: true, ...parseJsonStdout(result.stdout) };
+}
+
+/** The user approved the restatement — write the staged answers for real and re-review. */
+export function prdAnswerApply(input: { root: string; runId: string; project?: string }): CliJson {
+  const project = input.project || "crm";
+  const result = runWireframeCli(input.root, [
+    "prd",
+    "answer-apply",
+    "--run-id",
+    input.runId,
+    "--project",
+    project,
+  ]);
+  if (!result.ok) return { ok: false, error: result.stderr || result.stdout };
+  const out = parseJsonStdout(result.stdout);
+  if (out.ok === false) return out;
+  return { ok: true, ...out };
+}
+
+/** The user rejected the restatement — drop the staged answers. */
+export function prdAnswerDiscard(input: { root: string; runId: string; project?: string }): CliJson {
+  const project = input.project || "crm";
+  const result = runWireframeCli(input.root, [
+    "prd",
+    "answer-discard",
+    "--run-id",
+    input.runId,
+    "--project",
+    project,
+  ]);
+  if (!result.ok) return { ok: false, error: result.stderr || result.stdout };
+  return { ok: true, ...parseJsonStdout(result.stdout) };
+}
+
+type PendingAnswersDoc = {
+  entries: Array<{ topic?: string; answer?: string; overridesPrd?: boolean }>;
+  restatement: string[];
+  challenged: string[];
+  stagedAt: string;
+};
+
+/**
+ * Read-only view of spec/pending-answers.json. Like the pending PRD draft, a truncated or
+ * hand-edited file reads as "nothing staged" — it must never break prd_get / prd_review.
+ */
+export function prdAnswersPendingGet(input: {
+  root: string;
+  runId: string;
+  project?: string;
+}): CliJson {
+  const index = readIndex(input.root);
+  if (!index) return { ok: false, error: "index.json missing" };
+  const hit = findRun(index, input.runId, input.project || "crm");
+  if (!hit) return { ok: false, error: `run not found: ${input.runId}` };
+  const { doc, corrupt } = readPendingAnswers(input.root, hit.run.runId);
+  return {
+    ok: true,
+    runId: hit.run.runId,
+    pending: Boolean(doc),
+    corrupt,
+    restatement: doc?.restatement ?? [],
+    confirmQuestion: "이대로 확정할까요?",
+    stagedAt: doc?.stagedAt ?? "",
+  };
+}
+
+function pendingAnswersPathFor(root: string, runId: string): string | null {
+  const runsRoot = path.resolve(path.join(root, "wireFrame", "runs"));
+  const specDir = path.resolve(path.join(runsRoot, runId, "spec"));
+  const file = path.resolve(path.join(specDir, "pending-answers.json"));
+  if (!specDir.startsWith(runsRoot + path.sep)) return null;
+  if (path.dirname(file) !== specDir) return null;
+  if (path.basename(file) !== "pending-answers.json") return null;
+  return file;
+}
+
+function readPendingAnswers(
+  root: string,
+  runId: string,
+): { doc: PendingAnswersDoc | null; corrupt: boolean } {
+  const file = pendingAnswersPathFor(root, runId);
+  if (!file || !fs.existsSync(file)) return { doc: null, corrupt: false };
+  let parsed: unknown = null;
+  try {
+    parsed = JSON.parse(fs.readFileSync(file, "utf8").replace(/^\uFEFF/, ""));
+  } catch {
+    return { doc: null, corrupt: true };
+  }
+  if (!isPlainObject(parsed) || !Array.isArray(parsed.entries) || parsed.entries.length === 0) {
+    return { doc: null, corrupt: true };
+  }
+  return {
+    doc: {
+      entries: parsed.entries.filter(isPlainObject) as PendingAnswersDoc["entries"],
+      restatement: Array.isArray(parsed.restatement)
+        ? parsed.restatement.filter((line): line is string => typeof line === "string")
+        : [],
+      challenged: Array.isArray(parsed.challenged)
+        ? parsed.challenged.filter((topic): topic is string => typeof topic === "string")
+        : [],
+      stagedAt: typeof parsed.stagedAt === "string" ? parsed.stagedAt : "",
+    },
+    corrupt: false,
+  };
 }
 
 export type PrdListItem = {
@@ -621,9 +729,14 @@ export function prdGet(input: { root: string; runId: string; project?: string })
     content,
     clarifications,
   });
+  // Answers waiting for the user's yes. A broken stage file reads as "nothing staged".
+  const stagedAnswers = readPendingAnswers(input.root, run.runId);
   return {
     ok: true,
     runId: run.runId,
+    pendingAnswers: Boolean(stagedAnswers.doc),
+    pendingAnswerRestatement: stagedAnswers.doc?.restatement ?? [],
+    pendingAnswerCorrupt: stagedAnswers.corrupt,
     routeId: run.no || run.runId,
     title: run.title,
     status: run.status,
