@@ -1361,6 +1361,8 @@ export function renderArtifactHtml(input: {
   /** features.json / flow.json documents — the 00-spec/00-flow pages render from these */
   features?: FeaturesDoc | null;
   flow?: FlowDoc | null;
+  /** renamed step title from a flow-node rename, so the screen H1 follows the flow edit */
+  titleOverride?: string;
 }): string {
   const hints = parseInstructionHints(input.artifact.instructions);
   const uiPattern =
@@ -1398,15 +1400,21 @@ export function renderArtifactHtml(input: {
   }
 
   const stepNo = input.artifact.no;
-  const stepSpec =
+  const title = input.titleOverride?.trim() || input.artifact.label;
+  const baseStepSpec =
     input.domain.stepSpecs.find((entry) => entry.no === stepNo) ??
     ({
       no: stepNo,
-      title: input.artifact.label,
+      title,
       controls: [],
     } as StepSpec);
+  // A flow-node rename retitles the screen behind it; without a rename the generated
+  // titles stand.
+  const stepSpec = input.titleOverride?.trim()
+    ? { ...baseStepSpec, title: input.titleOverride.trim() }
+    : baseStepSpec;
 
-  const blueprint =
+  const baseBlueprint =
     input.domain.fieldBlueprints.find((entry) => entry.stepNo === stepNo) ??
     ({
       stepNo,
@@ -1414,6 +1422,9 @@ export function renderArtifactHtml(input: {
       title: stepSpec.title,
       fields: [],
     } as FieldBlueprint);
+  const blueprint = input.titleOverride?.trim()
+    ? { ...baseBlueprint, title: input.titleOverride.trim() }
+    : baseBlueprint;
 
   const kind = resolveScreenKind(blueprint, input.artifact, hints, uiPattern);
 

@@ -1,4 +1,4 @@
-import { access, readFile, writeFile } from "node:fs/promises";
+import { access, readFile, rm, writeFile } from "node:fs/promises";
 import crypto from "node:crypto";
 import path from "node:path";
 import type { WireframeConfig } from "../../lib/config.js";
@@ -15,7 +15,12 @@ import {
   buildFlowDoc,
   type ClarificationsFile,
 } from "../../pipeline/build-docs.js";
-import { applyOverrides, loadOverrides } from "../../pipeline/spec-overrides.js";
+import {
+  applyOverrides,
+  effectiveOverrides,
+  loadOverrides,
+  resolveCascade,
+} from "../../pipeline/spec-overrides.js";
 import {
   ensureRunDirs,
   getProject,
@@ -165,7 +170,6 @@ export async function buildRun(config: WireframeConfig, args: string[]): Promise
   }
 
   await writeFile(domainPath, `${JSON.stringify(domain, null, 2)}\n`, "utf8");
-  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
   await writeFile(
     contextPath,
     `${JSON.stringify(
@@ -198,6 +202,9 @@ export async function buildRun(config: WireframeConfig, args: string[]): Promise
     domain,
     manifest,
   });
+  // features.json / flow.json stay pristine (the full generated docs); the canvas and the
+  // 00-spec/00-flow pages merge overrides at read time. Written before the manifest so the
+  // flow → screen linkage below reads the complete node set.
   const featuresPath = path.join(specDir, "features.json");
   const flowPath = path.join(specDir, "flow.json");
   await writeFile(featuresPath, `${JSON.stringify(features, null, 2)}\n`, "utf8");
@@ -207,7 +214,36 @@ export async function buildRun(config: WireframeConfig, args: string[]): Promise
   // read time only: the generated documents above stay untouched on disk, and the build
   // never writes the overrides file back. See pipeline/spec-overrides.ts.
   const overrides = await loadOverrides(specDir);
-  const merged = applyOverrides(features, flow, overrides);
+
+  // The organism: a hide made in one document travels the shared stepNo spine to the
+  // others. resolveCascade expands the raw patches into the full set of linked nodes to
+  // hide across 유저플로우 / 기능명세서 / 와이어프레임; effectiveOverrides folds that back into
+  // ordinary hidden patches so the existing merges hide the linked nodes too. Recomputed
+  // from overrides.json every build — the manifest stays derived, overrides the SSOT.
+  const cascade = resolveCascade({ flow, features, manifest, overrides });
+  const merged = applyOverrides(features, flow, effectiveOverrides(overrides, cascade));
+  const droppedArtifactIds = cascade.artifactHidden;
+  const renameByArtifactId = cascade.renameArtifact;
+  const droppedFiles = manifest.artifacts
+    .filter((artifact) => droppedArtifactIds.has(artifact.id))
+    .map((artifact) => artifact.file);
+  manifest = {
+    ...manifest,
+    artifacts: manifest.artifacts
+      .filter((artifact) => !droppedArtifactIds.has(artifact.id))
+      .map((artifact) => {
+        const renamed = renameByArtifactId.get(artifact.id);
+        return renamed ? { ...artifact, label: renamed } : artifact;
+      }),
+  };
+  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+
+  // Drop the stale HTML for a hidden screen so it never lingers as a 404 iframe target.
+  // Unhiding restores it: the node reappears in the manifest and re-renders next build.
+  for (const file of droppedFiles) {
+    const stale = path.join(artifactsDir, file);
+    if (await fileExists(stale)) await rm(stale, { force: true });
+  }
 
   for (const artifact of manifest.artifacts) {
     // locked means "keep what is already on disk", not "never write it". 00-overview is born
@@ -222,6 +258,7 @@ export async function buildRun(config: WireframeConfig, args: string[]): Promise
       assets: ctx.assets,
       features: merged.features,
       flow: merged.flow,
+      titleOverride: renameByArtifactId.get(artifact.id),
     });
     await writeFile(path.join(artifactsDir, artifact.file), html, "utf8");
   }
