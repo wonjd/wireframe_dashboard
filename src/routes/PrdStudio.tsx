@@ -87,6 +87,15 @@ function SpecEmpty({ onRetry }: { onRetry: () => void }) {
   );
 }
 
+/** Calm right-pane state before any document exists: one quiet line, no dev vocabulary. */
+function StudioAwaiting() {
+  return (
+    <div className="wfs-studio-empty">
+      <div className="wfs-studio-empty-detail">PRD를 확정하면 여기에 만들어집니다.</div>
+    </div>
+  );
+}
+
 function WireframePane({
   runId,
   project,
@@ -174,13 +183,22 @@ function WireframePane({
 export function PrdStudio() {
   const { runId: rawParam = "" } = useParams();
   const paramId = decodeURIComponent(rawParam);
+  // No param → the studio is the entry point for a brand-new request (/prd/new). There is no
+  // run yet: the chat on the left creates one and reports it back via onRunId.
+  const isNew = !paramId;
   const navigate = useNavigate();
   const data = useWireframeData();
 
   // The route param may be a routeId alias (e.g. PRD-001); resolve the real runId.
+  // In the "new" flow there is nothing to resolve until the chat reports its run id.
   const [realRunId, setRealRunId] = useState<string | null>(null);
   const [runTitle, setRunTitle] = useState("");
+  // Once the run exists we swap the URL to the real studio path (see onChatRunId). That is a
+  // brand-new run whose id equals its own alias, so re-resolving it is redundant; skip it so the
+  // chat is never handed a runId prop (which would reload its session and wipe the conversation).
+  const adoptedRef = useRef(false);
   useEffect(() => {
+    if (isNew || adoptedRef.current) return;
     let cancelled = false;
     setRealRunId(null);
     fetch(`/api/prd/${encodeURIComponent(paramId)}?project=crm`)
@@ -196,7 +214,7 @@ export function PrdStudio() {
     return () => {
       cancelled = true;
     };
-  }, [paramId]);
+  }, [paramId, isNew]);
 
   // Project entry for wireframe links (falls back to a stub when unknown).
   const [project, setProject] = useState<ProjectEntry | null>(null);
@@ -263,6 +281,40 @@ export function PrdStudio() {
   const [reloadToken, setReloadToken] = useState(0);
   const features = useSpecJson<FeaturesDoc>(realRunId ?? undefined, "features.json", reloadToken);
   const flow = useSpecJson<FlowDoc>(realRunId ?? undefined, "flow.json", reloadToken);
+
+  // The embedded chat is the single source of truth for the run; the studio only listens.
+  // When it reports a run id we adopt it (to start watching this run's spec files) and, for the
+  // "new" flow, rewrite the URL to the real studio path. We use history.replaceState directly —
+  // not router navigate — so the /prd/new route element never unmounts and the chat keeps its
+  // conversation and composer state. A later refresh loads /prd/:runId/studio and rehydrates.
+  const onChatRunId = useCallback(
+    (id: string) => {
+      setRealRunId((prev) => prev ?? id);
+      if (isNew && !adoptedRef.current) {
+        adoptedRef.current = true;
+        window.history.replaceState(null, "", `/prd/${encodeURIComponent(id)}/studio`);
+      }
+    },
+    [isNew],
+  );
+
+  // A finished build means new spec files: re-fetch features/flow/overrides and the wireframe list.
+  const onChatBuilt = useCallback(() => setReloadToken((n) => n + 1), []);
+
+  // Reveal: the first time either document becomes available, snap the right pane to 기능명세서 so
+  // the user actually sees the result appear. Later rebuilds must not keep yanking the tab.
+  const revealedRef = useRef(false);
+  useEffect(() => {
+    if (revealedRef.current) return;
+    if (features.state === "ready" || flow.state === "ready") {
+      revealedRef.current = true;
+      setTab("features");
+    }
+  }, [features.state, flow.state]);
+
+  // The chat manages its own run id in the "new" flow, so we never feed the adopted id back as a
+  // prop (that would reload its session). Deep-linked existing runs still receive the resolved id.
+  const chatRunId = isNew ? undefined : realRunId ?? undefined;
 
   // User edits (rename / importance / hide) live in spec/overrides.json — never in the
   // two generated documents above — and are merged in here with the same rules the CLI
@@ -352,7 +404,11 @@ export function PrdStudio() {
     [overrides, hiddenKind],
   );
 
-  if (!realRunId) return <div className="wfs-empty">불러오는 중…</div>;
+  // Right-pane phases: docs shown once either document is ready; a brief spinner only while an
+  // adopted run is fetching; otherwise the calm "awaiting" state (new run, or build not run yet).
+  const docsReady = features.state === "ready" || flow.state === "ready";
+  const docsLoading =
+    Boolean(realRunId) && (features.state === "loading" || flow.state === "loading");
 
   const TABS: Array<{ id: StudioTab; label: string }> = [
     { id: "features", label: "기능명세서" },
@@ -363,7 +419,12 @@ export function PrdStudio() {
   return (
     <div className={`wfs-studio${dragging ? " is-dragging" : ""}`} ref={splitRef}>
       <div className="wfs-studio-left" style={{ width: `${ratio * 100}%` }}>
-        <PrdAgentChat runId={realRunId} chatOnly />
+        <PrdAgentChat
+          runId={chatRunId}
+          chatOnly
+          onRunId={onChatRunId}
+          onBuilt={onChatBuilt}
+        />
       </div>
       <div
         className="wfs-studio-divider"
@@ -376,6 +437,14 @@ export function PrdStudio() {
         onPointerCancel={onDividerUp}
       />
       <div className="wfs-studio-right">
+        {!docsReady ? (
+          docsLoading ? (
+            <div className="wfs-empty">불러오는 중…</div>
+          ) : (
+            <StudioAwaiting />
+          )
+        ) : (
+        <>
         <div className="wfs-studio-right-bar">
           <nav className="wfs-tabs wfs-studio-tabs" aria-label="캔버스">
             {TABS.map((t) => (
@@ -440,13 +509,15 @@ export function PrdStudio() {
             )
           ) : null}
           {tab === "wireframe" ? (
-            project ? (
+            project && realRunId ? (
               <WireframePane runId={realRunId} project={project} />
             ) : (
               <div className="wfs-empty">로딩 중…</div>
             )
           ) : null}
         </div>
+        </>
+        )}
       </div>
     </div>
   );

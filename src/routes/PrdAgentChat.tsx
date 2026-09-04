@@ -70,7 +70,19 @@ const CONTINUE_ASSISTANT: Msg = {
 export function PrdAgentChat({
   runId: runIdProp,
   chatOnly = false,
-}: { runId?: string; chatOnly?: boolean } = {}) {
+  onRunId,
+  onBuilt,
+  onPhase,
+}: {
+  runId?: string;
+  chatOnly?: boolean;
+  /** Fired once this chat has a run id (created on first save, or supplied via prop). */
+  onRunId?: (runId: string) => void;
+  /** Fired when a build finishes and artifacts exist for the run. */
+  onBuilt?: () => void;
+  /** Fired whenever the pipeline phase changes (clarify → layout → ready). */
+  onPhase?: (phase: string | undefined) => void;
+} = {}) {
   const [searchParams] = useSearchParams();
   const queryRunId = runIdProp || searchParams.get("runId") || undefined;
 
@@ -103,6 +115,14 @@ export function PrdAgentChat({
   useEffect(() => {
     runIdRef.current = runId;
   }, [runId]);
+
+  // Lift state to an embedding container (e.g. the studio) without changing chat logic.
+  useEffect(() => {
+    if (runId) onRunId?.(runId);
+  }, [runId, onRunId]);
+  useEffect(() => {
+    onPhase?.(phase);
+  }, [phase, onPhase]);
 
   useEffect(() => {
     if (!queryRunId) return;
@@ -161,7 +181,8 @@ export function PrdAgentChat({
       }
       setPhase("ready");
       const n = Array.isArray(j.screens) ? j.screens.length : j.artifactCount || 0;
-      setBuildNotice(`와이어프레임 ${n}개 화면 생성 완료.`);
+      setBuildNotice(`기능명세서·유저플로우·와이어프레임(화면 ${n}개) 생성 완료.`);
+      onBuilt?.();
       setMessages((prev) => [
         ...prev,
         {
@@ -230,8 +251,9 @@ export function PrdAgentChat({
       if (data.built && nextRunId) {
         builtForReady.current = `${nextRunId}:phase-ready`;
         const n = data.artifactCount || 0;
-        setBuildNotice(n ? `와이어프레임 ${n}개 화면 생성 완료.` : "와이어프레임 생성 완료.");
+        setBuildNotice(n ? `기능명세서·유저플로우·와이어프레임(화면 ${n}개) 생성 완료.` : "기능명세서·유저플로우·와이어프레임 생성 완료.");
         setPhase("ready");
+        onBuilt?.();
         return;
       }
 

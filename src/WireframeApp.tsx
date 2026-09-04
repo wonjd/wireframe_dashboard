@@ -4,7 +4,6 @@ import { WireframeLayout } from "./components/WireframeLayout";
 import { WireframeHome } from "./routes/WireframeHome";
 import { WireframeProject } from "./routes/WireframeProject";
 import { WireframeFeature } from "./routes/WireframeFeature";
-import { PrdAgentChat } from "./routes/PrdAgentChat";
 import { PrdList } from "./routes/PrdList";
 import { PrdDetail } from "./routes/PrdDetail";
 import { PrdStudio } from "./routes/PrdStudio";
@@ -18,7 +17,7 @@ export function WireframeApp() {
         <Route element={<AppShell />}>
           <Route index element={<Navigate to="/prd" replace />} />
           <Route path="prd" element={<PrdList />} />
-          <Route path="prd/new" element={<PrdAgentChat />} />
+          <Route path="prd/new" element={<PrdStudio />} />
           <Route path="prd/:runId" element={<PrdDetail />} />
           <Route path="prd/:runId/studio" element={<PrdStudio />} />
           <Route path="db" element={<DbQueryTab />} />

@@ -908,7 +908,7 @@ function runTool(
         built: true,
         artifactCount: n,
         phase: "ready",
-        message: `와이어프레임 ${n}개 화면 생성 완료. 사용자에게 「와이어프레임」 탭에서 보고 수정·승인하라고 안내하세요.`,
+        message: `기능명세서·유저플로우·와이어프레임(화면 ${n}개)을 만들었습니다. 오른쪽에 바로 보인다고 안내하고, 고칠 점이 있으면 말해 달라고 하세요.`,
       },
       state: { ...gate.state, built: true, artifactCount: n, phase: "ready" },
     };
@@ -1077,7 +1077,7 @@ function ensureProgress(
       return {
         state: cur,
         open: curOpen,
-        note: `화면 형태까지 반영해 와이어프레임 ${n}개 화면을 만들었습니다. 「와이어프레임」 탭에서 확인한 뒤, 고칠 점을 말하고 마음에 들면 승인해 주세요.`,
+        note: `기능명세서·유저플로우·와이어프레임(화면 ${n}개)을 만들었습니다. 오른쪽에서 바로 확인하시고, 고칠 점을 말씀하시면 반영합니다.`,
       };
     }
   }
@@ -1221,7 +1221,7 @@ export async function runPrdAgentChat(input: AgentChatInput): Promise<AgentChatR
     assistantMessage: sanitizeUserFacing(
       ensured.note ||
         (state.built
-          ? `와이어프레임 ${state.artifactCount ?? ""}개 화면을 만들었습니다. 「와이어프레임」 탭에서 확인해 주세요.`
+          ? `기능명세서·유저플로우·와이어프레임(화면 ${state.artifactCount ?? ""}개)을 만들었습니다. 오른쪽에서 바로 확인해 주세요.`
           : "이어서 답을 보내 주세요."),
     ),
     runId: state.runId,
