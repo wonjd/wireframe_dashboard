@@ -7,6 +7,7 @@ import { extractRoutes } from "./commands/extract/routes.js";
 import { initProject } from "./commands/project/init.js";
 import { listProjects } from "./commands/project/list.js";
 import { buildRun } from "./commands/run/build.js";
+import { runImpactCli } from "./commands/run/impact.js";
 import { confirmRun } from "./commands/run/confirm.js";
 import { createRun } from "./commands/run/create.js";
 import { listRuns } from "./commands/run/list.js";
@@ -32,6 +33,8 @@ wireframe run create --title "기능명" [--run-id slug] [--project crm] [--prd 
 wireframe run update --run-id slug [--project crm] [--title "제목"] [--prd ./file.md | --prd -]
 wireframe run build --run-id slug [--project crm] [--asset-project crm]
 wireframe run confirm --run-id slug [--project crm]
+wireframe run impact --run-id slug [--project crm] --hide flow:step-2,features:2.1 [--rename flow:step-1="새 이름"]
+                                                             (와이어프레임 편집 영향 미리보기 — 읽기 전용)
 wireframe run list [--project crm]
 wireframe prd review --run-id slug [--project crm] [--asset-project crm]
 wireframe prd answer --run-id slug --answers '[{"id":"q1","answer":"..."}]' [--project crm]   (제시만 — 저장 안 함)
@@ -114,6 +117,10 @@ export async function runCli(argv: string[]): Promise<void> {
   }
   if (command === "run" && subcommand === "confirm") {
     await confirmRun(config, rest);
+    return;
+  }
+  if (command === "run" && subcommand === "impact") {
+    await runImpactCli(config, rest);
     return;
   }
   if (command === "render") {

@@ -86,14 +86,14 @@ const INTERNAL_TOKEN =
 
 const UNNAMED = "이름이 정해지지 않은 항목";
 
-function businessName(raw: string, fallback: string): string {
+export function businessName(raw: string, fallback: string): string {
   const text = cleanLabel(String(raw ?? "")).replace(/\s+/g, " ").trim();
   if (!text || INTERNAL_TOKEN.test(text)) return fallback;
   return text;
 }
 
 /** "공통 정보 입력 (2단계)" — rule 1: the manifest's own label plus the step number. */
-function screenName(label: string, stepNo: number): string {
+export function screenName(label: string, stepNo: number): string {
   return `${businessName(label, `${stepNo}단계 화면`)} (${stepNo}단계)`;
 }
 
